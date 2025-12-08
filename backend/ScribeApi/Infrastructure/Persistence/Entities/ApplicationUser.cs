@@ -13,6 +13,11 @@ public class ApplicationUser : IdentityUser
 
     public bool IsDeleted { get; set; }
 
+    public List<RefreshToken> RefreshTokens { get; set; } = new();
+    public string? EmailConfirmationToken { get; set; }
+    public string? PasswordResetToken { get; set; }
+    public DateTime? PasswordResetTokenExpiry { get; set; }
+
     public ICollection<TranscriptionJob> TranscriptionJobs { get; set; } = new List<TranscriptionJob>();
     public ICollection<MediaFile> MediaFiles { get; set; } = new List<MediaFile>();
     public ICollection<UploadSession> UploadSessions { get; set; } = new List<UploadSession>();

@@ -17,11 +17,21 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<TranscriptSegment> TranscriptSegments => Set<TranscriptSegment>();
     public DbSet<TranscriptChapter> TranscriptChapters => Set<TranscriptChapter>();
     public DbSet<UploadSession> UploadSessions => Set<UploadSession>();
+    
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
 
         builder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+        
+        builder.Entity<ApplicationUser>()
+            .HasIndex(u => u.Email)
+            .IsUnique();
+
+        builder.Entity<RefreshToken>()
+            .HasIndex(rt => rt.Token)
+            .IsUnique();
     }
 }
