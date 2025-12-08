@@ -7,12 +7,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ScribeApi.Api.Middlewares;
+using ScribeApi.Common.Configuration;
 using ScribeApi.Common.Interfaces;
 using ScribeApi.Features.Auth;
-using ScribeApi.Infrastructure.Identity;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
 using ScribeApi.Infrastructure.Services;
+using JwtSettings = ScribeApi.Infrastructure.Identity.JwtSettings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -101,6 +102,11 @@ builder.Services.AddAutoMapper(typeof(AuthMappingProfile));
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.Configure<JwtSettings>(
+    builder.Configuration.GetSection("JwtSettings"));
+
+builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection("EmailSettings"));
 
 var app = builder.Build();
 

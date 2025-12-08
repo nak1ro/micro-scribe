@@ -6,3 +6,8 @@ obj/
 .env
 .env.local
 .env/
+
+appsettings.Development.json
+appsettings.Production.json
+appsettings.*.json
+!appsettings.json
