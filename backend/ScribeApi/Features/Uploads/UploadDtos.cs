@@ -6,7 +6,8 @@ namespace ScribeApi.Features.Uploads;
 public record InitUploadRequest(
     string FileName,
     string ContentType,
-    long TotalSizeBytes
+    long TotalSizeBytes,
+    int ChunkSizeBytes  // e.g. 5 MB
 );
 
 public record UploadSessionDto(
@@ -16,7 +17,8 @@ public record UploadSessionDto(
     DateTime ExpiresAtUtc
 );
 
-public record FinalizeUploadRequest(
-    Guid SessionId, 
-    IFormFile File 
+public record UploadChunkRequest(
+    Guid SessionId,
+    int ChunkIndex,
+    IFormFile Chunk
 );

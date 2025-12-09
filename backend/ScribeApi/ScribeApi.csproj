@@ -35,7 +35,6 @@
     <Folder Include="Common\ResultTypes\" />
     <Folder Include="Features\Billing\" />
     <Folder Include="Features\Media\" />
-    <Folder Include="Features\Uploads\" />
     <Folder Include="Features\Usage\" />
     <Folder Include="Infrastructure\Identity\" />
   </ItemGroup>

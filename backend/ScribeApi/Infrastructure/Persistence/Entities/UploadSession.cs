@@ -32,6 +32,9 @@ public class UploadSession
     // How many chunks have been successfully received so far.
     public int ReceivedChunksCount { get; set; }
 
+    // List of indices of chunks that have been successfully uploaded.
+    public List<int> UploadedChunkIndices { get; set; } = new();
+
     // A prefix/folder/key under which chunks are stored in your storage backend.
     // For example: "uploads/sessions/{Id}/".
     public required string StorageKeyPrefix { get; set; }
