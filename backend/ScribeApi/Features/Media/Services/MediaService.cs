@@ -4,7 +4,7 @@ using ScribeApi.Common.Interfaces;
 using ScribeApi.Features.Media.Contracts;
 using ScribeApi.Infrastructure.Persistence;
 
-namespace ScribeApi.Features.Media;
+namespace ScribeApi.Features.Media.Services;
 
 public class MediaService : IMediaService
 {
@@ -14,9 +14,9 @@ public class MediaService : IMediaService
     private readonly IMapper _mapper;
 
     public MediaService(
-        IMediaQueries mediaQueries, 
-        AppDbContext context, 
-        IFileStorageService fileStorageService, 
+        IMediaQueries mediaQueries,
+        AppDbContext context,
+        IFileStorageService fileStorageService,
         IMapper mapper)
     {
         _mediaQueries = mediaQueries;
@@ -36,27 +36,29 @@ public class MediaService : IMediaService
         return _mapper.Map<MediaFileDto>(mediaFile);
     }
 
-    public async Task<PagedResponse<MediaFileDto>> ListMediaFilesAsync(string userId, int page, int pageSize, CancellationToken ct = default)
+    public async Task<PagedResponse<MediaFileDto>> ListMediaFilesAsync(string userId, int page, int pageSize,
+        CancellationToken ct = default)
     {
         var pagedMediaFiles = await _mediaQueries.ListAsync(userId, page, pageSize, ct);
-        
+
         var dtos = _mapper.Map<IEnumerable<MediaFileDto>>(pagedMediaFiles.Items);
-        
-        return new PagedResponse<MediaFileDto>(dtos, pagedMediaFiles.Page, pagedMediaFiles.PageSize, pagedMediaFiles.TotalCount);
+
+        return new PagedResponse<MediaFileDto>(dtos, pagedMediaFiles.Page, pagedMediaFiles.PageSize,
+            pagedMediaFiles.TotalCount);
     }
 
     public async Task DeleteMediaFileAsync(Guid id, string userId, CancellationToken ct = default)
     {
         var mediaFile = await _context.MediaFiles.FindAsync([id], ct);
-        
+
         if (mediaFile == null || mediaFile.UserId != userId)
         {
             throw new NotFoundException("Media file not found.");
         }
-        
+
         if (!string.IsNullOrEmpty(mediaFile.OriginalPath))
         {
-             await _fileStorageService.DeleteAsync(mediaFile.OriginalPath, ct);
+            await _fileStorageService.DeleteAsync(mediaFile.OriginalPath, ct);
         }
 
         if (!string.IsNullOrEmpty(mediaFile.AudioPath) && mediaFile.AudioPath != mediaFile.OriginalPath)

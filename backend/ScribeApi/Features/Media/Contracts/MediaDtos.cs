@@ -29,3 +29,8 @@ public class PagedResponse<T>
         TotalCount = totalCount;
     }
 }
+
+public record MediaListRequest(
+    int Page = 1,
+    int PageSize = 10
+);

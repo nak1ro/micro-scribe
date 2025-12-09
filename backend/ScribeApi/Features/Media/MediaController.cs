@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using ScribeApi.Common.Extensions;
 using ScribeApi.Features.Media.Contracts;
 
-namespace ScribeApi.Features.Media.Services;
+namespace ScribeApi.Features.Media;
 
 [Authorize]
 [ApiController]
@@ -19,16 +19,11 @@ public class MediaController : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult<PagedResponse<MediaFileDto>>> ListAsync(
-        [FromQuery] int page = 1, 
-        [FromQuery] int pageSize = 10,
+        [FromQuery] MediaListRequest request,
         CancellationToken ct = default)
     {
-        if (page < 1) page = 1;
-        if (pageSize < 1) pageSize = 10;
-        if (pageSize > 100) pageSize = 100;
-
         var userId = User.GetUserId();
-        var result = await _mediaService.ListMediaFilesAsync(userId, page, pageSize, ct);
+        var result = await _mediaService.ListMediaFilesAsync(userId, request.Page, request.PageSize, ct);
         return Ok(result);
     }
 

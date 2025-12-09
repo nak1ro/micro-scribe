@@ -9,6 +9,6 @@ public class AuthMappingProfile : Profile
     {
         CreateMap<ApplicationUser, UserDto>()
             .ForMember(dest => dest.Roles,
-                opt => opt.Ignore()); 
+                opt => opt.Ignore());
     }
 }
