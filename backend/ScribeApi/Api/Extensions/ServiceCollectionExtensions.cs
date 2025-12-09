@@ -123,6 +123,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAuthQueries, AuthQueries>();
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
         services.AddScoped<IUploadService, UploadService>();
+        services.AddScoped<IUploadQueries, UploadQueries>();
         
         // HttpClient for OAuthService
         services.AddHttpClient<IOAuthService, OAuthService>();

@@ -11,25 +11,25 @@ namespace ScribeApi.Features.Uploads;
 public class UploadService : IUploadService
 {
     private readonly AppDbContext _context;
+    private readonly IUploadQueries _queries;
     private readonly IFileStorageService _storageService;
-    private readonly PlansOptions _plansOptions;
     private readonly ILogger<UploadService> _logger;
 
     public UploadService(
         AppDbContext context,
+        IUploadQueries queries,
         IFileStorageService storageService,
-        IOptions<PlansOptions> plansOptions,
         ILogger<UploadService> logger)
     {
         _context = context;
+        _queries = queries;
         _storageService = storageService;
-        _plansOptions = plansOptions.Value;
         _logger = logger;
     }
 
     public async Task<UploadSession> CreateSessionAsync(string userId, InitUploadRequest request, CancellationToken ct)
     {
-        var userPlan = await GetUserPlanDefinitionAsync(userId, ct);
+        var userPlan = await _queries.GetUserPlanDefinitionAsync(userId, ct);
 
         await ValidateSessionCreationRulesAsync(userId, request, userPlan, ct);
 
@@ -39,13 +39,13 @@ public class UploadService : IUploadService
         {
             Id = Guid.NewGuid(),
             UserId = userId,
-            User = null!, 
+            User = null!,
             OriginalFileName = request.FileName,
             ContentType = request.ContentType,
             TotalSizeBytes = request.TotalSizeBytes,
             TotalChunks = totalChunks,
             ReceivedChunksCount = 0,
-            UploadedChunkIndices = new List<int>(),
+            UploadedChunkIndices = [],
             StorageKeyPrefix = $"uploads/{userId}/{Guid.NewGuid()}",
             Status = UploadSessionStatus.Active,
             CreatedAtUtc = DateTime.UtcNow,
@@ -58,7 +58,8 @@ public class UploadService : IUploadService
         return session;
     }
 
-    public async Task<MediaFile?> UploadChunkAsync(Guid sessionId, int chunkIndex, Stream chunkStream, string userId, CancellationToken ct)
+    public async Task<MediaFile?> UploadChunkAsync(Guid sessionId, int chunkIndex, Stream chunkStream, string userId,
+        CancellationToken ct)
     {
         var session = await GetAndValidateSessionAsync(sessionId, userId, ct);
 
@@ -76,25 +77,27 @@ public class UploadService : IUploadService
         return await CheckForCompletionAndAssembleAsync(session, ct);
     }
 
-    private async Task ValidateSessionCreationRulesAsync(string userId, InitUploadRequest request, PlanDefinition userPlan, CancellationToken ct)
+    private async Task ValidateSessionCreationRulesAsync(string userId, InitUploadRequest request,
+        PlanDefinition userPlan, CancellationToken ct)
     {
         if (request.TotalSizeBytes > userPlan.MaxFileSizeBytes)
         {
-            throw new ArgumentException($"File size exceeds the limit of {userPlan.MaxFileSizeBytes / 1024 / 1024} MB for your plan.");
+            throw new ArgumentException(
+                $"File size exceeds the limit of {userPlan.MaxFileSizeBytes / 1024 / 1024} MB for your plan.");
         }
-        
+
         // Ensure ChunkSizeBytes is valid
-        if (request.ChunkSizeBytes <= 0) 
+        if (request.ChunkSizeBytes <= 0)
         {
             throw new ArgumentException("ChunkSizeBytes must be greater than 0.");
         }
 
-        var activeSessionsCount = await _context.UploadSessions
-            .CountAsync(s => s.UserId == userId && s.Status == UploadSessionStatus.Active, ct);
+        var activeSessionsCount = await _queries.CountActiveSessionsAsync(userId, ct);
 
         if (activeSessionsCount >= userPlan.MaxFilesPerUpload)
         {
-            throw new InvalidOperationException($"You have reached the maximum number of active uploads ({userPlan.MaxFilesPerUpload}) for your plan.");
+            throw new InvalidOperationException(
+                $"You have reached the maximum number of active uploads ({userPlan.MaxFilesPerUpload}) for your plan.");
         }
     }
 
@@ -105,44 +108,44 @@ public class UploadService : IUploadService
 
     private async Task<UploadSession> GetAndValidateSessionAsync(Guid sessionId, string userId, CancellationToken ct)
     {
-        var session = await _context.UploadSessions
-            .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId, ct);
+        var session = await _queries.GetSessionAsync(sessionId, userId, ct);
 
         if (session == null)
             throw new KeyNotFoundException("Upload session not found or does not belong to user.");
 
         if (session.Status != UploadSessionStatus.Active)
             throw new InvalidOperationException($"Session is not active. Current status: {session.Status}");
-        
-        if (session.ExpiresAtUtc < DateTime.UtcNow)
-        {
-            session.Status = UploadSessionStatus.Expired;
-            await _context.SaveChangesAsync(ct);
-            throw new TimeoutException($"Upload session expired at {session.ExpiresAtUtc} UTC.");
-        }
 
-        return session;
+        if (session.ExpiresAtUtc >= DateTime.UtcNow) return session;
+
+        session.Status = UploadSessionStatus.Expired;
+        await _context.SaveChangesAsync(ct);
+        throw new TimeoutException($"Upload session expired at {session.ExpiresAtUtc} UTC.");
     }
 
     private static void ValidateChunkIndex(int chunkIndex, int totalChunks)
     {
         if (chunkIndex < 0 || chunkIndex >= totalChunks)
         {
-            throw new ArgumentOutOfRangeException(nameof(chunkIndex), $"Chunk index {chunkIndex} is out of range (0-{totalChunks - 1}).");
+            throw new ArgumentOutOfRangeException(nameof(chunkIndex),
+                $"Chunk index {chunkIndex} is out of range (0-{totalChunks - 1}).");
         }
     }
-    
-    private async Task SaveChunkToStorageAsync(UploadSession session, int chunkIndex, Stream chunkStream, CancellationToken ct)
+
+    private async Task SaveChunkToStorageAsync(UploadSession session, int chunkIndex, Stream chunkStream,
+        CancellationToken ct)
     {
         var chunkPath = $"{session.StorageKeyPrefix}/chunk_{chunkIndex}";
+
         try
         {
-            await _storageService.SaveAsync(chunkStream, chunkPath, session.ContentType ?? "application/octet-stream", ct);
+            await _storageService.SaveAsync(chunkStream, chunkPath, session.ContentType ?? "application/octet-stream",
+                ct);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to save chunk {ChunkIndex} for session {SessionId}", chunkIndex, session.Id);
-            throw; 
+            throw;
         }
     }
 
@@ -159,6 +162,7 @@ public class UploadService : IUploadService
         {
             return await AssembleFileAsync(session, ct);
         }
+
         return null;
     }
 
@@ -167,9 +171,9 @@ public class UploadService : IUploadService
         // Re-check expiration before intensive op
         if (session.ExpiresAtUtc < DateTime.UtcNow)
         {
-             session.Status = UploadSessionStatus.Expired;
-             await _context.SaveChangesAsync(ct);
-             throw new TimeoutException("Session expired during assembly.");
+            session.Status = UploadSessionStatus.Expired;
+            await _context.SaveChangesAsync(ct);
+            throw new TimeoutException("Session expired during assembly.");
         }
 
         try
@@ -177,44 +181,45 @@ public class UploadService : IUploadService
             var tempFile = Path.GetTempFileName();
             long assembledSize;
 
-            try 
+            try
             {
                 assembledSize = await MergeChunksToTempFileAsync(session, tempFile, ct);
-                
+
                 // Validate
-                var userPlan = await GetUserPlanDefinitionAsync(session.UserId, ct);
+                var userPlan = await _queries.GetUserPlanDefinitionAsync(session.UserId, ct);
                 ValidateAssembledFile(assembledSize, session.TotalSizeBytes, userPlan);
-                
+
                 // Upload Final
                 var savedPath = await UploadFinalFileAsync(session, tempFile, ct);
-                
+
                 // Create Record
                 var mediaFile = await FinalizeSessionAsync(session, savedPath, assembledSize, ct);
-                
+
                 return mediaFile;
             }
             finally
             {
                 if (File.Exists(tempFile)) File.Delete(tempFile);
-                await CleanupChunksAsync(session); // Fire and forget or await? Awaiting for safety.
+                await CleanupChunksAsync(session);
             }
         }
         catch (Exception ex)
         {
-             _logger.LogError(ex, "Failed to assemble file for session {SessionId}", session.Id);
-             session.Status = UploadSessionStatus.Failed;
-             session.CompletedAtUtc = DateTime.UtcNow;
-             await _context.SaveChangesAsync(ct);
-             throw;
+            _logger.LogError(ex, "Failed to assemble file for session {SessionId}", session.Id);
+            session.Status = UploadSessionStatus.Failed;
+            session.CompletedAtUtc = DateTime.UtcNow;
+            await _context.SaveChangesAsync(ct);
+            throw;
         }
     }
 
-    private async Task<long> MergeChunksToTempFileAsync(UploadSession session, string tempFilePath, CancellationToken ct)
+    private async Task<long> MergeChunksToTempFileAsync(UploadSession session, string tempFilePath,
+        CancellationToken ct)
     {
         session.UploadedChunkIndices.Sort();
-        
+
         await using var outputStream = File.OpenWrite(tempFilePath);
-        
+
         foreach (var index in session.UploadedChunkIndices)
         {
             var chunkPath = $"{session.StorageKeyPrefix}/chunk_{index}";
@@ -231,14 +236,13 @@ public class UploadService : IUploadService
         {
             throw new ArgumentException($"Assembled file size ({actualSize}) exceeds plan limit.");
         }
-        
-        if (declaredSize.HasValue)
+
+        if (!declaredSize.HasValue) return;
+
+        var diff = Math.Abs(actualSize - declaredSize.Value);
+        if (diff > declaredSize.Value * 0.1)
         {
-            var diff = Math.Abs(actualSize - declaredSize.Value);
-            if (diff > declaredSize.Value * 0.1) 
-            {
-                throw new ArgumentException("Assembled size differs significantly from declared size.");
-            }
+            throw new ArgumentException("Assembled size differs significantly from declared size.");
         }
     }
 
@@ -246,7 +250,8 @@ public class UploadService : IUploadService
     {
         var finalPath = $"{session.StorageKeyPrefix}/{session.OriginalFileName}";
         await using var readTemp = File.OpenRead(tempFilePath);
-        return await _storageService.SaveAsync(readTemp, finalPath, session.ContentType ?? "application/octet-stream", ct);
+        return await _storageService.SaveAsync(readTemp, finalPath, session.ContentType ?? "application/octet-stream",
+            ct);
     }
 
     private async Task CleanupChunksAsync(UploadSession session)
@@ -254,18 +259,19 @@ public class UploadService : IUploadService
         foreach (var index in session.UploadedChunkIndices)
         {
             var chunkPath = $"{session.StorageKeyPrefix}/chunk_{index}";
-            try 
-            { 
-                await _storageService.DeleteAsync(chunkPath, CancellationToken.None); 
-            } 
-            catch 
-            { 
+            try
+            {
+                await _storageService.DeleteAsync(chunkPath, CancellationToken.None);
+            }
+            catch
+            {
                 // Ignore cleanup errors
             }
         }
     }
 
-    private async Task<MediaFile> FinalizeSessionAsync(UploadSession session, string savedPath, long sizeBytes, CancellationToken ct)
+    private async Task<MediaFile> FinalizeSessionAsync(UploadSession session, string savedPath, long sizeBytes,
+        CancellationToken ct)
     {
         var mediaFile = new MediaFile
         {
@@ -281,7 +287,7 @@ public class UploadService : IUploadService
         };
 
         _context.MediaFiles.Add(mediaFile);
-        
+
         session.Status = UploadSessionStatus.Completed;
         session.CompletedAtUtc = DateTime.UtcNow;
         session.MediaFileId = mediaFile.Id;
@@ -290,23 +296,11 @@ public class UploadService : IUploadService
         return mediaFile;
     }
 
-    private async Task<PlanDefinition> GetUserPlanDefinitionAsync(string userId, CancellationToken ct)
-    {
-        var subscription = await _context.Subscriptions
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.UserId == userId && s.Status == SubscriptionStatus.Active, ct);
-
-        var planType = subscription?.Plan ?? PlanType.Free;
-        
-        return _plansOptions.Plans.FirstOrDefault(p => p.PlanType == planType) 
-               ?? _plansOptions.Plans.First(p => p.PlanType == PlanType.Free);
-    }
-
     private static MediaFileType DetermineFileType(string? contentType)
     {
-        if (string.IsNullOrWhiteSpace(contentType)) return MediaFileType.Audio; 
-        return contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase) 
-            ? MediaFileType.Video 
+        if (string.IsNullOrWhiteSpace(contentType)) return MediaFileType.Audio;
+        return contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase)
+            ? MediaFileType.Video
             : MediaFileType.Audio;
     }
 }

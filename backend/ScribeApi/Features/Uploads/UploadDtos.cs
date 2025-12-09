@@ -22,3 +22,11 @@ public record UploadChunkRequest(
     int ChunkIndex,
     IFormFile Chunk
 );
+
+public record MediaFileDto(
+    Guid Id,
+    string OriginalFileName,
+    string ContentType,
+    long SizeBytes,
+    DateTime CreatedAtUtc
+);
