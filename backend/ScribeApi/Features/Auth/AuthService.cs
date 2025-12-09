@@ -5,7 +5,6 @@ using System.Text;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using ScribeApi.Common.Configuration;
 using ScribeApi.Common.Exceptions;
@@ -24,10 +23,11 @@ public class AuthService : IAuthService
     private readonly IMapper _mapper;
     private readonly IEmailService _emailService;
     private readonly IOAuthService _oauthService;
+    private readonly IAuthQueries _authQueries;
 
     public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager,
         JwtSettings jwtSettings, AppDbContext context, IMapper mapper, IEmailService emailService,
-        IOAuthService oauthService)
+        IOAuthService oauthService, IAuthQueries authQueries)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -36,6 +36,7 @@ public class AuthService : IAuthService
         _mapper = mapper;
         _emailService = emailService;
         _oauthService = oauthService;
+        _authQueries = authQueries;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request)
@@ -89,10 +90,25 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenRequestDto request)
     {
-        var storedToken = await _context.RefreshTokens
-            .Include(x => x.User)
-            .SingleOrDefaultAsync(x => x.Token == request.RefreshToken);
+        var storedToken = await _authQueries.GetRefreshTokenByTokenAsync(request.RefreshToken);
 
+        ValidateRefreshTokenStatus(storedToken);
+
+        storedToken!.Used = true;
+        _context.RefreshTokens.Update(storedToken);
+        await _context.SaveChangesAsync();
+
+        var user = storedToken.User;
+        if (user == null)
+        {
+            throw new AuthenticationException("User not found.");
+        }
+
+        return await GenerateAuthResponseAsync(user);
+    }
+
+    private void ValidateRefreshTokenStatus(RefreshToken? storedToken)
+    {
         if (storedToken == null)
         {
             throw new AuthenticationException("Invalid refresh token.");
@@ -112,18 +128,6 @@ public class AuthService : IAuthService
         {
             throw new AuthenticationException("Refresh token has already been used.");
         }
-
-        storedToken.Used = true;
-        _context.RefreshTokens.Update(storedToken);
-        await _context.SaveChangesAsync();
-
-        var user = storedToken.User;
-        if (user == null)
-        {
-            throw new AuthenticationException("User not found.");
-        }
-
-        return await GenerateAuthResponseAsync(user);
     }
 
     public async Task ForgotPasswordAsync(ForgotPasswordRequestDto request)
@@ -209,7 +213,7 @@ public class AuthService : IAuthService
         if (user == null) return;
 
         // Invalidate all refresh tokens for the user
-        var tokens = await _context.RefreshTokens.Where(x => x.UserId == userId).ToListAsync();
+        var tokens = await _authQueries.GetRefreshTokensByUserIdAsync(userId);
         foreach (var token in tokens)
         {
             token.Invalidated = true;
@@ -220,76 +224,35 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> ExternalLoginAsync(ExternalAuthRequestDto request)
     {
-        // Validate the OAuth token
         var oauthUserInfo = await _oauthService.ValidateGoogleTokenAsync(request.IdToken);
+        return await ProcessExternalLoginFlowAsync(oauthUserInfo);
+    }
 
-        // Check if this external login already exists
-        var existingLogin = await _context.ExternalLogins
-            .Include(el => el.User)
-            .FirstOrDefaultAsync(el =>
-                el.Provider == oauthUserInfo.Provider &&
-                el.ProviderKey == oauthUserInfo.ProviderKey);
+    public async Task<AuthResponseDto> OAuthCallbackAsync(OAuthCallbackRequestDto request)
+    {
+        var oauthUserInfo = await _oauthService.ExchangeCodeForTokenAsync(request.Provider, request.Code);
+        return await ProcessExternalLoginFlowAsync(oauthUserInfo);
+    }
+    
+    // Shared private method to handle the common flow after getting user info from provider
+    private async Task<AuthResponseDto> ProcessExternalLoginFlowAsync(OAuthUserInfo oauthUserInfo)
+    {
+        var existingLogin = await _authQueries.GetExternalLoginAsync(oauthUserInfo.Provider, oauthUserInfo.ProviderKey);
 
         ApplicationUser user;
 
         if (existingLogin != null)
         {
-            // User already has this external login linked
             user = existingLogin.User;
-
-            // Update the access token and expiry
-            existingLogin.AccessToken = oauthUserInfo.AccessToken;
-            existingLogin.RefreshToken = oauthUserInfo.RefreshToken;
-            existingLogin.AccessTokenExpiresAt = oauthUserInfo.AccessTokenExpiresAt;
-            await _context.SaveChangesAsync();
+            UpdateExternalLoginTokens(existingLogin, oauthUserInfo);
         }
         else
         {
-            // Check if a user with this email already exists
-            var existingUser = await _userManager.FindByEmailAsync(oauthUserInfo.Email);
-
-            if (existingUser != null)
-            {
-                // User exists but doesn't have this external login linked
-                // Link it automatically
-                user = existingUser;
-            }
-            else
-            {
-                // Create a new user
-                user = new ApplicationUser
-                {
-                    UserName = oauthUserInfo.Email,
-                    Email = oauthUserInfo.Email,
-                    EmailConfirmed = true // OAuth providers verify emails
-                };
-
-                var createResult = await _userManager.CreateAsync(user);
-                if (!createResult.Succeeded)
-                {
-                    var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
-                    throw new ValidationException($"Failed to create user: {errors}");
-                }
-
-                await _userManager.AddToRoleAsync(user, "User");
-            }
-
-            // Create the external login
-            var externalLogin = new ExternalLogin
-            {
-                Id = Guid.NewGuid().ToString(),
-                UserId = user.Id,
-                User = user,
-                Provider = oauthUserInfo.Provider,
-                ProviderKey = oauthUserInfo.ProviderKey,
-                AccessToken = oauthUserInfo.AccessToken,
-                RefreshToken = oauthUserInfo.RefreshToken,
-                AccessTokenExpiresAt = oauthUserInfo.AccessTokenExpiresAt
-            };
-
-            await _context.ExternalLogins.AddAsync(externalLogin);
-            await _context.SaveChangesAsync();
+            user = await GetOrCreateUserAsync(oauthUserInfo.Email);
+            await CreateExternalLoginAsync(user, oauthUserInfo);
         }
+        
+        await _context.SaveChangesAsync();
 
         // Update last login time
         user.LastLoginAtUtc = DateTime.UtcNow;
@@ -298,80 +261,54 @@ public class AuthService : IAuthService
         return await GenerateAuthResponseAsync(user);
     }
 
-    public async Task<AuthResponseDto> OAuthCallbackAsync(OAuthCallbackRequestDto request)
+    private void UpdateExternalLoginTokens(ExternalLogin login, OAuthUserInfo userInfo)
     {
-        // Exchange the authorization code for access token
-        var oauthUserInfo = await _oauthService.ExchangeCodeForTokenAsync(request.Provider, request.Code);
+        login.AccessToken = userInfo.AccessToken;
+        login.RefreshToken = userInfo.RefreshToken;
+        login.AccessTokenExpiresAt = userInfo.AccessTokenExpiresAt;
+    }
 
-        // Use the same logic as ExternalLoginAsync
-        var externalAuthRequest = new ExternalAuthRequestDto(request.Provider, string.Empty);
-
-        // Check if this external login already exists
-        var existingLogin = await _context.ExternalLogins
-            .Include(el => el.User)
-            .FirstOrDefaultAsync(el =>
-                el.Provider == oauthUserInfo.Provider &&
-                el.ProviderKey == oauthUserInfo.ProviderKey);
-
-        ApplicationUser user;
-
-        if (existingLogin != null)
+    private async Task<ApplicationUser> GetOrCreateUserAsync(string email)
+    {
+        var existingUser = await _userManager.FindByEmailAsync(email);
+        if (existingUser != null)
         {
-            user = existingLogin.User;
-
-            // Update the tokens
-            existingLogin.AccessToken = oauthUserInfo.AccessToken;
-            existingLogin.RefreshToken = oauthUserInfo.RefreshToken;
-            existingLogin.AccessTokenExpiresAt = oauthUserInfo.AccessTokenExpiresAt;
-            await _context.SaveChangesAsync();
-        }
-        else
-        {
-            var existingUser = await _userManager.FindByEmailAsync(oauthUserInfo.Email);
-
-            if (existingUser != null)
-            {
-                user = existingUser;
-            }
-            else
-            {
-                user = new ApplicationUser
-                {
-                    UserName = oauthUserInfo.Email,
-                    Email = oauthUserInfo.Email,
-                    EmailConfirmed = true
-                };
-
-                var createResult = await _userManager.CreateAsync(user);
-                if (!createResult.Succeeded)
-                {
-                    var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
-                    throw new ValidationException($"Failed to create user: {errors}");
-                }
-
-                await _userManager.AddToRoleAsync(user, "User");
-            }
-
-            var externalLogin = new ExternalLogin
-            {
-                Id = Guid.NewGuid().ToString(),
-                UserId = user.Id,
-                User = user,
-                Provider = oauthUserInfo.Provider,
-                ProviderKey = oauthUserInfo.ProviderKey,
-                AccessToken = oauthUserInfo.AccessToken,
-                RefreshToken = oauthUserInfo.RefreshToken,
-                AccessTokenExpiresAt = oauthUserInfo.AccessTokenExpiresAt
-            };
-
-            await _context.ExternalLogins.AddAsync(externalLogin);
-            await _context.SaveChangesAsync();
+            return existingUser;
         }
 
-        user.LastLoginAtUtc = DateTime.UtcNow;
-        await _userManager.UpdateAsync(user);
+        var user = new ApplicationUser
+        {
+            UserName = email,
+            Email = email,
+            EmailConfirmed = true 
+        };
 
-        return await GenerateAuthResponseAsync(user);
+        var createResult = await _userManager.CreateAsync(user);
+        if (!createResult.Succeeded)
+        {
+            var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
+            throw new ValidationException($"Failed to create user: {errors}");
+        }
+
+        await _userManager.AddToRoleAsync(user, "User");
+        return user;
+    }
+
+    private async Task CreateExternalLoginAsync(ApplicationUser user, OAuthUserInfo userInfo)
+    {
+        var externalLogin = new ExternalLogin
+        {
+            Id = Guid.NewGuid().ToString(),
+            UserId = user.Id,
+            User = user,
+            Provider = userInfo.Provider,
+            ProviderKey = userInfo.ProviderKey,
+            AccessToken = userInfo.AccessToken,
+            RefreshToken = userInfo.RefreshToken,
+            AccessTokenExpiresAt = userInfo.AccessTokenExpiresAt
+        };
+
+        await _context.ExternalLogins.AddAsync(externalLogin);
     }
 
     public async Task LinkExternalAccountAsync(string userId, LinkOAuthAccountRequestDto request)
@@ -386,10 +323,7 @@ public class AuthService : IAuthService
         var oauthUserInfo = await _oauthService.ValidateGoogleTokenAsync(request.IdToken);
 
         // Check if this provider account is already linked to another user
-        var existingLogin = await _context.ExternalLogins
-            .FirstOrDefaultAsync(el =>
-                el.Provider == oauthUserInfo.Provider &&
-                el.ProviderKey == oauthUserInfo.ProviderKey);
+        var existingLogin = await _authQueries.GetExternalLoginAsync(oauthUserInfo.Provider, oauthUserInfo.ProviderKey);
 
         if (existingLogin != null)
         {
@@ -399,42 +333,27 @@ public class AuthService : IAuthService
             }
 
             // Already linked to this user, just update tokens
-            existingLogin.AccessToken = oauthUserInfo.AccessToken;
-            existingLogin.RefreshToken = oauthUserInfo.RefreshToken;
-            existingLogin.AccessTokenExpiresAt = oauthUserInfo.AccessTokenExpiresAt;
+            UpdateExternalLoginTokens(existingLogin, oauthUserInfo);
             await _context.SaveChangesAsync();
             return;
         }
 
         // Create new external login link
-        var externalLogin = new ExternalLogin
-        {
-            Id = Guid.NewGuid().ToString(),
-            UserId = userId,
-            User = user,
-            Provider = oauthUserInfo.Provider,
-            ProviderKey = oauthUserInfo.ProviderKey,
-            AccessToken = oauthUserInfo.AccessToken,
-            RefreshToken = oauthUserInfo.RefreshToken,
-            AccessTokenExpiresAt = oauthUserInfo.AccessTokenExpiresAt
-        };
-
-        await _context.ExternalLogins.AddAsync(externalLogin);
-        await _context.SaveChangesAsync();
+        await CreateExternalLoginAsync(user, oauthUserInfo);
+        await _context.SaveChangesAsync(); // Need to save explicitly here as CreateExternalLoginAsync only Adds to context
     }
 
     public async Task<List<ExternalLoginDto>> GetLinkedAccountsAsync(string userId)
     {
-        var externalLogins = await _context.ExternalLogins
-            .Where(el => el.UserId == userId)
+        var externalLogins = await _authQueries.GetExternalLoginsByUserIdAsync(userId);
+
+        return externalLogins
             .Select(el => new ExternalLoginDto(
                 el.Provider,
                 el.ProviderKey,
                 el.AccessTokenExpiresAt
             ))
-            .ToListAsync();
-
-        return externalLogins;
+            .ToList();
     }
 
     public async Task UnlinkExternalAccountAsync(string userId, string provider)
@@ -445,8 +364,7 @@ public class AuthService : IAuthService
             throw new NotFoundException("User not found.");
         }
 
-        var externalLogin = await _context.ExternalLogins
-            .FirstOrDefaultAsync(el => el.UserId == userId && el.Provider == provider);
+        var externalLogin = await _authQueries.GetExternalLoginByProviderAsync(userId, provider);
 
         if (externalLogin == null)
         {
@@ -455,8 +373,7 @@ public class AuthService : IAuthService
 
         // Check if user has a password or other login methods
         var hasPassword = await _userManager.HasPasswordAsync(user);
-        var otherLoginsCount = await _context.ExternalLogins
-            .CountAsync(el => el.UserId == userId && el.Provider != provider);
+        var otherLoginsCount = await _authQueries.CountOtherExternalLoginsAsync(userId, provider);
 
         if (!hasPassword && otherLoginsCount == 0)
         {
@@ -483,11 +400,27 @@ public class AuthService : IAuthService
 
     private async Task<AuthResponseDto> GenerateAuthResponseAsync(ApplicationUser user)
     {
+        var roles = await _userManager.GetRolesAsync(user);
+        var accessToken = GenerateAccessToken(user, roles);
+        var refreshToken = await GenerateRefreshTokenAsync(user, accessToken.Id); 
+
+        var userDto = _mapper.Map<UserDto>(user);
+        userDto = userDto with { Roles = roles.ToList() };
+
+        return new AuthResponseDto(
+            accessToken.Value,
+            refreshToken,
+            _jwtSettings.ExpiryMinutes * 60,
+            "Bearer",
+            userDto
+        );
+    }
+    
+    private (string Value, string Id) GenerateAccessToken(ApplicationUser user, IList<string> roles)
+    {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
-
-        var roles = await _userManager.GetRolesAsync(user);
-
+        
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id),
@@ -509,11 +442,14 @@ public class AuthService : IAuthService
         };
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
-        var accessToken = tokenHandler.WriteToken(token);
+        return (tokenHandler.WriteToken(token), token.Id);
+    }
 
+    private async Task<string> GenerateRefreshTokenAsync(ApplicationUser user, string jwtId)
+    {
         var refreshToken = new RefreshToken
         {
-            JwtId = token.Id,
+            JwtId = jwtId,
             UserId = user.Id,
             CreationDate = DateTime.UtcNow,
             ExpiryDate = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays),
@@ -523,15 +459,6 @@ public class AuthService : IAuthService
         await _context.RefreshTokens.AddAsync(refreshToken);
         await _context.SaveChangesAsync();
 
-        var userDto = _mapper.Map<UserDto>(user);
-        userDto = userDto with { Roles = roles.ToList() };
-
-        return new AuthResponseDto(
-            accessToken,
-            refreshToken.Token,
-            _jwtSettings.ExpiryMinutes * 60,
-            "Bearer",
-            userDto
-        );
+        return refreshToken.Token;
     }
 }

@@ -8,6 +8,10 @@ namespace ScribeApi.Features.Auth;
 
 public class OAuthService : IOAuthService
 {
+    private const string GoogleProvider = "google";
+    private const string GoogleTokenUrl = "https://oauth2.googleapis.com/token";
+    private const string GrantTypeAuthorizationCode = "authorization_code";
+    
     private readonly OAuthSettings _oauthSettings;
     private readonly HttpClient _httpClient;
     private readonly ILogger<OAuthService> _logger;
@@ -34,7 +38,7 @@ public class OAuthService : IOAuthService
             var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, validationSettings);
 
             return new OAuthUserInfo(
-                Provider: "google",
+                Provider: GoogleProvider,
                 ProviderKey: payload.Subject,
                 Email: payload.Email,
                 Name: payload.Name,
@@ -57,55 +61,15 @@ public class OAuthService : IOAuthService
 
     public async Task<OAuthUserInfo> ExchangeCodeForTokenAsync(string provider, string code)
     {
-        if (!provider.Equals("google", StringComparison.OrdinalIgnoreCase))
+        if (!provider.Equals(GoogleProvider, StringComparison.OrdinalIgnoreCase))
         {
             throw new OAuthException($"Unsupported OAuth provider: {provider}");
         }
 
         try
         {
-            // Exchange authorization code for access token
-            var tokenRequest = new Dictionary<string, string>
-            {
-                { "code", code },
-                { "client_id", _oauthSettings.Google.ClientId },
-                { "client_secret", _oauthSettings.Google.ClientSecret },
-                { "redirect_uri", _oauthSettings.Google.RedirectUri },
-                { "grant_type", "authorization_code" }
-            };
-
-            var response = await _httpClient.PostAsync(
-                "https://oauth2.googleapis.com/token",
-                new FormUrlEncodedContent(tokenRequest)
-            );
-
-            if (!response.IsSuccessStatusCode)
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                _logger.LogWarning("Failed to exchange code for token: {Error}", errorContent);
-                throw new OAuthException("Failed to exchange authorization code for access token");
-            }
-
-            var tokenResponse = await response.Content.ReadAsStringAsync();
-            var tokenData = JsonSerializer.Deserialize<GoogleTokenResponse>(tokenResponse);
-
-            if (tokenData?.IdToken == null)
-            {
-                throw new OAuthException("No ID token returned from Google");
-            }
-
-            // Validate the ID token and extract user info
-            var userInfo = await ValidateGoogleTokenAsync(tokenData.IdToken);
-
-            // Update with access token and refresh token
-            return userInfo with
-            {
-                AccessToken = tokenData.AccessToken,
-                RefreshToken = tokenData.RefreshToken,
-                AccessTokenExpiresAt = tokenData.ExpiresIn.HasValue
-                    ? DateTimeOffset.UtcNow.AddSeconds(tokenData.ExpiresIn.Value)
-                    : null
-            };
+            var tokenResponse = await SendTokenExchangeRequestAsync(code);
+            return await ParseGoogleTokenResponseAsync(tokenResponse);
         }
         catch (OAuthException)
         {
@@ -116,6 +80,56 @@ public class OAuthService : IOAuthService
             _logger.LogError(ex, "Error exchanging authorization code for token");
             throw new OAuthException("Failed to exchange authorization code", ex);
         }
+    }
+
+    private async Task<string> SendTokenExchangeRequestAsync(string code)
+    {
+        var tokenRequest = new Dictionary<string, string>
+        {
+            { "code", code },
+            { "client_id", _oauthSettings.Google.ClientId },
+            { "client_secret", _oauthSettings.Google.ClientSecret },
+            { "redirect_uri", _oauthSettings.Google.RedirectUri },
+            { "grant_type", GrantTypeAuthorizationCode }
+        };
+
+        var response = await _httpClient.PostAsync(
+            GoogleTokenUrl,
+            new FormUrlEncodedContent(tokenRequest)
+        );
+
+        var content = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("Failed to exchange code for token: {Error}", content);
+            throw new OAuthException("Failed to exchange authorization code for access token");
+        }
+
+        return content;
+    }
+
+    private async Task<OAuthUserInfo> ParseGoogleTokenResponseAsync(string jsonResponse)
+    {
+        var tokenData = JsonSerializer.Deserialize<GoogleTokenResponse>(jsonResponse);
+
+        if (tokenData?.IdToken == null)
+        {
+            throw new OAuthException("No ID token returned from Google");
+        }
+
+        // Validate the ID token and extract user info
+        var userInfo = await ValidateGoogleTokenAsync(tokenData.IdToken);
+
+        // Update with access token and refresh token
+        return userInfo with
+        {
+            AccessToken = tokenData.AccessToken,
+            RefreshToken = tokenData.RefreshToken,
+            AccessTokenExpiresAt = tokenData.ExpiresIn.HasValue
+                ? DateTimeOffset.UtcNow.AddSeconds(tokenData.ExpiresIn.Value)
+                : null
+        };
     }
 
     private class GoogleTokenResponse

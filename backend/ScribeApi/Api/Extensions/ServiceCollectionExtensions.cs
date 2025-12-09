@@ -118,6 +118,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IOAuthService, OAuthService>();
+        services.AddScoped<IAuthQueries, AuthQueries>();
         
         // HttpClient for OAuthService
         services.AddHttpClient<IOAuthService, OAuthService>();
