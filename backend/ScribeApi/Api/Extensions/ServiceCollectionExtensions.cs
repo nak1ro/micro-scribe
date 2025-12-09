@@ -11,9 +11,11 @@ using ScribeApi.Common.Configuration;
 using ScribeApi.Common.Configuration.Plans;
 using ScribeApi.Common.Interfaces;
 using ScribeApi.Features.Auth;
+using ScribeApi.Features.Uploads;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
 using ScribeApi.Infrastructure.Services;
+using ScribeApi.Infrastructure.Storage;
 
 namespace ScribeApi.Api.Extensions;
 
@@ -119,6 +121,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IOAuthService, OAuthService>();
         services.AddScoped<IAuthQueries, AuthQueries>();
+        services.AddScoped<IFileStorageService, LocalFileStorageService>();
+        services.AddScoped<IUploadService, UploadService>();
         
         // HttpClient for OAuthService
         services.AddHttpClient<IOAuthService, OAuthService>();

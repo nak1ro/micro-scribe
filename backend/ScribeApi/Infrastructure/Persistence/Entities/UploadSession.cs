@@ -5,7 +5,8 @@ public enum UploadSessionStatus
     Active = 0,
     Completed = 1,
     Expired = 2,
-    Cancelled = 3
+    Cancelled = 3,
+    Failed = 4
 }
 
 public class UploadSession
