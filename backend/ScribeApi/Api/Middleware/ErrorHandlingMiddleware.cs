@@ -1,18 +1,19 @@
 using System.Net;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using ScribeApi.Common.Exceptions;
 
 namespace ScribeApi.Api.Middleware;
 
-public sealed class ErrorHandlingMiddleware
+public sealed class ExceptionHandlingMiddleware
 {
     private readonly RequestDelegate _next;
-    private readonly ILogger<ErrorHandlingMiddleware> _logger;
+    private readonly ILogger<ExceptionHandlingMiddleware> _logger;
     private readonly IHostEnvironment _env;
 
-    public ErrorHandlingMiddleware(
+    public ExceptionHandlingMiddleware(
         RequestDelegate next,
-        ILogger<ErrorHandlingMiddleware> logger,
+        ILogger<ExceptionHandlingMiddleware> logger,
         IHostEnvironment env)
     {
         _next = next;
@@ -35,10 +36,11 @@ public sealed class ErrorHandlingMiddleware
     private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         // Log first
-        _logger.LogError(exception, "Unhandled exception caught by ErrorHandlingMiddleware");
+        _logger.LogError(exception, "Unhandled exception caught by ExceptionHandlingMiddleware");
 
         if (context.Response.HasStarted)
         {
+            // We can't modify the response at this point, so rethrow
             throw exception;
         }
 
@@ -53,10 +55,18 @@ public sealed class ErrorHandlingMiddleware
         {
             Status = (int)statusCode,
             Title = title,
-            Detail = _env.IsDevelopment() ? exception.ToString() : null,
+            Detail = _env.IsDevelopment()
+                ? exception.ToString() // full details in dev (stack trace etc.)
+                : exception.Message, // safer message in production
             Instance = context.TraceIdentifier,
             Type = "https://httpstatuses.com/" + (int)statusCode
         };
+
+        // Optional: include exception type in dev for easier debugging
+        if (_env.IsDevelopment())
+        {
+            problemDetails.Extensions["exceptionType"] = exception.GetType().FullName;
+        }
 
         var options = new JsonSerializerOptions
         {
@@ -67,15 +77,16 @@ public sealed class ErrorHandlingMiddleware
         await context.Response.WriteAsync(payload);
     }
 
-    private static (HttpStatusCode statusCode, string title) MapExceptionToStatusCode(Exception ex)
+    private static (HttpStatusCode statusCode, string title) MapExceptionToStatusCode(Exception exception)
     {
-        // Customize this mapping as needed for your app-specific exceptions
-        return ex switch
+        return exception switch
         {
-            // Example custom exceptions:
-            // ValidationException => (HttpStatusCode.BadRequest, "Validation failed"),
-            // NotFoundException => (HttpStatusCode.NotFound, "Resource not found"),
-
+            AuthenticationException => (HttpStatusCode.Unauthorized, "Authentication failed"),
+            UnauthorizedException => (HttpStatusCode.Forbidden, "Forbidden"),
+            NotFoundException => (HttpStatusCode.NotFound, "Resource not found"),
+            ConflictException => (HttpStatusCode.Conflict, "Conflict"),
+            ValidationException => (HttpStatusCode.BadRequest, "Validation failed"),
+            ExternalAuthException => (HttpStatusCode.BadGateway, "External authentication error"),
             _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred")
         };
     }

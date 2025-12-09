@@ -18,4 +18,10 @@ public record ExternalAuthRequestDto(string Provider, string IdToken);
 
 public record AuthResponseDto(string AccessToken, string RefreshToken, int ExpiresIn, string TokenType, UserDto User);
 
-public record UserDto(string Id, string Email, bool EmailConfirmed, List<string> Roles);
+public record UserDto
+{
+    public string Id { get; init; } = string.Empty;
+    public string Email { get; init; } = string.Empty;
+    public bool EmailConfirmed { get; init; }
+    public List<string> Roles { get; init; } = new();
+}
