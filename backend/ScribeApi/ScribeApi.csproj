@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <Folder Include="Api\Filters\" />
+    <Folder Include="Common\Attributes\" />
     <Folder Include="Common\Exceptions\" />
     <Folder Include="Common\Logging\" />
     <Folder Include="Common\ResultTypes\" />
