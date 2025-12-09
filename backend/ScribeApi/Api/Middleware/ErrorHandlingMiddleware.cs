@@ -86,7 +86,7 @@ public sealed class ExceptionHandlingMiddleware
             NotFoundException => (HttpStatusCode.NotFound, "Resource not found"),
             ConflictException => (HttpStatusCode.Conflict, "Conflict"),
             ValidationException => (HttpStatusCode.BadRequest, "Validation failed"),
-            ExternalAuthException => (HttpStatusCode.BadGateway, "External authentication error"),
+            OAuthException => (HttpStatusCode.BadGateway, "External authentication error"),
             _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred")
         };
     }

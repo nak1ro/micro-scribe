@@ -25,7 +25,13 @@ public class UnauthorizedException : Exception
     public UnauthorizedException(string message) : base(message) { }
 }
 
-public class ExternalAuthException : Exception
+public class OAuthException : Exception
 {
-    public ExternalAuthException(string message) : base(message) { }
+    public OAuthException(string message) : base(message) { }
+    public OAuthException(string message, Exception innerException) : base(message, innerException) { }
+}
+
+public class AccountLinkingException : Exception
+{
+    public AccountLinkingException(string message) : base(message) { }
 }

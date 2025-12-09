@@ -16,6 +16,23 @@ public record ChangePasswordRequestDto(string CurrentPassword, string NewPasswor
 
 public record ExternalAuthRequestDto(string Provider, string IdToken);
 
+public record OAuthCallbackRequestDto(string Provider, string Code, string? State);
+
+public record OAuthLoginRequestDto(string Provider, string IdToken);
+
+public record LinkOAuthAccountRequestDto(string Provider, string IdToken);
+
+// Internal DTO for OAuth user info
+public record OAuthUserInfo(
+    string Provider,
+    string ProviderKey,
+    string Email,
+    string? Name,
+    string? AccessToken = null,
+    string? RefreshToken = null,
+    DateTimeOffset? AccessTokenExpiresAt = null
+);
+
 public record AuthResponseDto(string AccessToken, string RefreshToken, int ExpiresIn, string TokenType, UserDto User);
 
 public record UserDto
@@ -25,3 +42,9 @@ public record UserDto
     public bool EmailConfirmed { get; init; }
     public List<string> Roles { get; init; } = new();
 }
+
+public record ExternalLoginDto(
+    string Provider,
+    string ProviderKey,
+    DateTimeOffset? AccessTokenExpiresAt
+);

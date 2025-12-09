@@ -78,3 +78,48 @@ public class ExternalAuthRequestValidator : AbstractValidator<ExternalAuthReques
         RuleFor(x => x.IdToken).NotEmpty();
     }
 }
+
+public class OAuthCallbackRequestValidator : AbstractValidator<OAuthCallbackRequestDto>
+{
+    private static readonly string[] ValidProviders = { "google" };
+    
+    public OAuthCallbackRequestValidator()
+    {
+        RuleFor(x => x.Provider)
+            .NotEmpty()
+            .Must(p => ValidProviders.Contains(p.ToLower()))
+            .WithMessage("Invalid OAuth provider. Supported providers: google");
+        
+        RuleFor(x => x.Code).NotEmpty().WithMessage("Authorization code is required");
+    }
+}
+
+public class OAuthLoginRequestValidator : AbstractValidator<OAuthLoginRequestDto>
+{
+    private static readonly string[] ValidProviders = { "google" };
+    
+    public OAuthLoginRequestValidator()
+    {
+        RuleFor(x => x.Provider)
+            .NotEmpty()
+            .Must(p => ValidProviders.Contains(p.ToLower()))
+            .WithMessage("Invalid OAuth provider. Supported providers: google");
+        
+        RuleFor(x => x.IdToken).NotEmpty().WithMessage("ID token is required");
+    }
+}
+
+public class LinkOAuthAccountRequestValidator : AbstractValidator<LinkOAuthAccountRequestDto>
+{
+    private static readonly string[] ValidProviders = { "google" };
+    
+    public LinkOAuthAccountRequestValidator()
+    {
+        RuleFor(x => x.Provider)
+            .NotEmpty()
+            .Must(p => ValidProviders.Contains(p.ToLower()))
+            .WithMessage("Invalid OAuth provider. Supported providers: google");
+        
+        RuleFor(x => x.IdToken).NotEmpty().WithMessage("ID token is required");
+    }
+}

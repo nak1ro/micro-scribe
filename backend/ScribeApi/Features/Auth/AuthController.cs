@@ -86,6 +86,46 @@ public class AuthController : ControllerBase
         return Ok(response);
     }
 
+    [HttpPost("oauth/callback")]
+    public async Task<ActionResult<AuthResponseDto>> OAuthCallback(OAuthCallbackRequestDto request)
+    {
+        var response = await _authService.OAuthCallbackAsync(request);
+        return Ok(response);
+    }
+
+    [Authorize]
+    [HttpPost("oauth/link")]
+    public async Task<IActionResult> LinkOAuthAccount(LinkOAuthAccountRequestDto request)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return Unauthorized();
+
+        await _authService.LinkExternalAccountAsync(userId, request);
+        return Ok(new { message = "External account linked successfully." });
+    }
+
+    [Authorize]
+    [HttpGet("oauth/linked-accounts")]
+    public async Task<ActionResult<List<ExternalLoginDto>>> GetLinkedAccounts()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return Unauthorized();
+
+        var accounts = await _authService.GetLinkedAccountsAsync(userId);
+        return Ok(accounts);
+    }
+
+    [Authorize]
+    [HttpDelete("oauth/unlink/{provider}")]
+    public async Task<IActionResult> UnlinkOAuthAccount(string provider)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return Unauthorized();
+
+        await _authService.UnlinkExternalAccountAsync(userId, provider);
+        return Ok(new { message = $"{provider} account unlinked successfully." });
+    }
+
     [Authorize]
     [HttpGet("me")]
     public async Task<ActionResult<UserDto>> Me()

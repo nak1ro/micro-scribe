@@ -23,21 +23,19 @@ public class AuthService : IAuthService
     private readonly AppDbContext _context;
     private readonly IMapper _mapper;
     private readonly IEmailService _emailService;
+    private readonly IOAuthService _oauthService;
 
-    public AuthService(
-        UserManager<ApplicationUser> userManager,
-        SignInManager<ApplicationUser> signInManager,
-        IOptions<JwtSettings> jwtSettings,
-        AppDbContext context,
-        IMapper mapper,
-        IEmailService emailService)
+    public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager,
+        JwtSettings jwtSettings, AppDbContext context, IMapper mapper, IEmailService emailService,
+        IOAuthService oauthService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
-        _jwtSettings = jwtSettings.Value;
+        _jwtSettings = jwtSettings;
         _context = context;
         _mapper = mapper;
         _emailService = emailService;
+        _oauthService = oauthService;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request)
@@ -122,7 +120,7 @@ public class AuthService : IAuthService
         var user = storedToken.User;
         if (user == null)
         {
-             throw new AuthenticationException("User not found.");
+            throw new AuthenticationException("User not found.");
         }
 
         return await GenerateAuthResponseAsync(user);
@@ -155,7 +153,7 @@ public class AuthService : IAuthService
 
         if (user.PasswordResetToken != request.Token || user.PasswordResetTokenExpiry < DateTime.UtcNow)
         {
-             throw new ValidationException("Invalid or expired password reset token.");
+            throw new ValidationException("Invalid or expired password reset token.");
         }
 
         var result = await _userManager.ResetPasswordAsync(user, request.Token, request.NewPassword);
@@ -198,9 +196,9 @@ public class AuthService : IAuthService
         var result = await _userManager.ConfirmEmailAsync(user, token);
         if (!result.Succeeded)
         {
-             throw new ValidationException("Email confirmation failed.");
+            throw new ValidationException("Email confirmation failed.");
         }
-        
+
         user.EmailConfirmationToken = null;
         await _userManager.UpdateAsync(user);
     }
@@ -216,18 +214,258 @@ public class AuthService : IAuthService
         {
             token.Invalidated = true;
         }
-        
+
         await _context.SaveChangesAsync();
     }
 
     public async Task<AuthResponseDto> ExternalLoginAsync(ExternalAuthRequestDto request)
     {
-        // Placeholder for external login logic
-        // In a real implementation, you would verify the token with Google/Microsoft
-        // and then find or create the user.
-        
-        // For now, we'll throw not implemented or handle it if we had the libraries installed
-        throw new NotImplementedException("External login is not fully implemented yet without provider keys.");
+        // Validate the OAuth token
+        var oauthUserInfo = await _oauthService.ValidateGoogleTokenAsync(request.IdToken);
+
+        // Check if this external login already exists
+        var existingLogin = await _context.ExternalLogins
+            .Include(el => el.User)
+            .FirstOrDefaultAsync(el =>
+                el.Provider == oauthUserInfo.Provider &&
+                el.ProviderKey == oauthUserInfo.ProviderKey);
+
+        ApplicationUser user;
+
+        if (existingLogin != null)
+        {
+            // User already has this external login linked
+            user = existingLogin.User;
+
+            // Update the access token and expiry
+            existingLogin.AccessToken = oauthUserInfo.AccessToken;
+            existingLogin.RefreshToken = oauthUserInfo.RefreshToken;
+            existingLogin.AccessTokenExpiresAt = oauthUserInfo.AccessTokenExpiresAt;
+            await _context.SaveChangesAsync();
+        }
+        else
+        {
+            // Check if a user with this email already exists
+            var existingUser = await _userManager.FindByEmailAsync(oauthUserInfo.Email);
+
+            if (existingUser != null)
+            {
+                // User exists but doesn't have this external login linked
+                // Link it automatically
+                user = existingUser;
+            }
+            else
+            {
+                // Create a new user
+                user = new ApplicationUser
+                {
+                    UserName = oauthUserInfo.Email,
+                    Email = oauthUserInfo.Email,
+                    EmailConfirmed = true // OAuth providers verify emails
+                };
+
+                var createResult = await _userManager.CreateAsync(user);
+                if (!createResult.Succeeded)
+                {
+                    var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
+                    throw new ValidationException($"Failed to create user: {errors}");
+                }
+
+                await _userManager.AddToRoleAsync(user, "User");
+            }
+
+            // Create the external login
+            var externalLogin = new ExternalLogin
+            {
+                Id = Guid.NewGuid().ToString(),
+                UserId = user.Id,
+                User = user,
+                Provider = oauthUserInfo.Provider,
+                ProviderKey = oauthUserInfo.ProviderKey,
+                AccessToken = oauthUserInfo.AccessToken,
+                RefreshToken = oauthUserInfo.RefreshToken,
+                AccessTokenExpiresAt = oauthUserInfo.AccessTokenExpiresAt
+            };
+
+            await _context.ExternalLogins.AddAsync(externalLogin);
+            await _context.SaveChangesAsync();
+        }
+
+        // Update last login time
+        user.LastLoginAtUtc = DateTime.UtcNow;
+        await _userManager.UpdateAsync(user);
+
+        return await GenerateAuthResponseAsync(user);
+    }
+
+    public async Task<AuthResponseDto> OAuthCallbackAsync(OAuthCallbackRequestDto request)
+    {
+        // Exchange the authorization code for access token
+        var oauthUserInfo = await _oauthService.ExchangeCodeForTokenAsync(request.Provider, request.Code);
+
+        // Use the same logic as ExternalLoginAsync
+        var externalAuthRequest = new ExternalAuthRequestDto(request.Provider, string.Empty);
+
+        // Check if this external login already exists
+        var existingLogin = await _context.ExternalLogins
+            .Include(el => el.User)
+            .FirstOrDefaultAsync(el =>
+                el.Provider == oauthUserInfo.Provider &&
+                el.ProviderKey == oauthUserInfo.ProviderKey);
+
+        ApplicationUser user;
+
+        if (existingLogin != null)
+        {
+            user = existingLogin.User;
+
+            // Update the tokens
+            existingLogin.AccessToken = oauthUserInfo.AccessToken;
+            existingLogin.RefreshToken = oauthUserInfo.RefreshToken;
+            existingLogin.AccessTokenExpiresAt = oauthUserInfo.AccessTokenExpiresAt;
+            await _context.SaveChangesAsync();
+        }
+        else
+        {
+            var existingUser = await _userManager.FindByEmailAsync(oauthUserInfo.Email);
+
+            if (existingUser != null)
+            {
+                user = existingUser;
+            }
+            else
+            {
+                user = new ApplicationUser
+                {
+                    UserName = oauthUserInfo.Email,
+                    Email = oauthUserInfo.Email,
+                    EmailConfirmed = true
+                };
+
+                var createResult = await _userManager.CreateAsync(user);
+                if (!createResult.Succeeded)
+                {
+                    var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
+                    throw new ValidationException($"Failed to create user: {errors}");
+                }
+
+                await _userManager.AddToRoleAsync(user, "User");
+            }
+
+            var externalLogin = new ExternalLogin
+            {
+                Id = Guid.NewGuid().ToString(),
+                UserId = user.Id,
+                User = user,
+                Provider = oauthUserInfo.Provider,
+                ProviderKey = oauthUserInfo.ProviderKey,
+                AccessToken = oauthUserInfo.AccessToken,
+                RefreshToken = oauthUserInfo.RefreshToken,
+                AccessTokenExpiresAt = oauthUserInfo.AccessTokenExpiresAt
+            };
+
+            await _context.ExternalLogins.AddAsync(externalLogin);
+            await _context.SaveChangesAsync();
+        }
+
+        user.LastLoginAtUtc = DateTime.UtcNow;
+        await _userManager.UpdateAsync(user);
+
+        return await GenerateAuthResponseAsync(user);
+    }
+
+    public async Task LinkExternalAccountAsync(string userId, LinkOAuthAccountRequestDto request)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            throw new NotFoundException("User not found.");
+        }
+
+        // Validate the OAuth token
+        var oauthUserInfo = await _oauthService.ValidateGoogleTokenAsync(request.IdToken);
+
+        // Check if this provider account is already linked to another user
+        var existingLogin = await _context.ExternalLogins
+            .FirstOrDefaultAsync(el =>
+                el.Provider == oauthUserInfo.Provider &&
+                el.ProviderKey == oauthUserInfo.ProviderKey);
+
+        if (existingLogin != null)
+        {
+            if (existingLogin.UserId != userId)
+            {
+                throw new AccountLinkingException("This external account is already linked to another user.");
+            }
+
+            // Already linked to this user, just update tokens
+            existingLogin.AccessToken = oauthUserInfo.AccessToken;
+            existingLogin.RefreshToken = oauthUserInfo.RefreshToken;
+            existingLogin.AccessTokenExpiresAt = oauthUserInfo.AccessTokenExpiresAt;
+            await _context.SaveChangesAsync();
+            return;
+        }
+
+        // Create new external login link
+        var externalLogin = new ExternalLogin
+        {
+            Id = Guid.NewGuid().ToString(),
+            UserId = userId,
+            User = user,
+            Provider = oauthUserInfo.Provider,
+            ProviderKey = oauthUserInfo.ProviderKey,
+            AccessToken = oauthUserInfo.AccessToken,
+            RefreshToken = oauthUserInfo.RefreshToken,
+            AccessTokenExpiresAt = oauthUserInfo.AccessTokenExpiresAt
+        };
+
+        await _context.ExternalLogins.AddAsync(externalLogin);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<List<ExternalLoginDto>> GetLinkedAccountsAsync(string userId)
+    {
+        var externalLogins = await _context.ExternalLogins
+            .Where(el => el.UserId == userId)
+            .Select(el => new ExternalLoginDto(
+                el.Provider,
+                el.ProviderKey,
+                el.AccessTokenExpiresAt
+            ))
+            .ToListAsync();
+
+        return externalLogins;
+    }
+
+    public async Task UnlinkExternalAccountAsync(string userId, string provider)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            throw new NotFoundException("User not found.");
+        }
+
+        var externalLogin = await _context.ExternalLogins
+            .FirstOrDefaultAsync(el => el.UserId == userId && el.Provider == provider);
+
+        if (externalLogin == null)
+        {
+            throw new NotFoundException("External login not found.");
+        }
+
+        // Check if user has a password or other login methods
+        var hasPassword = await _userManager.HasPasswordAsync(user);
+        var otherLoginsCount = await _context.ExternalLogins
+            .CountAsync(el => el.UserId == userId && el.Provider != provider);
+
+        if (!hasPassword && otherLoginsCount == 0)
+        {
+            throw new ValidationException(
+                "Cannot unlink the only login method. Please set a password first or link another account.");
+        }
+
+        _context.ExternalLogins.Remove(externalLogin);
+        await _context.SaveChangesAsync();
     }
 
     public async Task<UserDto> GetUserByIdAsync(string userId)
@@ -249,7 +487,7 @@ public class AuthService : IAuthService
         var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
 
         var roles = await _userManager.GetRolesAsync(user);
-        
+
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id),
@@ -257,14 +495,15 @@ public class AuthService : IAuthService
             new(JwtRegisteredClaimNames.Email, user.Email!),
             new("id", user.Id)
         };
-        
+
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
             Expires = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes),
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
+            SigningCredentials =
+                new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
             Issuer = _jwtSettings.Issuer,
             Audience = _jwtSettings.Audience
         };

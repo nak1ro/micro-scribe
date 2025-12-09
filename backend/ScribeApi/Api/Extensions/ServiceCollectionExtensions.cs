@@ -117,10 +117,18 @@ public static class ServiceCollectionExtensions
         services.AddScoped<TransactionFilter>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IOAuthService, OAuthService>();
+        
+        // HttpClient for OAuthService
+        services.AddHttpClient<IOAuthService, OAuthService>();
+        
+        // Register JwtSettings as singleton for direct injection
+        services.AddSingleton(jwtSettings);
 
         // Options binding (non-secret config)
         services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
         services.Configure<PlansOptions>(configuration.GetSection("Plans"));
+        services.Configure<OAuthSettings>(configuration.GetSection("OAuth"));
 
         return services;
     }
