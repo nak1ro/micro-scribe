@@ -15,7 +15,6 @@ using ScribeApi.Features.Auth;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
 using ScribeApi.Infrastructure.Services;
-using JwtSettings = ScribeApi.Infrastructure.Identity.JwtSettings;
 
 var builder = WebApplication.CreateBuilder(args);
 

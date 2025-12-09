@@ -7,9 +7,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using ScribeApi.Common.Configuration;
 using ScribeApi.Common.Exceptions;
 using ScribeApi.Common.Interfaces;
-using ScribeApi.Infrastructure.Identity;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
 

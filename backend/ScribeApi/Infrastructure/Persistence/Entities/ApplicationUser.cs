@@ -13,7 +13,7 @@ public class ApplicationUser : IdentityUser
 
     public bool IsDeleted { get; set; }
 
-    public List<RefreshToken> RefreshTokens { get; set; } = new();
+    public List<RefreshToken> RefreshTokens { get; set; } = [];
     public string? EmailConfirmationToken { get; set; }
     public string? PasswordResetToken { get; set; }
     public DateTime? PasswordResetTokenExpiry { get; set; }
