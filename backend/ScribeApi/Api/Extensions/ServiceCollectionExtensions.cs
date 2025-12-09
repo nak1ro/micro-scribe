@@ -11,6 +11,7 @@ using ScribeApi.Common.Configuration;
 using ScribeApi.Common.Configuration.Plans;
 using ScribeApi.Common.Interfaces;
 using ScribeApi.Features.Auth;
+using ScribeApi.Features.Media;
 using ScribeApi.Features.Uploads;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
@@ -124,6 +125,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
         services.AddScoped<IUploadService, UploadService>();
         services.AddScoped<IUploadQueries, UploadQueries>();
+        services.AddScoped<IMediaService, MediaService>();
+        services.AddScoped<IMediaQueries, MediaQueries>();
         
         // HttpClient for OAuthService
         services.AddHttpClient<IOAuthService, OAuthService>();

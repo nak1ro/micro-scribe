@@ -447,6 +447,7 @@ public class AuthService : IAuthService
     {
         var refreshToken = new RefreshToken
         {
+            Id = Guid.NewGuid(),
             JwtId = jwtId,
             UserId = user.Id,
             CreationDate = DateTime.UtcNow,
