@@ -2,7 +2,7 @@ namespace ScribeApi.Common.Interfaces;
 
 public interface IEmailService
 {
-    Task SendEmailConfirmationAsync(string email, string token);
-    Task SendPasswordResetAsync(string email, string token);
-    Task SendWelcomeEmailAsync(string email, string username);
+    Task SendEmailConfirmationAsync(string email, string token, CancellationToken cancellationToken = default);
+    Task SendPasswordResetAsync(string email, string token, CancellationToken cancellationToken = default);
+    Task SendWelcomeEmailAsync(string email, string username, CancellationToken cancellationToken = default);
 }

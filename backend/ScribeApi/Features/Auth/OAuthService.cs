@@ -26,7 +26,7 @@ public class OAuthService : IOAuthService
         _logger = logger;
     }
 
-    public async Task<OAuthUserInfo> ValidateGoogleTokenAsync(string idToken)
+    public async Task<OAuthUserInfo> ValidateGoogleTokenAsync(string idToken, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -59,7 +59,7 @@ public class OAuthService : IOAuthService
         }
     }
 
-    public async Task<OAuthUserInfo> ExchangeCodeForTokenAsync(string provider, string code)
+    public async Task<OAuthUserInfo> ExchangeCodeForTokenAsync(string provider, string code, CancellationToken cancellationToken = default)
     {
         if (!provider.Equals(GoogleProvider, StringComparison.OrdinalIgnoreCase))
         {
@@ -68,8 +68,8 @@ public class OAuthService : IOAuthService
 
         try
         {
-            var tokenResponse = await SendTokenExchangeRequestAsync(code);
-            return await ParseGoogleTokenResponseAsync(tokenResponse);
+            var tokenResponse = await SendTokenExchangeRequestAsync(code, cancellationToken);
+            return await ParseGoogleTokenResponseAsync(tokenResponse, cancellationToken);
         }
         catch (OAuthException)
         {
@@ -82,7 +82,7 @@ public class OAuthService : IOAuthService
         }
     }
 
-    private async Task<string> SendTokenExchangeRequestAsync(string code)
+    private async Task<string> SendTokenExchangeRequestAsync(string code, CancellationToken cancellationToken)
     {
         var tokenRequest = new Dictionary<string, string>
         {
@@ -95,21 +95,19 @@ public class OAuthService : IOAuthService
 
         var response = await _httpClient.PostAsync(
             GoogleTokenUrl,
-            new FormUrlEncodedContent(tokenRequest)
+            new FormUrlEncodedContent(tokenRequest),
+            cancellationToken
         );
 
-        var content = await response.Content.ReadAsStringAsync();
+        var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
-        if (!response.IsSuccessStatusCode)
-        {
-            _logger.LogWarning("Failed to exchange code for token: {Error}", content);
-            throw new OAuthException("Failed to exchange authorization code for access token");
-        }
-
-        return content;
+        if (response.IsSuccessStatusCode) return content;
+        
+        _logger.LogWarning("Failed to exchange code for token: {Error}", content);
+        throw new OAuthException("Failed to exchange authorization code for access token");
     }
 
-    private async Task<OAuthUserInfo> ParseGoogleTokenResponseAsync(string jsonResponse)
+    private async Task<OAuthUserInfo> ParseGoogleTokenResponseAsync(string jsonResponse, CancellationToken cancellationToken)
     {
         var tokenData = JsonSerializer.Deserialize<GoogleTokenResponse>(jsonResponse);
 
@@ -119,7 +117,7 @@ public class OAuthService : IOAuthService
         }
 
         // Validate the ID token and extract user info
-        var userInfo = await ValidateGoogleTokenAsync(tokenData.IdToken);
+        var userInfo = await ValidateGoogleTokenAsync(tokenData.IdToken, cancellationToken);
 
         // Update with access token and refresh token
         return userInfo with
