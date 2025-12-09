@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using AutoMapper;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ScribeApi.Features.Uploads.Contracts;
@@ -11,10 +13,17 @@ namespace ScribeApi.Features.Uploads;
 public class UploadsController : ControllerBase
 {
     private readonly IUploadService _uploadService;
+    private readonly IMapper _mapper;
+    private readonly IValidator<UploadChunkRequest> _uploadChunkValidator;
 
-    public UploadsController(IUploadService uploadService)
+    public UploadsController(
+        IUploadService uploadService,
+        IMapper mapper,
+        IValidator<UploadChunkRequest> uploadChunkValidator)
     {
         _uploadService = uploadService;
+        _mapper = mapper;
+        _uploadChunkValidator = uploadChunkValidator;
     }
 
     [HttpPost("sessions")]
@@ -26,41 +35,29 @@ public class UploadsController : ControllerBase
 
         var session = await _uploadService.CreateSessionAsync(userId!, request, ct);
 
-        return Ok(new UploadSessionDto(
-            session.Id,
-            session.StorageKeyPrefix,
-            session.Status,
-            session.ExpiresAtUtc
-        ));
+        return Ok(_mapper.Map<UploadSessionDto>(session));
     }
 
     [HttpPut("sessions/{sessionId:guid}/chunks/{chunkIndex:int}")]
     public async Task<ActionResult<MediaFileDto>> UploadChunk(
-        [FromRoute] Guid sessionId,
-        [FromRoute] int chunkIndex,
-        [FromForm] IFormFile? chunk,
+        [AsParameters] UploadChunkRequest request,
         CancellationToken ct)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (chunk == null || chunk.Length == 0)
+        var validationResult = await _uploadChunkValidator.ValidateAsync(request, ct);
+        if (!validationResult.IsValid)
         {
-            return BadRequest("No chunk data provided.");
+            return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
         }
 
-        await using var stream = chunk.OpenReadStream();
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        var mediaFile = await _uploadService.UploadChunkAsync(sessionId, chunkIndex, stream, userId!, ct);
+        await using var stream = request.Chunk.OpenReadStream();
+
+        var mediaFile = await _uploadService.UploadChunkAsync(request.SessionId, request.ChunkIndex, stream, userId!, ct);
 
         if (mediaFile != null)
         {
-            return Ok(new MediaFileDto(
-                mediaFile.Id,
-                mediaFile.OriginalFileName,
-                mediaFile.ContentType,
-                mediaFile.SizeBytes,
-                mediaFile.CreatedAtUtc
-            ));
+            return Ok(_mapper.Map<MediaFileDto>(mediaFile));
         }
 
         return Accepted(new { Message = "Chunk received" });
