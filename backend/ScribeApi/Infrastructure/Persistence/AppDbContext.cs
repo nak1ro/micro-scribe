@@ -31,8 +31,6 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasIndex(u => u.Email)
             .IsUnique();
 
-        builder.Entity<RefreshToken>()
-            .HasIndex(rt => rt.Token)
-            .IsUnique();
+
     }
 }
