@@ -1,4 +1,4 @@
-namespace ScribeApi.Features.Media;
+namespace ScribeApi.Features.Media.Contracts;
 
 public interface IMediaService
 {

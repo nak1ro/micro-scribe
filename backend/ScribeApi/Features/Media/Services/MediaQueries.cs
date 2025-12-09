@@ -1,8 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using ScribeApi.Features.Media.Contracts;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
 
-namespace ScribeApi.Features.Media;
+namespace ScribeApi.Features.Media.Services;
 
 public class MediaQueries : IMediaQueries
 {

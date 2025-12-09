@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ScribeApi.Features.Uploads.Contracts;
 
 namespace ScribeApi.Features.Uploads;
 

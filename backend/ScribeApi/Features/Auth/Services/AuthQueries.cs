@@ -1,8 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using ScribeApi.Features.Auth.Contracts;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
 
-namespace ScribeApi.Features.Auth;
+namespace ScribeApi.Features.Auth.Services;
 
 public class AuthQueries : IAuthQueries
 {

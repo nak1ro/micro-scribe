@@ -1,6 +1,4 @@
-using System.ComponentModel.DataAnnotations;
-
-namespace ScribeApi.Features.Auth;
+namespace ScribeApi.Features.Auth.Contracts;
 
 public record RegisterRequestDto(string Email, string Password, string ConfirmPassword);
 

@@ -3,8 +3,9 @@ using Google.Apis.Auth;
 using Microsoft.Extensions.Options;
 using ScribeApi.Common.Configuration;
 using ScribeApi.Common.Exceptions;
+using ScribeApi.Features.Auth.Contracts;
 
-namespace ScribeApi.Features.Auth;
+namespace ScribeApi.Features.Auth.Services;
 
 public class OAuthService : IOAuthService
 {

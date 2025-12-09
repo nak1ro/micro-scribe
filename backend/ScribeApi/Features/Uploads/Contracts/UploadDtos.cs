@@ -1,7 +1,6 @@
-using Microsoft.AspNetCore.Http;
 using ScribeApi.Infrastructure.Persistence.Entities;
 
-namespace ScribeApi.Features.Uploads;
+namespace ScribeApi.Features.Uploads.Contracts;
 
 public record InitUploadRequest(
     string FileName,

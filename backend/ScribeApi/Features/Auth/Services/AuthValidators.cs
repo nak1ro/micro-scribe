@@ -1,6 +1,7 @@
 using FluentValidation;
+using ScribeApi.Features.Auth.Contracts;
 
-namespace ScribeApi.Features.Auth;
+namespace ScribeApi.Features.Auth.Services;
 
 public class RegisterRequestValidator : AbstractValidator<RegisterRequestDto>
 {

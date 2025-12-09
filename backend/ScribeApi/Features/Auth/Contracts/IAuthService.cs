@@ -1,4 +1,4 @@
-namespace ScribeApi.Features.Auth;
+namespace ScribeApi.Features.Auth.Contracts;
 
 public interface IAuthService
 {

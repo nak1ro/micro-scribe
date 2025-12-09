@@ -1,6 +1,6 @@
 using ScribeApi.Infrastructure.Persistence.Entities;
 
-namespace ScribeApi.Features.Media;
+namespace ScribeApi.Features.Media.Contracts;
 
 public interface IMediaQueries
 {

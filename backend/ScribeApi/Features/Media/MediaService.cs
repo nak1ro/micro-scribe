@@ -1,6 +1,7 @@
 using AutoMapper;
 using ScribeApi.Common.Exceptions;
 using ScribeApi.Common.Interfaces;
+using ScribeApi.Features.Media.Contracts;
 using ScribeApi.Infrastructure.Persistence;
 
 namespace ScribeApi.Features.Media;

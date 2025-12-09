@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using ScribeApi.Common.Configuration.Plans;
+using ScribeApi.Features.Uploads.Contracts;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
 
-namespace ScribeApi.Features.Uploads;
+namespace ScribeApi.Features.Uploads.Services;
 
 public class UploadQueries : IUploadQueries
 {

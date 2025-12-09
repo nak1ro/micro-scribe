@@ -1,8 +1,6 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using ScribeApi.Infrastructure.Persistence.Entities;
 
-namespace ScribeApi.Features.Auth;
+namespace ScribeApi.Features.Auth.Contracts;
 
 public interface IAuthQueries
 {

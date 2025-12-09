@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ScribeApi.Common.Extensions;
+using ScribeApi.Features.Media.Contracts;
 
-namespace ScribeApi.Features.Media;
+namespace ScribeApi.Features.Media.Services;
 
 [Authorize]
 [ApiController]

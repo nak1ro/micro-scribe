@@ -1,7 +1,7 @@
 using AutoMapper;
 using ScribeApi.Infrastructure.Persistence.Entities;
 
-namespace ScribeApi.Features.Auth;
+namespace ScribeApi.Features.Auth.Contracts;
 
 public class AuthMappingProfile : Profile
 {
