@@ -7,6 +7,7 @@ public interface IPlanGuard
     void EnsureFileSize(PlanDefinition plan, long sizeBytes);
     void EnsureConcurrentUploads(PlanDefinition plan, int currentCount);
     void EnsureConcurrentJobs(PlanDefinition plan, int currentCount);
+    void EnsureDailyUploadLimit(PlanDefinition plan, int currentDailyCount);
     void EnsureAudioDuration(PlanDefinition plan, double durationSeconds);
 }
 
@@ -49,6 +50,15 @@ public class PlanGuard : IPlanGuard
             throw new PlanLimitExceededException(
                 $"Audio duration ({durationMinutes:F1} min) exceeds plan limit " +
                 $"({plan.MaxMinutesPerFile} min/file).");
+        }
+    }
+
+    public void EnsureDailyUploadLimit(PlanDefinition plan, int currentDailyCount)
+    {
+        if (plan.DailyTranscriptionLimit.HasValue && currentDailyCount >= plan.DailyTranscriptionLimit.Value)
+        {
+            throw new PlanLimitExceededException(
+                $"You have reached the daily limit of {plan.DailyTranscriptionLimit.Value} files for your plan.");
         }
     }
 }

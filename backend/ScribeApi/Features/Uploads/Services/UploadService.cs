@@ -3,6 +3,7 @@ using ScribeApi.Features.Uploads.Contracts;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
 using ScribeApi.Infrastructure.Storage;
+using ScribeApi.Infrastructure.ExternalServices;
 
 namespace ScribeApi.Features.Uploads.Services;
 
@@ -13,6 +14,7 @@ public class UploadService : IUploadService
     private readonly IPlanResolver _planResolver;
     private readonly IPlanGuard _planGuard;
     private readonly IFileStorageService _storageService;
+    private readonly IFfmpegMediaService _ffmpegService;
     private readonly ILogger<UploadService> _logger;
 
     public UploadService(
@@ -21,6 +23,7 @@ public class UploadService : IUploadService
         IPlanResolver planResolver,
         IPlanGuard planGuard,
         IFileStorageService storageService,
+        IFfmpegMediaService ffmpegService,
         ILogger<UploadService> logger)
     {
         _context = context;
@@ -28,6 +31,7 @@ public class UploadService : IUploadService
         _planResolver = planResolver;
         _planGuard = planGuard;
         _storageService = storageService;
+        _ffmpegService = ffmpegService;
         _logger = logger;
     }
 
@@ -95,6 +99,9 @@ public class UploadService : IUploadService
 
         var activeSessionsCount = await _queries.CountActiveSessionsAsync(userId, ct);
         _planGuard.EnsureConcurrentUploads(userPlan, activeSessionsCount);
+
+        var dailyUploadsCount = await _queries.CountDailyUploadsAsync(userId, DateTime.UtcNow.Date, ct);
+        _planGuard.EnsureDailyUploadLimit(userPlan, dailyUploadsCount);
     }
 
     private static int CalculateTotalChunks(InitUploadRequest request)
@@ -182,16 +189,21 @@ public class UploadService : IUploadService
                 assembledSize = await MergeChunksToTempFileAsync(session, tempFile, ct);
 
                 // Validate
+                // Validate Size
                 var planType = await _queries.GetUserPlanTypeAsync(session.UserId, ct);
                 var userPlan = _planResolver.GetPlanDefinition(planType);
                 
                 ValidateAssembledFile(assembledSize, session.TotalSizeBytes, userPlan);
 
+                // Validate Duration
+                var duration = await _ffmpegService.GetDurationAsync(tempFile, ct);
+                _planGuard.EnsureAudioDuration(userPlan, duration.TotalSeconds);
+
                 // Upload Final
                 var savedPath = await UploadFinalFileAsync(session, tempFile, ct);
 
                 // Create Record
-                var mediaFile = await FinalizeSessionAsync(session, savedPath, assembledSize, ct);
+                var mediaFile = await FinalizeSessionAsync(session, savedPath, assembledSize, duration.TotalSeconds, ct);
 
                 return mediaFile;
             }
@@ -265,7 +277,7 @@ public class UploadService : IUploadService
         }
     }
 
-    private async Task<MediaFile> FinalizeSessionAsync(UploadSession session, string savedPath, long sizeBytes,
+    private async Task<MediaFile> FinalizeSessionAsync(UploadSession session, string savedPath, long sizeBytes, double durationSeconds,
         CancellationToken ct)
     {
         var mediaFile = new MediaFile
@@ -278,6 +290,7 @@ public class UploadService : IUploadService
             OriginalPath = savedPath,
             SizeBytes = sizeBytes,
             FileType = DetermineFileType(session.ContentType),
+            DurationSeconds = durationSeconds,
             CreatedAtUtc = DateTime.UtcNow
         };
 

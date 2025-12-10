@@ -35,4 +35,14 @@ public class UploadQueries : IUploadQueries
         return await _context.UploadSessions
             .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId, ct);
     }
+
+    public async Task<int> CountDailyUploadsAsync(string userId, DateTime dateUtc, CancellationToken ct)
+    {
+        return await _context.UploadSessions
+            .CountAsync(s => 
+                s.UserId == userId && 
+                s.CreatedAtUtc >= dateUtc && 
+                s.Status != UploadSessionStatus.Failed && 
+                s.Status != UploadSessionStatus.Expired, ct);
+    }
 }

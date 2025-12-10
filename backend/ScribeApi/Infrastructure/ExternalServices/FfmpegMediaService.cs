@@ -19,6 +19,56 @@ public partial class FfmpegMediaService : IFfmpegMediaService
         _ffmpegPath = "ffmpeg"; // Assumes ffmpeg is in PATH
     }
 
+    public async Task<TimeSpan> GetDurationAsync(string inputPath, CancellationToken ct)
+    {
+        // 1. Download to temp if needed (since ffmpeg works on files)
+        // If inputPath is a local path, we can use it directly? 
+        // But UploadService passes a temp file path in AssembleFileAsync!
+        // So we can use inputPath directly if it exists.
+        
+        var tempPath = inputPath;
+        var needsCleanup = false;
+
+        // If it's a storage path (cloud), we need download. Check if file exists locally.
+        if (!File.Exists(inputPath))
+        {
+             tempPath = await DownloadToTempAsync(inputPath, ct);
+             needsCleanup = true;
+        }
+
+        try
+        {
+            // Run ffmpeg simply to get metadata
+            var args = $"-i \"{tempPath}\" -hide_banner";
+            
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = _ffmpegPath,
+                Arguments = args,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true, // ffmpeg output is usually in stderr
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = new Process { StartInfo = startInfo };
+            
+            var sb = new System.Text.StringBuilder();
+            process.ErrorDataReceived += (_, e) => { if (e.Data != null) sb.AppendLine(e.Data); };
+
+            process.Start();
+            process.BeginErrorReadLine();
+            await process.WaitForExitAsync(ct);
+
+            // Exit code might be 1 because we didn't specify output, that's fine for probing
+            return ParseDurationFromOutput(sb.ToString());
+        }
+        finally
+        {
+            if (needsCleanup) CleanupTempFile(tempPath);
+        }
+    }
+
     public async Task<FfmpegResult> ConvertToAudioAsync(
         string inputPath, 
         CancellationToken ct)
