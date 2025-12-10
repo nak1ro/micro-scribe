@@ -38,6 +38,17 @@ public class TranscriptionJobQueries : ITranscriptionJobQueries
             .CountAsync(ct);
     }
 
+
+
+    public async Task<bool> HasPendingJobForMediaAsync(Guid mediaFileId, string userId, CancellationToken ct)
+    {
+        return await _context.TranscriptionJobs
+            .AsNoTracking()
+            .AnyAsync(j => j.MediaFileId == mediaFileId 
+                           && j.UserId == userId 
+                           && (j.Status == TranscriptionJobStatus.Pending || j.Status == TranscriptionJobStatus.Processing), ct);
+    }
+
     public async Task<MediaFile?> GetMediaFileByIdAsync(
         Guid mediaFileId, 
         string userId, 

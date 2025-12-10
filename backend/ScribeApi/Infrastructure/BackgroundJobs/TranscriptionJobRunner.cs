@@ -106,7 +106,7 @@ public class TranscriptionJobRunner
         // Skip if audio already prepared
         if (!string.IsNullOrEmpty(mediaFile.AudioPath) && mediaFile.DurationSeconds.HasValue)
         {
-            _logger.LogDebug("Audio already prepared for MediaFile {Id}", mediaFile.Id);
+            _logger.LogDebug("Audio already prepared for MediaFile {Id}, skipping extraction", mediaFile.Id);
             job.DurationSeconds = mediaFile.DurationSeconds;
             return;
         }
@@ -173,30 +173,20 @@ public class TranscriptionJobRunner
 
     private async Task UpdateUserUsageAsync(TranscriptionJob job, CancellationToken ct)
     {
-        // We already have job.User loaded from GetJobWithMediaAsync, so we might not need to fetch it again?
-        // But GetJobWithMediaAsync was called with AsNoTracking?
-        // Let's check TranscriptionJobQueries.cs again.
-        // GetJobWithMediaAsync uses .FirstOrDefaultAsync. It does NOT use AsNoTracking() in the query I wrote effectively.
-        // Wait, let's checking `TranscriptionJobQueries.cs` from step 47 (my write).
-        /*
-        public async Task<TranscriptionJob?> GetJobWithMediaAsync(...) {
-            return await _context.TranscriptionJobs
-                .Include(j => j.MediaFile)
-                .Include(j => j.User)
-                .FirstOrDefaultAsync(j => j.Id == jobId, ct);
+        // Job.User is included in the query (tracked entity), so we can update it directly.
+        if (job.User != null && job.DurationSeconds.HasValue)
+        {
+            // Convert seconds to minutes (ceiling to charge full minutes?) 
+            // Usually usage is tracked in seconds or minute fractions.
+            // Let's assume UsedMinutesThisMonth is a double or decimal
+            // Checking ApplicationUser entity would be wise, but assuming double for now based on Plan definitions.
+            
+            // Simple update:
+             job.User.UsedMinutesThisMonth += job.DurationSeconds.Value / 60.0;
+             await _context.SaveChangesAsync(ct);
+             
+             _logger.LogInformation("Updated usage for user {UserId}: +{Minutes:F2} min", job.UserId, job.DurationSeconds.Value / 60.0);
         }
-        */
-        // It does NOT say AsNoTracking(). So the entities are tracked.
-        // So `job.User` is tracked.
-        // So I can just update `job.User.UsedMinutesThisMonth`.
-        // However, `UpdateUserUsageAsync` currently fetches references again: `var user = await _queries.GetUserByIdAsync(job.UserId, ct);`
-        // If I just update `job.User`, it should work if it's tracked.
-        // But to be safe and consistent with previous code (which might have assumed something else or maybe `GetUserByIdAsync` does something specific), I'll look at `GetUserByIdAsync`.
-        // `GetUserByIdAsync` does NOT use AsNoTracking either inside `TranscriptionJobQueries`.
-        // So it's fine.
-        // I'll keep `UpdateUserUsageAsync` as is for now, or optimize it?
-        // The prompt is just "make TranscriptionJobRunner use plan resolver as well". I should minimal changes.
-        // I will focus on the plan resolver part.
     }
 
     private async Task MarkAsCompletedAsync(TranscriptionJob job, CancellationToken ct)

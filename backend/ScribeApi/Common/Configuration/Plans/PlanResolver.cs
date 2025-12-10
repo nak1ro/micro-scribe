@@ -6,6 +6,7 @@ namespace ScribeApi.Common.Configuration.Plans;
 public interface IPlanResolver
 {
     PlanDefinition GetPlanDefinition(PlanType planType);
+    string GetQueueName(PlanDefinition plan);
 }
 
 public class PlanResolver : IPlanResolver
@@ -19,4 +20,9 @@ public class PlanResolver : IPlanResolver
 
     public PlanDefinition GetPlanDefinition(PlanType planType)
         => _plans[planType];
+
+    public string GetQueueName(PlanDefinition plan)
+    {
+        return plan.TranscriptionJobPriority ? "priority" : "default";
+    }
 }

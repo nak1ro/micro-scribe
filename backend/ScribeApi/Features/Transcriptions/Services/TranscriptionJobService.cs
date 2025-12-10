@@ -41,6 +41,12 @@ public class TranscriptionJobService : ITranscriptionJobService
         CancellationToken ct)
     {
         await ValidateMediaFileAsync(request.MediaFileId, userId, ct);
+
+        // Check for duplicate pending jobs
+        if (await _queries.HasPendingJobForMediaAsync(request.MediaFileId, userId, ct))
+        {
+            throw new InvalidOperationException($"A transcription job for MediaFile {request.MediaFileId} is already pending or processing.");
+        }
         
         var user = await _queries.GetUserByIdAsync(userId, ct);
         if (user == null)
@@ -60,7 +66,7 @@ public class TranscriptionJobService : ITranscriptionJobService
 
         var job = await CreateAndPersistJobAsync(userId, request, ct);
 
-        EnqueueBackgroundJob(job.Id, user.Plan);
+        EnqueueBackgroundJob(job.Id, plan);
 
         _logger.LogInformation(
             "Transcription job {JobId} created for MediaFile {MediaFileId}",
@@ -73,7 +79,7 @@ public class TranscriptionJobService : ITranscriptionJobService
             job.CreatedAtUtc);
     }
 
-    private async Task<MediaFile> ValidateMediaFileAsync(
+    private async Task ValidateMediaFileAsync(
         Guid mediaFileId,
         string userId,
         CancellationToken ct)
@@ -85,8 +91,6 @@ public class TranscriptionJobService : ITranscriptionJobService
             throw new NotFoundException(
                 $"MediaFile {mediaFileId} not found or does not belong to user.");
         }
-
-        return mediaFile;
     }
 
     private async Task<TranscriptionJob> CreateAndPersistJobAsync(
@@ -113,9 +117,9 @@ public class TranscriptionJobService : ITranscriptionJobService
         return job;
     }
 
-    private void EnqueueBackgroundJob(Guid jobId, PlanType planType)
+    private void EnqueueBackgroundJob(Guid jobId, PlanDefinition plan)
     {
-        var queue = DetermineQueueName(planType);
+        var queue = _planResolver.GetQueueName(plan);
 
         _backgroundJobClient.Create<TranscriptionJobRunner>(
             runner => runner.RunAsync(jobId, CancellationToken.None),
@@ -124,14 +128,5 @@ public class TranscriptionJobService : ITranscriptionJobService
         _logger.LogDebug(
             "Enqueued job {JobId} to queue '{Queue}'",
             jobId, queue);
-    }
-
-    private static string DetermineQueueName(PlanType planType)
-    {
-        return planType switch
-        {
-            PlanType.Pro => "priority",
-            _ => "default"
-        };
     }
 }
