@@ -14,23 +14,17 @@ public class TranscriptionJobService : ITranscriptionJobService
 {
     private readonly AppDbContext _context;
     private readonly ITranscriptionJobQueries _queries;
-    private readonly IPlanResolver _planResolver;
-    private readonly IPlanGuard _planGuard;
     private readonly IBackgroundJobClient _backgroundJobClient;
     private readonly ILogger<TranscriptionJobService> _logger;
 
     public TranscriptionJobService(
         AppDbContext context,
         ITranscriptionJobQueries queries,
-        IPlanResolver planResolver,
-        IPlanGuard planGuard,
         IBackgroundJobClient backgroundJobClient,
         ILogger<TranscriptionJobService> logger)
     {
         _context = context;
         _queries = queries;
-        _planResolver = planResolver;
-        _planGuard = planGuard;
         _backgroundJobClient = backgroundJobClient;
         _logger = logger;
     }
@@ -41,10 +35,15 @@ public class TranscriptionJobService : ITranscriptionJobService
         CancellationToken ct)
     {
         await ValidateMediaFileAsync(request.MediaFileId, userId, ct);
-        var plan = await ValidatePlanLimitsAsync(userId, ct);
+        var user = await _queries.GetUserByIdAsync(userId, ct);
+        if (user == null)
+        {
+            throw new NotFoundException($"User {userId} not found.");
+        }
+
         var job = await CreateAndPersistJobAsync(userId, request, ct);
 
-        EnqueueBackgroundJob(job.Id, plan.PlanType);
+        EnqueueBackgroundJob(job.Id, user.Plan);
 
         _logger.LogInformation(
             "Transcription job {JobId} created for MediaFile {MediaFileId}",
@@ -71,24 +70,6 @@ public class TranscriptionJobService : ITranscriptionJobService
         }
 
         return mediaFile;
-    }
-
-    private async Task<PlanDefinition> ValidatePlanLimitsAsync(
-        string userId,
-        CancellationToken ct)
-    {
-        var user = await _queries.GetUserByIdAsync(userId, ct);
-        if (user == null)
-        {
-            throw new NotFoundException($"User {userId} not found.");
-        }
-
-        var plan = _planResolver.GetPlanDefinition(user.Plan);
-        var activeJobsCount = await _queries.CountActiveJobsAsync(userId, ct);
-
-        _planGuard.EnsureConcurrentJobs(plan, activeJobsCount);
-
-        return plan;
     }
 
     private async Task<TranscriptionJob> CreateAndPersistJobAsync(

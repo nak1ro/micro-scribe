@@ -11,8 +11,6 @@ public class UploadService : IUploadService
 {
     private readonly AppDbContext _context;
     private readonly IUploadQueries _queries;
-    private readonly IPlanResolver _planResolver;
-    private readonly IPlanGuard _planGuard;
     private readonly IFileStorageService _storageService;
     private readonly IFfmpegMediaService _ffmpegService;
     private readonly ILogger<UploadService> _logger;
@@ -20,16 +18,12 @@ public class UploadService : IUploadService
     public UploadService(
         AppDbContext context,
         IUploadQueries queries,
-        IPlanResolver planResolver,
-        IPlanGuard planGuard,
         IFileStorageService storageService,
         IFfmpegMediaService ffmpegService,
         ILogger<UploadService> logger)
     {
         _context = context;
         _queries = queries;
-        _planResolver = planResolver;
-        _planGuard = planGuard;
         _storageService = storageService;
         _ffmpegService = ffmpegService;
         _logger = logger;
@@ -37,10 +31,10 @@ public class UploadService : IUploadService
 
     public async Task<UploadSession> CreateSessionAsync(string userId, InitUploadRequest request, CancellationToken ct)
     {
-        var planType = await _queries.GetUserPlanTypeAsync(userId, ct);
-        var userPlan = _planResolver.GetPlanDefinition(planType);
-
-        await ValidateSessionCreationRulesAsync(userId, request, userPlan, ct);
+        if (request.ChunkSizeBytes <= 0)
+        {
+            throw new ArgumentException("ChunkSizeBytes must be greater than 0.");
+        }
 
         var totalChunks = CalculateTotalChunks(request);
 
@@ -86,23 +80,7 @@ public class UploadService : IUploadService
         return await CheckForCompletionAndAssembleAsync(session, ct);
     }
 
-    private async Task ValidateSessionCreationRulesAsync(string userId, InitUploadRequest request,
-        PlanDefinition userPlan, CancellationToken ct)
-    {
-        _planGuard.EnsureFileSize(userPlan, request.TotalSizeBytes);
 
-        // Ensure ChunkSizeBytes is valid
-        if (request.ChunkSizeBytes <= 0)
-        {
-            throw new ArgumentException("ChunkSizeBytes must be greater than 0.");
-        }
-
-        var activeSessionsCount = await _queries.CountActiveSessionsAsync(userId, ct);
-        _planGuard.EnsureConcurrentUploads(userPlan, activeSessionsCount);
-
-        var dailyUploadsCount = await _queries.CountDailyUploadsAsync(userId, DateTime.UtcNow.Date, ct);
-        _planGuard.EnsureDailyUploadLimit(userPlan, dailyUploadsCount);
-    }
 
     private static int CalculateTotalChunks(InitUploadRequest request)
     {
@@ -189,15 +167,17 @@ public class UploadService : IUploadService
                 assembledSize = await MergeChunksToTempFileAsync(session, tempFile, ct);
 
                 // Validate
-                // Validate Size
-                var planType = await _queries.GetUserPlanTypeAsync(session.UserId, ct);
-                var userPlan = _planResolver.GetPlanDefinition(planType);
-                
-                ValidateAssembledFile(assembledSize, session.TotalSizeBytes, userPlan);
+                if (session.TotalSizeBytes.HasValue)
+                {
+                     var diff = Math.Abs(assembledSize - session.TotalSizeBytes.Value);
+                     if (diff > session.TotalSizeBytes.Value * 0.1)
+                     {
+                         throw new ArgumentException("Assembled size differs significantly from declared size.");
+                     }
+                }
 
                 // Validate Duration
                 var duration = await _ffmpegService.GetDurationAsync(tempFile, ct);
-                _planGuard.EnsureAudioDuration(userPlan, duration.TotalSeconds);
 
                 // Upload Final
                 var savedPath = await UploadFinalFileAsync(session, tempFile, ct);
@@ -240,18 +220,7 @@ public class UploadService : IUploadService
         return outputStream.Length;
     }
 
-    private void ValidateAssembledFile(long actualSize, long? declaredSize, PlanDefinition userPlan)
-    {
-        _planGuard.EnsureFileSize(userPlan, actualSize);
 
-        if (!declaredSize.HasValue) return;
-
-        var diff = Math.Abs(actualSize - declaredSize.Value);
-        if (diff > declaredSize.Value * 0.1)
-        {
-            throw new ArgumentException("Assembled size differs significantly from declared size.");
-        }
-    }
 
     private async Task<string> UploadFinalFileAsync(UploadSession session, string tempFilePath, CancellationToken ct)
     {

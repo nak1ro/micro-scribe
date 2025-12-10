@@ -1,7 +1,5 @@
-using Microsoft.Extensions.Logging;
-using ScribeApi.Common.Configuration.Plans;
 using ScribeApi.Features.Transcriptions.Contracts;
-using ScribeApi.Features.Transcriptions.Services;
+using ScribeApi.Features.Media.Contracts;
 using ScribeApi.Infrastructure.ExternalClients;
 using ScribeApi.Infrastructure.ExternalServices;
 using ScribeApi.Infrastructure.Persistence;
@@ -14,30 +12,27 @@ public class TranscriptionJobRunner
 {
     private readonly AppDbContext _context;
     private readonly ITranscriptionJobQueries _queries;
-    private readonly IPlanResolver _planResolver;
-    private readonly IPlanGuard _planGuard;
     private readonly IFfmpegMediaService _ffmpegService;
     private readonly ITranscriptionProvider _transcriptionProvider;
     private readonly IFileStorageService _storageService;
+    private readonly IMediaService _mediaService;
     private readonly ILogger<TranscriptionJobRunner> _logger;
 
     public TranscriptionJobRunner(
         AppDbContext context,
         ITranscriptionJobQueries queries,
-        IPlanResolver planResolver,
-        IPlanGuard planGuard,
         IFfmpegMediaService ffmpegService,
         ITranscriptionProvider transcriptionProvider,
         IFileStorageService storageService,
+        IMediaService mediaService,
         ILogger<TranscriptionJobRunner> logger)
     {
         _context = context;
         _queries = queries;
-        _planResolver = planResolver;
-        _planGuard = planGuard;
         _ffmpegService = ffmpegService;
         _transcriptionProvider = transcriptionProvider;
         _storageService = storageService;
+        _mediaService = mediaService;
         _logger = logger;
     }
 
@@ -54,7 +49,6 @@ public class TranscriptionJobRunner
         {
             await MarkAsProcessingAsync(job!, ct);
             await PrepareAudioAsync(job!, ct);
-            await ValidateDurationLimitsAsync(job!, ct);
             await RunTranscriptionAsync(job!, ct);
             await UpdateUserUsageAsync(job!, ct);
             await MarkAsCompletedAsync(job!, ct);
@@ -67,6 +61,13 @@ public class TranscriptionJobRunner
             await MarkAsFailedAsync(job!, ex.Message, ct);
             // We do NOT rethrow to prevent Hangfire from retrying indefinitely on logic errors.
             // If you want retries for transient errors, you'd need specific logic here.
+        }
+        finally
+        {
+            if (job?.MediaFile != null)
+            {
+                await _mediaService.DeleteMediaFilesAsync(job.MediaFile, CancellationToken.None);
+            }
         }
     }
 
@@ -123,28 +124,7 @@ public class TranscriptionJobRunner
         await _context.SaveChangesAsync(ct);
     }
 
-    private async Task ValidateDurationLimitsAsync(TranscriptionJob job, CancellationToken ct)
-    {
-        var plan = _planResolver.GetPlanDefinition(job.User.Plan);
-        _planGuard.EnsureAudioDuration(plan, job.DurationSeconds ?? 0);
-        
-        await Task.CompletedTask; // Keep signature async or change it, but caller awaits it. 
-        // Actually, since I removed the async call, I should probably remove async/Task unless I want to keep it consistent.
-        // But let's check the caller. await ValidateDurationLimitsAsync(job!, ct);
-        // I'll keep it async Task and just use Task.CompletedTask or just allow the compiler to handle the lack of await with a warning (or suppress it).
-        // Better: Make it synchronous? No, the caller `RunAsync` awaits it. I can just return Task.CompletedTask.
-        // Or I can keep it async and let it run synchronously.
-        // Let's remove async and Task and fix call site?
-        // Call site: `await ValidateDurationLimitsAsync(job!, ct);`
-        // If I change it to void/sync, I need to remove await in RunAsync.
-        // It's easier to keep it async for now to minimize diff, but correctly implementation is to remove async keyword and return Task.CompletedTask or simple void if not needed.
-        // Actually, RunAsync calls it. If I change to void, I must remove await.
-        // Let's stick to modifying the method body to use PlanResolver. I will remove `async` and return `Task` manually or check if I can just make it void.
-        // Actually, simply keeping `async` and no `await` inside is fine, just gives a warning.
-        // But wait, `ValidateDurationLimitsAsync` calls `_queries.GetUserPlanDefinitionAsync` which WAS async.
-        // Now `_planResolver.GetPlanDefinition` is synchronous.
-        // So `ValidateDurationLimitsAsync` doesn't need to be async anymore.
-    }
+
 
     private async Task RunTranscriptionAsync(TranscriptionJob job, CancellationToken ct)
     {

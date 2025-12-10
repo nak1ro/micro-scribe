@@ -2,6 +2,7 @@ using AutoMapper;
 using ScribeApi.Common.Exceptions;
 using ScribeApi.Features.Media.Contracts;
 using ScribeApi.Infrastructure.Persistence;
+using ScribeApi.Infrastructure.Persistence.Entities;
 using ScribeApi.Infrastructure.Storage;
 
 namespace ScribeApi.Features.Media.Services;
@@ -56,17 +57,36 @@ public class MediaService : IMediaService
             throw new NotFoundException("Media file not found.");
         }
 
+        await DeleteMediaFilesAsync(mediaFile, ct);
+
+        _context.MediaFiles.Remove(mediaFile);
+        await _context.SaveChangesAsync(ct);
+    }
+
+    public async Task DeleteMediaFilesAsync(MediaFile mediaFile, CancellationToken ct = default)
+    {
         if (!string.IsNullOrEmpty(mediaFile.OriginalPath))
         {
-            await _fileStorageService.DeleteAsync(mediaFile.OriginalPath, ct);
+            try 
+            {
+                await _fileStorageService.DeleteAsync(mediaFile.OriginalPath, ct);
+            }
+            catch 
+            { 
+                // Ignored for cleanup resilience 
+            }
         }
 
         if (!string.IsNullOrEmpty(mediaFile.AudioPath) && mediaFile.AudioPath != mediaFile.OriginalPath)
         {
-            await _fileStorageService.DeleteAsync(mediaFile.AudioPath, ct);
+             try 
+            {
+                await _fileStorageService.DeleteAsync(mediaFile.AudioPath, ct);
+            }
+            catch 
+            { 
+                // Ignored for cleanup resilience 
+            }
         }
-
-        _context.MediaFiles.Remove(mediaFile);
-        await _context.SaveChangesAsync(ct);
     }
 }
