@@ -2,6 +2,7 @@ using ScribeApi.Infrastructure.Persistence.Entities;
 
 namespace ScribeApi.Features.Transcriptions;
 
+// for later implementation
 public class TranscriptionOptions
 {
     public TranscriptionQuality Quality { get; init; } = TranscriptionQuality.Balanced;

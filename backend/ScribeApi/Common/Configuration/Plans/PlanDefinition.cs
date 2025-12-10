@@ -11,6 +11,7 @@ public class PlanDefinition
     public int MaxMinutesPerFile { get; set; }
     public long MaxFileSizeBytes { get; set; }
     public int MaxFilesPerUpload { get; set; }
+    public int MaxConcurrentJobs { get; set; }
 
     // Feature flags
     public bool AllowTranslation { get; set; }

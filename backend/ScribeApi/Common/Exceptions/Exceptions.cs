@@ -35,3 +35,14 @@ public class AccountLinkingException : Exception
 {
     public AccountLinkingException(string message) : base(message) { }
 }
+
+public class PlanLimitExceededException : Exception
+{
+    public PlanLimitExceededException(string message) : base(message) { }
+}
+
+public class TranscriptionException : Exception
+{
+    public TranscriptionException(string message) : base(message) { }
+    public TranscriptionException(string message, Exception inner) : base(message, inner) { }
+}
