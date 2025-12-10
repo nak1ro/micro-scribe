@@ -16,7 +16,7 @@ public class UploadService : IUploadService
     private readonly IFileStorageService _storageService;
     private readonly IFfmpegMediaService _ffmpegService;
     private readonly ILogger<UploadService> _logger;
-
+    
     public UploadService(
         AppDbContext context,
         IUploadQueries queries,
@@ -45,9 +45,9 @@ public class UploadService : IUploadService
         // Validate plan limits
         var planType = await _queries.GetUserPlanTypeAsync(userId, ct);
         var plan = _planResolver.GetPlanDefinition(planType);
-        
+
         _planGuard.EnsureFileSize(plan, request.TotalSizeBytes);
-        _planGuard.EnsureAudioDuration(plan, request.DurationMinutes * 60);
+        _planGuard.EnsureAudioDuration(plan, request.DurationMinutes);
 
         var totalChunks = CalculateTotalChunks(request);
 
@@ -92,7 +92,6 @@ public class UploadService : IUploadService
 
         return await CheckForCompletionAndAssembleAsync(session, ct);
     }
-
 
 
     private static int CalculateTotalChunks(InitUploadRequest request)
@@ -182,21 +181,25 @@ public class UploadService : IUploadService
                 // Validate
                 if (session.TotalSizeBytes.HasValue)
                 {
-                     var diff = Math.Abs(assembledSize - session.TotalSizeBytes.Value);
-                     if (diff > session.TotalSizeBytes.Value * 0.1)
-                     {
-                         throw new ArgumentException("Assembled size differs significantly from declared size.");
-                     }
+                    var diff = Math.Abs(assembledSize - session.TotalSizeBytes.Value);
+                    if (diff > session.TotalSizeBytes.Value * 0.1)
+                    {
+                        throw new ArgumentException("Assembled size differs significantly from declared size.");
+                    }
                 }
 
-                // Validate Duration
+                // Validate Duration (actual file duration)
                 var duration = await _ffmpegService.GetDurationAsync(tempFile, ct);
+                var planType = await _queries.GetUserPlanTypeAsync(session.UserId, ct);
+                var plan = _planResolver.GetPlanDefinition(planType);
+                _planGuard.EnsureAudioDuration(plan, duration.TotalMinutes);
 
                 // Upload Final
                 var savedPath = await UploadFinalFileAsync(session, tempFile, ct);
-
+                
                 // Create Record
-                var mediaFile = await FinalizeSessionAsync(session, savedPath, assembledSize, duration.TotalSeconds, ct);
+                var mediaFile =
+                    await FinalizeSessionAsync(session, savedPath, assembledSize, duration.TotalSeconds, ct);
 
                 return mediaFile;
             }
@@ -234,7 +237,6 @@ public class UploadService : IUploadService
     }
 
 
-
     private async Task<string> UploadFinalFileAsync(UploadSession session, string tempFilePath, CancellationToken ct)
     {
         var finalPath = $"{session.StorageKeyPrefix}/{session.OriginalFileName}";
@@ -259,7 +261,8 @@ public class UploadService : IUploadService
         }
     }
 
-    private async Task<MediaFile> FinalizeSessionAsync(UploadSession session, string savedPath, long sizeBytes, double durationSeconds,
+    private async Task<MediaFile> FinalizeSessionAsync(UploadSession session, string savedPath, long sizeBytes,
+        double durationSeconds,
         CancellationToken ct)
     {
         var mediaFile = new MediaFile

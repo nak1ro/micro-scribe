@@ -21,11 +21,6 @@ public partial class FfmpegMediaService : IFfmpegMediaService
 
     public async Task<TimeSpan> GetDurationAsync(string inputPath, CancellationToken ct)
     {
-        // 1. Download to temp if needed (since ffmpeg works on files)
-        // If inputPath is a local path, we can use it directly? 
-        // But UploadService passes a temp file path in AssembleFileAsync!
-        // So we can use inputPath directly if it exists.
-        
         var tempPath = inputPath;
         var needsCleanup = false;
 
