@@ -6,8 +6,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using ScribeApi.Common.Configuration;
 using ScribeApi.Common.Exceptions;
-using ScribeApi.Common.Interfaces;
 using ScribeApi.Features.Auth.Contracts;
+using ScribeApi.Infrastructure.ExternalServices;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
 

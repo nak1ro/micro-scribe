@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using ScribeApi.Common.Interfaces;
 
 namespace ScribeApi.Infrastructure.Storage;
 

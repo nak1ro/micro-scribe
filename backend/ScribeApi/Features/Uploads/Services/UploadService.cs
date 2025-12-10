@@ -1,8 +1,8 @@
 using ScribeApi.Common.Configuration.Plans;
-using ScribeApi.Common.Interfaces;
 using ScribeApi.Features.Uploads.Contracts;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
+using ScribeApi.Infrastructure.Storage;
 
 namespace ScribeApi.Features.Uploads.Services;
 

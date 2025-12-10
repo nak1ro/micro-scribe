@@ -1,8 +1,4 @@
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace ScribeApi.Common.Interfaces;
+namespace ScribeApi.Infrastructure.Storage;
 
 public interface IFileStorageService
 {

@@ -10,11 +10,9 @@ using ScribeApi.Api.Extensions;
 using ScribeApi.Api.Filters;
 using ScribeApi.Api.Middleware;
 using ScribeApi.Common.Configuration;
-using ScribeApi.Common.Interfaces;
 using ScribeApi.Features.Auth;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
-using ScribeApi.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
