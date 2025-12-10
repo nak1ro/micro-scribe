@@ -11,6 +11,8 @@ public class UploadService : IUploadService
 {
     private readonly AppDbContext _context;
     private readonly IUploadQueries _queries;
+    private readonly IPlanResolver _planResolver;
+    private readonly IPlanGuard _planGuard;
     private readonly IFileStorageService _storageService;
     private readonly IFfmpegMediaService _ffmpegService;
     private readonly ILogger<UploadService> _logger;
@@ -18,12 +20,16 @@ public class UploadService : IUploadService
     public UploadService(
         AppDbContext context,
         IUploadQueries queries,
+        IPlanResolver planResolver,
+        IPlanGuard planGuard,
         IFileStorageService storageService,
         IFfmpegMediaService ffmpegService,
         ILogger<UploadService> logger)
     {
         _context = context;
         _queries = queries;
+        _planResolver = planResolver;
+        _planGuard = planGuard;
         _storageService = storageService;
         _ffmpegService = ffmpegService;
         _logger = logger;
@@ -35,6 +41,13 @@ public class UploadService : IUploadService
         {
             throw new ArgumentException("ChunkSizeBytes must be greater than 0.");
         }
+
+        // Validate plan limits
+        var planType = await _queries.GetUserPlanTypeAsync(userId, ct);
+        var plan = _planResolver.GetPlanDefinition(planType);
+        
+        _planGuard.EnsureFileSize(plan, request.TotalSizeBytes);
+        _planGuard.EnsureAudioDuration(plan, request.DurationMinutes * 60);
 
         var totalChunks = CalculateTotalChunks(request);
 

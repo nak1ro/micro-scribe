@@ -26,6 +26,18 @@ public class TranscriptionJobQueries : ITranscriptionJobQueries
             .CountAsync(ct);
     }
 
+    public async Task<int> CountDailyJobsAsync(string userId, DateTime dateUtc, CancellationToken ct)
+    {
+        var startOfDay = dateUtc.Date;
+        var endOfDay = startOfDay.AddDays(1);
+
+        return await _context.TranscriptionJobs
+            .AsNoTracking()
+            .Where(j => j.UserId == userId)
+            .Where(j => j.CreatedAtUtc >= startOfDay && j.CreatedAtUtc < endOfDay)
+            .CountAsync(ct);
+    }
+
     public async Task<MediaFile?> GetMediaFileByIdAsync(
         Guid mediaFileId, 
         string userId, 

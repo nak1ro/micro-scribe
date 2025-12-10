@@ -6,7 +6,8 @@ public record InitUploadRequest(
     string FileName,
     string ContentType,
     long TotalSizeBytes,
-    int ChunkSizeBytes  // e.g. 5 MB
+    int ChunkSizeBytes,  // e.g. 5 MB
+    double DurationMinutes  // Client-reported duration for early validation
 );
 
 public record UploadSessionDto(
