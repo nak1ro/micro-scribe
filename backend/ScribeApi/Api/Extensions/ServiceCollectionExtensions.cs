@@ -15,6 +15,8 @@ using ScribeApi.Features.Auth.Services;
 using ScribeApi.Features.Media;
 using ScribeApi.Features.Media.Contracts;
 using ScribeApi.Features.Media.Services;
+using ScribeApi.Features.Transcriptions.Contracts;
+using ScribeApi.Features.Transcriptions.Services;
 using ScribeApi.Features.Uploads;
 using ScribeApi.Features.Uploads.Contracts;
 using ScribeApi.Features.Uploads.Services;
@@ -22,6 +24,8 @@ using ScribeApi.Infrastructure.ExternalServices;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
 using ScribeApi.Infrastructure.Storage;
+using ScribeApi.Infrastructure.BackgroundJobs;
+using ScribeApi.Infrastructure.ExternalClients;
 
 namespace ScribeApi.Api.Extensions;
 
@@ -132,7 +136,15 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUploadQueries, UploadQueries>();
         services.AddScoped<IMediaService, MediaService>();
         services.AddScoped<IMediaQueries, MediaQueries>();
-        
+        services.AddScoped<ITranscriptionJobService, TranscriptionJobService>();
+        services.AddScoped<ITranscriptionJobQueries, TranscriptionJobQueries>();
+        services.AddScoped<ITranscriptionProvider, PlaceholderTranscriptionProvider>();
+        services.AddScoped<IFfmpegMediaService, FfmpegMediaService>();
+        services.AddScoped<TranscriptionJobRunner>();
+
+        // Hangfire
+        services.AddHangfireServices(configuration);
+
         // HttpClient for OAuthService
         services.AddHttpClient<IOAuthService, OAuthService>();
         
@@ -143,6 +155,9 @@ public static class ServiceCollectionExtensions
         services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
         services.Configure<PlansOptions>(configuration.GetSection("Plans"));
         services.Configure<OAuthSettings>(configuration.GetSection("OAuth"));
+
+        services.AddSingleton<IPlanResolver, PlanResolver>();
+        services.AddSingleton<IPlanGuard, PlanGuard>();
 
         return services;
     }

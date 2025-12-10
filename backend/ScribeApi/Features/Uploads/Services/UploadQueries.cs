@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using ScribeApi.Common.Configuration.Plans;
 using ScribeApi.Features.Uploads.Contracts;
 using ScribeApi.Infrastructure.Persistence;
@@ -10,24 +9,19 @@ namespace ScribeApi.Features.Uploads.Services;
 public class UploadQueries : IUploadQueries
 {
     private readonly AppDbContext _context;
-    private readonly PlansOptions _plansOptions;
 
-    public UploadQueries(AppDbContext context, IOptions<PlansOptions> plansOptions)
+    public UploadQueries(AppDbContext context)
     {
         _context = context;
-        _plansOptions = plansOptions.Value;
     }
 
-    public async Task<PlanDefinition> GetUserPlanDefinitionAsync(string userId, CancellationToken ct)
+    public async Task<PlanType> GetUserPlanTypeAsync(string userId, CancellationToken ct)
     {
         var subscription = await _context.Subscriptions
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.UserId == userId && s.Status == SubscriptionStatus.Active, ct);
 
-        var planType = subscription?.Plan ?? PlanType.Free;
-        
-        return _plansOptions.Plans.FirstOrDefault(p => p.PlanType == planType) 
-               ?? _plansOptions.Plans.First(p => p.PlanType == PlanType.Free);
+        return subscription?.Plan ?? PlanType.Free;
     }
 
     public async Task<int> CountActiveSessionsAsync(string userId, CancellationToken ct)

@@ -10,24 +10,31 @@ public class UploadService : IUploadService
 {
     private readonly AppDbContext _context;
     private readonly IUploadQueries _queries;
+    private readonly IPlanResolver _planResolver;
+    private readonly IPlanGuard _planGuard;
     private readonly IFileStorageService _storageService;
     private readonly ILogger<UploadService> _logger;
 
     public UploadService(
         AppDbContext context,
         IUploadQueries queries,
+        IPlanResolver planResolver,
+        IPlanGuard planGuard,
         IFileStorageService storageService,
         ILogger<UploadService> logger)
     {
         _context = context;
         _queries = queries;
+        _planResolver = planResolver;
+        _planGuard = planGuard;
         _storageService = storageService;
         _logger = logger;
     }
 
     public async Task<UploadSession> CreateSessionAsync(string userId, InitUploadRequest request, CancellationToken ct)
     {
-        var userPlan = await _queries.GetUserPlanDefinitionAsync(userId, ct);
+        var planType = await _queries.GetUserPlanTypeAsync(userId, ct);
+        var userPlan = _planResolver.GetPlanDefinition(planType);
 
         await ValidateSessionCreationRulesAsync(userId, request, userPlan, ct);
 
@@ -78,11 +85,7 @@ public class UploadService : IUploadService
     private async Task ValidateSessionCreationRulesAsync(string userId, InitUploadRequest request,
         PlanDefinition userPlan, CancellationToken ct)
     {
-        if (request.TotalSizeBytes > userPlan.MaxFileSizeBytes)
-        {
-            throw new ArgumentException(
-                $"File size exceeds the limit of {userPlan.MaxFileSizeBytes / 1024 / 1024} MB for your plan.");
-        }
+        _planGuard.EnsureFileSize(userPlan, request.TotalSizeBytes);
 
         // Ensure ChunkSizeBytes is valid
         if (request.ChunkSizeBytes <= 0)
@@ -91,12 +94,7 @@ public class UploadService : IUploadService
         }
 
         var activeSessionsCount = await _queries.CountActiveSessionsAsync(userId, ct);
-
-        if (activeSessionsCount >= userPlan.MaxFilesPerUpload)
-        {
-            throw new InvalidOperationException(
-                $"You have reached the maximum number of active uploads ({userPlan.MaxFilesPerUpload}) for your plan.");
-        }
+        _planGuard.EnsureConcurrentUploads(userPlan, activeSessionsCount);
     }
 
     private static int CalculateTotalChunks(InitUploadRequest request)
@@ -184,7 +182,9 @@ public class UploadService : IUploadService
                 assembledSize = await MergeChunksToTempFileAsync(session, tempFile, ct);
 
                 // Validate
-                var userPlan = await _queries.GetUserPlanDefinitionAsync(session.UserId, ct);
+                var planType = await _queries.GetUserPlanTypeAsync(session.UserId, ct);
+                var userPlan = _planResolver.GetPlanDefinition(planType);
+                
                 ValidateAssembledFile(assembledSize, session.TotalSizeBytes, userPlan);
 
                 // Upload Final
@@ -228,12 +228,9 @@ public class UploadService : IUploadService
         return outputStream.Length;
     }
 
-    private static void ValidateAssembledFile(long actualSize, long? declaredSize, PlanDefinition userPlan)
+    private void ValidateAssembledFile(long actualSize, long? declaredSize, PlanDefinition userPlan)
     {
-        if (actualSize > userPlan.MaxFileSizeBytes)
-        {
-            throw new ArgumentException($"Assembled file size ({actualSize}) exceeds plan limit.");
-        }
+        _planGuard.EnsureFileSize(userPlan, actualSize);
 
         if (!declaredSize.HasValue) return;
 

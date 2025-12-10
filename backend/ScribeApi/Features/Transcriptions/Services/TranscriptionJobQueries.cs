@@ -1,6 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
-using ScribeApi.Common.Configuration.Plans;
 using ScribeApi.Features.Transcriptions.Contracts;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
@@ -10,28 +8,10 @@ namespace ScribeApi.Features.Transcriptions.Services;
 public class TranscriptionJobQueries : ITranscriptionJobQueries
 {
     private readonly AppDbContext _context;
-    private readonly PlansOptions _plansOptions;
 
-    public TranscriptionJobQueries(
-        AppDbContext context, 
-        IOptions<PlansOptions> plansOptions)
+    public TranscriptionJobQueries(AppDbContext context)
     {
         _context = context;
-        _plansOptions = plansOptions.Value;
-    }
-
-    public async Task<PlanDefinition> GetUserPlanDefinitionAsync(
-        string userId, 
-        CancellationToken ct)
-    {
-        var user = await _context.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Id == userId, ct);
-
-        var planType = user?.Plan ?? PlanType.Free;
-        
-        return _plansOptions.Plans.FirstOrDefault(p => p.PlanType == planType)
-            ?? _plansOptions.Plans.First(p => p.PlanType == PlanType.Free);
     }
 
     public async Task<int> CountActiveJobsAsync(

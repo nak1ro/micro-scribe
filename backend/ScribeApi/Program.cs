@@ -1,18 +1,5 @@
-using System.Text;
-using FluentValidation;
-using FluentValidation.AspNetCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
 using ScribeApi.Api.Extensions;
-using ScribeApi.Api.Filters;
-using ScribeApi.Api.Middleware;
-using ScribeApi.Common.Configuration;
-using ScribeApi.Features.Auth;
-using ScribeApi.Infrastructure.Persistence;
-using ScribeApi.Infrastructure.Persistence.Entities;
+using ScribeApi.Infrastructure.BackgroundJobs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +17,8 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseHangfireDashboard(app.Environment.IsDevelopment());
 
 app.MapControllers();
 

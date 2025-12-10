@@ -5,7 +5,7 @@ namespace ScribeApi.Features.Uploads.Contracts;
 
 public interface IUploadQueries
 {
-    Task<PlanDefinition> GetUserPlanDefinitionAsync(string userId, CancellationToken ct);
+    Task<PlanType> GetUserPlanTypeAsync(string userId, CancellationToken ct);
     Task<int> CountActiveSessionsAsync(string userId, CancellationToken ct);
     Task<UploadSession?> GetSessionAsync(Guid sessionId, string userId, CancellationToken ct);
 }
