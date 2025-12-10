@@ -1,7 +1,7 @@
 using FluentValidation;
 using ScribeApi.Features.Media.Contracts;
 
-namespace ScribeApi.Features.Media;
+namespace ScribeApi.Features.Media.Services;
 
 public class MediaListRequestValidator : AbstractValidator<MediaListRequest>
 {

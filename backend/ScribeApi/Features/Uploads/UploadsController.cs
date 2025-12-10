@@ -1,8 +1,9 @@
-using System.Security.Claims;
 using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ScribeApi.Common.Extensions;
+using ScribeApi.Features.Media.Contracts;
 using ScribeApi.Features.Uploads.Contracts;
 
 namespace ScribeApi.Features.Uploads;
@@ -31,9 +32,9 @@ public class UploadsController : ControllerBase
         [FromBody] InitUploadRequest request,
         CancellationToken ct)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.GetUserId();
 
-        var session = await _uploadService.CreateSessionAsync(userId!, request, ct);
+        var session = await _uploadService.CreateSessionAsync(userId, request, ct);
 
         return Ok(_mapper.Map<UploadSessionDto>(session));
     }
@@ -49,11 +50,11 @@ public class UploadsController : ControllerBase
             return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
         }
 
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.GetUserId();
 
         await using var stream = request.Chunk.OpenReadStream();
 
-        var mediaFile = await _uploadService.UploadChunkAsync(request.SessionId, request.ChunkIndex, stream, userId!, ct);
+        var mediaFile = await _uploadService.UploadChunkAsync(request.SessionId, request.ChunkIndex, stream, userId, ct);
 
         if (mediaFile != null)
         {

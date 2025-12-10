@@ -1,4 +1,5 @@
 using AutoMapper;
+using ScribeApi.Features.Media.Contracts;
 using ScribeApi.Infrastructure.Persistence.Entities;
 
 namespace ScribeApi.Features.Uploads.Contracts;

@@ -1,6 +1,6 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ScribeApi.Common.Extensions;
 using ScribeApi.Features.Auth.Contracts;
 
 namespace ScribeApi.Features.Auth;
@@ -55,8 +55,8 @@ public class AuthController : ControllerBase
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePassword(ChangePasswordRequestDto request, CancellationToken cancellationToken)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null) return Unauthorized();
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         await _authService.ChangePasswordAsync(userId, request, cancellationToken);
         return Ok(new { message = "Password changed successfully." });
@@ -73,8 +73,8 @@ public class AuthController : ControllerBase
     [HttpPost("revoke-token")]
     public async Task<IActionResult> RevokeToken(CancellationToken cancellationToken)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null) return Unauthorized();
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         await _authService.RevokeTokenAsync(userId, cancellationToken);
         return Ok(new { message = "Tokens revoked successfully." });
@@ -98,8 +98,8 @@ public class AuthController : ControllerBase
     [HttpPost("oauth/link")]
     public async Task<IActionResult> LinkOAuthAccount(LinkOAuthAccountRequestDto request, CancellationToken cancellationToken)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null) return Unauthorized();
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         await _authService.LinkExternalAccountAsync(userId, request, cancellationToken);
         return Ok(new { message = "External account linked successfully." });
@@ -109,8 +109,8 @@ public class AuthController : ControllerBase
     [HttpGet("oauth/linked-accounts")]
     public async Task<ActionResult<List<ExternalLoginDto>>> GetLinkedAccounts(CancellationToken cancellationToken)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null) return Unauthorized();
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         var accounts = await _authService.GetLinkedAccountsAsync(userId, cancellationToken);
         return Ok(accounts);
@@ -120,8 +120,8 @@ public class AuthController : ControllerBase
     [HttpDelete("oauth/unlink/{provider}")]
     public async Task<IActionResult> UnlinkOAuthAccount(string provider, CancellationToken cancellationToken)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null) return Unauthorized();
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         await _authService.UnlinkExternalAccountAsync(userId, provider, cancellationToken);
         return Ok(new { message = $"{provider} account unlinked successfully." });
@@ -131,8 +131,8 @@ public class AuthController : ControllerBase
     [HttpGet("me")]
     public async Task<ActionResult<UserDto>> Me(CancellationToken cancellationToken)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null) return Unauthorized();
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         var user = await _authService.GetUserByIdAsync(userId, cancellationToken);
         return Ok(user);
