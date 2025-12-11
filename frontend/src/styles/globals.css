@@ -1,0 +1,142 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+
+    to {
+      height: 0;
+    }
+  }
+}
+
+:root {
+  /* Option 2: Vibrant Violet (Light) */
+  --background: 0 0% 100%;
+  /* #ffffff */
+  --foreground: 224 71.4% 4.1%;
+  /* #020817 */
+
+  --card: 0 0% 100%;
+  /* #ffffff */
+  --card-foreground: 224 71.4% 4.1%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 224 71.4% 4.1%;
+
+  --primary: 262 83% 58%;
+  /* Violet-600 #7c3aed */
+  --primary-foreground: 210 20% 98%;
+
+  --secondary: 295 70% 50%;
+  /* Fuchsia-500 #d946ef (approx) - adjusted for contrast */
+  --secondary-foreground: 210 20% 98%;
+
+  --muted: 220 14.3% 95.9%;
+  /* Gray/Zinc-100 */
+  --muted-foreground: 220 8.9% 46.1%;
+
+  --accent: 262 83% 96%;
+  /* Light Violet tint */
+  --accent-foreground: 262 83% 58%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 20% 98%;
+
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  --ring: 262 83% 58%;
+  /* Matching Primary */
+  --radius: 0.5rem;
+}
+
+.dark {
+  /* Option 2: Vibrant Violet (Dark) */
+  --background: 224 71% 4%;
+  /* Gray-950 #030712 */
+  --foreground: 210 20% 98%;
+  /* #f8fafc */
+
+  --card: 224 71% 4%;
+  --card-foreground: 210 20% 98%;
+
+  --popover: 224 71% 4%;
+  --popover-foreground: 210 20% 98%;
+
+  --primary: 263 70% 50%;
+  /* Violet-600 adapted */
+  --primary-foreground: 210 20% 98%;
+
+  --secondary: 295 70% 50%;
+  --secondary-foreground: 210 20% 98%;
+
+  --muted: 215 27.9% 16.9%;
+  /* Darker gray */
+  --muted-foreground: 217.9 10.6% 64.9%;
+
+  --accent: 215 27.9% 16.9%;
+  --accent-foreground: 210 20% 98%;
+
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 20% 98%;
+
+  --border: 215 27.9% 16.9%;
+  --input: 215 27.9% 16.9%;
+  --ring: 263 70% 50%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
