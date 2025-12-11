@@ -1,0 +1,30 @@
+export const API_ENDPOINTS = {
+    AUTH: {
+        REGISTER: '/auth/register',
+        LOGIN: '/auth/login',
+        LOGOUT: '/auth/logout',
+        FORGOT_PASSWORD: '/auth/forgot-password',
+        RESET_PASSWORD: '/auth/reset-password',
+        CHANGE_PASSWORD: '/auth/change-password',
+        CONFIRM_EMAIL: '/auth/confirm-email',
+        EXTERNAL_LOGIN: '/auth/external-login',
+        OAUTH_CALLBACK: '/auth/oauth/callback',
+        LINK_OAUTH: '/auth/oauth/link',
+        LINKED_ACCOUNTS: '/auth/oauth/linked-accounts',
+        UNLINK_OAUTH: (provider: string) => `/auth/oauth/unlink/${provider}`,
+        ME: '/auth/me',
+    },
+    MEDIA: {
+        LIST: '/media',
+        GET: (id: string) => `/media/${id}`,
+        DELETE: (id: string) => `/media/${id}`,
+    },
+    UPLOADS: {
+        SESSIONS: '/uploads/sessions',
+        UPLOAD_CHUNK: (sessionId: string, chunkIndex: number) => `/uploads/sessions/${sessionId}/chunks/${chunkIndex}`,
+    },
+    TRANSCRIPTIONS: {
+        CREATE: '/transcriptions',
+        GET: (jobId: string) => `/transcriptions/${jobId}`,
+    },
+} as const;
