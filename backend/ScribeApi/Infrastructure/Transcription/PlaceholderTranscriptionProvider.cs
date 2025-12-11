@@ -1,6 +1,7 @@
+using ScribeApi.Core.Interfaces;
 using ScribeApi.Infrastructure.Persistence.Entities;
 
-namespace ScribeApi.Infrastructure.ExternalClients;
+namespace ScribeApi.Infrastructure.Transcription;
 
 public class PlaceholderTranscriptionProvider : ITranscriptionProvider
 {
@@ -17,6 +18,10 @@ public class PlaceholderTranscriptionProvider : ITranscriptionProvider
             Segments: new List<TranscriptSegmentData>
             {
                 new("Placeholder segment", 0, 5)
+            },
+            Chapters: new List<TranscriptChapterData>
+            {
+                new("Placeholder Chapter", 0, 5)
             }
         );
         

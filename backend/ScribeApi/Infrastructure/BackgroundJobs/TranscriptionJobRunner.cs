@@ -1,7 +1,6 @@
+using ScribeApi.Core.Interfaces;
 using ScribeApi.Features.Transcriptions.Contracts;
 using ScribeApi.Features.Media.Contracts;
-using ScribeApi.Infrastructure.ExternalClients;
-using ScribeApi.Infrastructure.ExternalServices;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
 using ScribeApi.Infrastructure.Storage;
@@ -142,13 +141,19 @@ public class TranscriptionJobRunner
         job.Transcript = result.FullTranscript;
         job.LanguageCode = result.DetectedLanguage;
 
-        await CreateSegmentsAsync(job, result.Segments, ct);
+        if (result.Chapters != null)
+        {
+            AddChapters(job, result.Chapters);
+        }
+
+        AddSegments(job, result.Segments);
+        
+        await _context.SaveChangesAsync(ct);
     }
 
-    private async Task CreateSegmentsAsync(
+    private void AddSegments(
         TranscriptionJob job,
-        List<TranscriptSegmentData> segments,
-        CancellationToken ct)
+        List<TranscriptSegmentData> segments)
     {
         var order = 0;
         foreach (var segmentData in segments)
@@ -167,8 +172,28 @@ public class TranscriptionJobRunner
 
             _context.TranscriptSegments.Add(segment);
         }
+    }
 
-        await _context.SaveChangesAsync(ct);
+    private void AddChapters(
+        TranscriptionJob job,
+        List<TranscriptChapterData> chapters)
+    {
+        var order = 0;
+        foreach (var chapterData in chapters)
+        {
+            var chapter = new TranscriptChapter
+            {
+                Id = Guid.NewGuid(),
+                TranscriptionJobId = job.Id,
+                TranscriptionJob = job,
+                Title = chapterData.Title,
+                StartSeconds = chapterData.StartSeconds,
+                EndSeconds = chapterData.EndSeconds,
+                Order = order++
+            };
+
+            _context.TranscriptChapters.Add(chapter);
+        }
     }
 
     private async Task UpdateUserUsageAsync(TranscriptionJob job, CancellationToken ct)

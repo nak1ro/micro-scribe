@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Options;
 using ScribeApi.Infrastructure.Persistence.Entities;
 
-namespace ScribeApi.Common.Configuration.Plans;
+namespace ScribeApi.Core.Domain.Plans;
 
 public interface IPlanResolver
 {

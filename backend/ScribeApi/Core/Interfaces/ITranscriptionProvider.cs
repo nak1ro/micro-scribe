@@ -1,11 +1,12 @@
 using ScribeApi.Infrastructure.Persistence.Entities;
 
-namespace ScribeApi.Infrastructure.ExternalClients;
+namespace ScribeApi.Core.Interfaces;
 
 public record TranscriptionResult(
     string FullTranscript,
     string? DetectedLanguage,
-    List<TranscriptSegmentData> Segments
+    List<TranscriptSegmentData> Segments,
+    List<TranscriptChapterData> Chapters
 );
 
 public record TranscriptSegmentData(
@@ -13,6 +14,12 @@ public record TranscriptSegmentData(
     double StartSeconds,
     double EndSeconds,
     string? Speaker = null
+);
+
+public record TranscriptChapterData(
+    string Title,
+    double StartSeconds,
+    double? EndSeconds
 );
 
 public interface ITranscriptionProvider

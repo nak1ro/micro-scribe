@@ -1,6 +1,6 @@
 using ScribeApi.Infrastructure.Persistence.Entities;
 
-namespace ScribeApi.Common.Configuration.Plans;
+namespace ScribeApi.Core.Domain.Plans;
 
 public class PlanDefinition
 {

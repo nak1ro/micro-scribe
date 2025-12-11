@@ -1,4 +1,4 @@
-namespace ScribeApi.Infrastructure.Storage;
+namespace ScribeApi.Core.Interfaces;
 
 public interface IFileStorageService
 {

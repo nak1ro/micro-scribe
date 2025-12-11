@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ScribeApi.Common.Extensions;
 using ScribeApi.Features.Auth.Contracts;
+using ScribeApi.Shared.Extensions;
 
 namespace ScribeApi.Features.Auth;
 

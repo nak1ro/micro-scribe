@@ -1,4 +1,4 @@
-namespace ScribeApi.Common.Exceptions;
+namespace ScribeApi.Core.Exceptions;
 
 public class AuthenticationException : Exception
 {

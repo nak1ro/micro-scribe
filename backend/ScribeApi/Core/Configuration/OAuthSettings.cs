@@ -1,4 +1,4 @@
-namespace ScribeApi.Common.Configuration;
+namespace ScribeApi.Core.Configuration;
 
 public class OAuthSettings
 {

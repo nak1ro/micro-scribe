@@ -1,8 +1,8 @@
 using Hangfire;
 using Hangfire.States;
 using Microsoft.Extensions.Logging;
-using ScribeApi.Common.Configuration.Plans;
-using ScribeApi.Common.Exceptions;
+using ScribeApi.Core.Domain.Plans;
+using ScribeApi.Core.Exceptions;
 using ScribeApi.Features.Transcriptions.Contracts;
 using ScribeApi.Infrastructure.BackgroundJobs;
 using ScribeApi.Infrastructure.Persistence;

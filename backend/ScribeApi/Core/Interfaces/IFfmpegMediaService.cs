@@ -1,4 +1,6 @@
-namespace ScribeApi.Infrastructure.ExternalServices;
+using ScribeApi.Infrastructure.MediaProcessing;
+
+namespace ScribeApi.Core.Interfaces;
 
 public interface IFfmpegMediaService
 {

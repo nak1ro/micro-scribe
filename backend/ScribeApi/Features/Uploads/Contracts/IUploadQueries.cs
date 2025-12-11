@@ -1,4 +1,3 @@
-using ScribeApi.Common.Configuration.Plans;
 using ScribeApi.Infrastructure.Persistence.Entities;
 
 namespace ScribeApi.Features.Uploads.Contracts;

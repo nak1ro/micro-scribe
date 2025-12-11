@@ -33,14 +33,10 @@
 
   <ItemGroup>
     <Folder Include="Api\Filters\" />
-    <Folder Include="Common\Attributes\" />
-    <Folder Include="Common\Exceptions\" />
-    <Folder Include="Common\Interfaces\" />
-    <Folder Include="Common\Logging\" />
-    <Folder Include="Common\ResultTypes\" />
+    <Folder Include="Core\Domain\Billing\" />
     <Folder Include="Features\Billing\" />
     <Folder Include="Features\Usage\" />
-    <Folder Include="Infrastructure\Identity\" />
+    <Folder Include="Infrastructure\Integrations\Stripe\" />
   </ItemGroup>
 
 </Project>

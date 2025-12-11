@@ -1,4 +1,4 @@
-namespace ScribeApi.Infrastructure.ExternalServices;
+namespace ScribeApi.Core.Interfaces;
 
 public interface IEmailService
 {

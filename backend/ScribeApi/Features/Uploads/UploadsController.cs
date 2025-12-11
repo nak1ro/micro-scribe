@@ -2,9 +2,9 @@ using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ScribeApi.Common.Extensions;
 using ScribeApi.Features.Media.Contracts;
 using ScribeApi.Features.Uploads.Contracts;
+using ScribeApi.Shared.Extensions;
 
 namespace ScribeApi.Features.Uploads;
 

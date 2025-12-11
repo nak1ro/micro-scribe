@@ -1,4 +1,6 @@
-namespace ScribeApi.Infrastructure.ExternalServices;
+using ScribeApi.Core.Interfaces;
+
+namespace ScribeApi.Infrastructure.Email;
 
 public class EmailService : IEmailService
 {

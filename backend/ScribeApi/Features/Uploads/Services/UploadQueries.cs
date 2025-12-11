@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using ScribeApi.Common.Configuration.Plans;
 using ScribeApi.Features.Uploads.Contracts;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;

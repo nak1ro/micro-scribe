@@ -1,6 +1,6 @@
-using ScribeApi.Common.Exceptions;
+using ScribeApi.Core.Exceptions;
 
-namespace ScribeApi.Common.Configuration.Plans;
+namespace ScribeApi.Core.Domain.Plans;
 
 public interface IPlanGuard
 {

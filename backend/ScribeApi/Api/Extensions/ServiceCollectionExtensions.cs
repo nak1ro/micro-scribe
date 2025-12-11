@@ -7,8 +7,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ScribeApi.Api.Filters;
-using ScribeApi.Common.Configuration;
-using ScribeApi.Common.Configuration.Plans;
+using ScribeApi.Core.Configuration;
+using ScribeApi.Core.Domain.Plans;
+using ScribeApi.Core.Interfaces;
 using ScribeApi.Features.Auth;
 using ScribeApi.Features.Auth.Contracts;
 using ScribeApi.Features.Auth.Services;
@@ -20,12 +21,13 @@ using ScribeApi.Features.Transcriptions.Services;
 using ScribeApi.Features.Uploads;
 using ScribeApi.Features.Uploads.Contracts;
 using ScribeApi.Features.Uploads.Services;
-using ScribeApi.Infrastructure.ExternalServices;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
 using ScribeApi.Infrastructure.Storage;
 using ScribeApi.Infrastructure.BackgroundJobs;
-using ScribeApi.Infrastructure.ExternalClients;
+using ScribeApi.Infrastructure.Email;
+using ScribeApi.Infrastructure.Transcription;
+using FfmpegMediaService = ScribeApi.Infrastructure.MediaProcessing.FfmpegMediaService;
 
 namespace ScribeApi.Api.Extensions;
 

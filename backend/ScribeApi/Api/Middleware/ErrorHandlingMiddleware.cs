@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
-using ScribeApi.Common.Exceptions;
+using ScribeApi.Core.Exceptions;
 
 namespace ScribeApi.Api.Middleware;
 
