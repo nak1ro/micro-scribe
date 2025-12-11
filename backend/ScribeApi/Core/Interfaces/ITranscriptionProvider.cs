@@ -26,6 +26,7 @@ public interface ITranscriptionProvider
 {
     Task<TranscriptionResult> TranscribeAsync(
         Stream audioStream, 
+        string fileName,
         TranscriptionQuality quality,
         string? languageHint,
         CancellationToken ct);

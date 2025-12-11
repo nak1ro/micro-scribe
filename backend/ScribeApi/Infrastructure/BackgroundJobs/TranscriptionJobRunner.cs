@@ -134,6 +134,7 @@ public class TranscriptionJobRunner
 
         var result = await _transcriptionProvider.TranscribeAsync(
             audioStream,
+            Path.GetFileName(audioPath),
             job.Quality,
             job.LanguageCode,
             ct);

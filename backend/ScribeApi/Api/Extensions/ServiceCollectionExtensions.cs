@@ -140,7 +140,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IMediaQueries, MediaQueries>();
         services.AddScoped<ITranscriptionJobService, TranscriptionJobService>();
         services.AddScoped<ITranscriptionJobQueries, TranscriptionJobQueries>();
-        services.AddScoped<ITranscriptionProvider, PlaceholderTranscriptionProvider>();
+        // Transcription Provider
+        services.Configure<OpenAiSettings>(configuration.GetSection("OpenAi"));
+        
+        services.AddHttpClient<OpenAiTranscriptionProvider>();
+        services.AddScoped<ITranscriptionProvider, OpenAiTranscriptionProvider>();
         services.AddScoped<IFfmpegMediaService, FfmpegMediaService>();
         services.AddScoped<TranscriptionJobRunner>();
 
