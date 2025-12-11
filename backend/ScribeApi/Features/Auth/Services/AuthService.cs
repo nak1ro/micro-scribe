@@ -1,10 +1,5 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.Tokens;
-using ScribeApi.Core.Configuration;
 using ScribeApi.Core.Exceptions;
 using ScribeApi.Core.Interfaces;
 using ScribeApi.Features.Auth.Contracts;
@@ -17,7 +12,6 @@ public class AuthService : IAuthService
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
-    private readonly JwtSettings _jwtSettings;
     private readonly AppDbContext _context;
     private readonly IMapper _mapper;
     private readonly IEmailService _emailService;
@@ -25,12 +19,11 @@ public class AuthService : IAuthService
     private readonly IAuthQueries _authQueries;
 
     public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager,
-        JwtSettings jwtSettings, AppDbContext context, IMapper mapper, IEmailService emailService,
+        AppDbContext context, IMapper mapper, IEmailService emailService,
         IOAuthService oauthService, IAuthQueries authQueries)
     {
         _userManager = userManager;
         _signInManager = signInManager;
-        _jwtSettings = jwtSettings;
         _context = context;
         _mapper = mapper;
         _emailService = emailService;
@@ -38,7 +31,7 @@ public class AuthService : IAuthService
         _authQueries = authQueries;
     }
 
-    public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request, CancellationToken cancellationToken = default)
+    public async Task<UserDto> RegisterAsync(RegisterRequestDto request, CancellationToken cancellationToken = default)
     {
         var existingUser = await _userManager.FindByEmailAsync(request.Email);
         if (existingUser != null)
@@ -66,11 +59,14 @@ public class AuthService : IAuthService
         await _userManager.UpdateAsync(user);
 
         await _emailService.SendEmailConfirmationAsync(user.Email, token, cancellationToken);
+        
+        // Auto-login
+        await _signInManager.SignInAsync(user, isPersistent: true);
 
-        return await GenerateAuthResponseAsync(user, cancellationToken);
+        return await MapUserDtoAsync(user);
     }
 
-    public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
+    public async Task<UserDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user == null)
@@ -78,55 +74,18 @@ public class AuthService : IAuthService
             throw new AuthenticationException("Invalid email or password.");
         }
 
-        var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, false);
+        var result = await _signInManager.PasswordSignInAsync(user, request.Password, request.RememberMe, lockoutOnFailure: false);
         if (!result.Succeeded)
         {
             throw new AuthenticationException("Invalid email or password.");
         }
 
-        return await GenerateAuthResponseAsync(user, cancellationToken);
+        return await MapUserDtoAsync(user);
     }
-
-    public async Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenRequestDto request, CancellationToken cancellationToken = default)
+    
+    public async Task LogoutAsync(CancellationToken cancellationToken = default)
     {
-        var storedToken = await _authQueries.GetRefreshTokenByTokenAsync(request.RefreshToken, cancellationToken);
-
-        ValidateRefreshTokenStatus(storedToken);
-
-        storedToken!.Used = true;
-        _context.RefreshTokens.Update(storedToken);
-        await _context.SaveChangesAsync(cancellationToken);
-
-        var user = storedToken.User;
-        if (user == null)
-        {
-            throw new AuthenticationException("User not found.");
-        }
-
-        return await GenerateAuthResponseAsync(user, cancellationToken);
-    }
-
-    private void ValidateRefreshTokenStatus(RefreshToken? storedToken)
-    {
-        if (storedToken == null)
-        {
-            throw new AuthenticationException("Invalid refresh token.");
-        }
-
-        if (storedToken.ExpiryDate < DateTime.UtcNow)
-        {
-            throw new AuthenticationException("Refresh token has expired.");
-        }
-
-        if (storedToken.Invalidated)
-        {
-            throw new AuthenticationException("Refresh token has been invalidated.");
-        }
-
-        if (storedToken.Used)
-        {
-            throw new AuthenticationException("Refresh token has already been used.");
-        }
+        await _signInManager.SignOutAsync();
     }
 
     public async Task ForgotPasswordAsync(ForgotPasswordRequestDto request, CancellationToken cancellationToken = default)
@@ -134,7 +93,6 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user == null)
         {
-            // Don't reveal that the user doesn't exist
             return;
         }
 
@@ -206,35 +164,20 @@ public class AuthService : IAuthService
         await _userManager.UpdateAsync(user);
     }
 
-    public async Task RevokeTokenAsync(string userId, CancellationToken cancellationToken = default)
-    {
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user == null) return;
-
-        // Invalidate all refresh tokens for the user
-        var tokens = await _authQueries.GetRefreshTokensByUserIdAsync(userId, cancellationToken);
-        foreach (var token in tokens)
-        {
-            token.Invalidated = true;
-        }
-
-        await _context.SaveChangesAsync(cancellationToken);
-    }
-
-    public async Task<AuthResponseDto> ExternalLoginAsync(ExternalAuthRequestDto request, CancellationToken cancellationToken = default)
+    public async Task<UserDto> ExternalLoginAsync(ExternalAuthRequestDto request, CancellationToken cancellationToken = default)
     {
         var oauthUserInfo = await _oauthService.ValidateGoogleTokenAsync(request.IdToken, cancellationToken);
         return await ProcessExternalLoginFlowAsync(oauthUserInfo, cancellationToken);
     }
 
-    public async Task<AuthResponseDto> OAuthCallbackAsync(OAuthCallbackRequestDto request, CancellationToken cancellationToken = default)
+    public async Task<UserDto> OAuthCallbackAsync(OAuthCallbackRequestDto request, CancellationToken cancellationToken = default)
     {
         var oauthUserInfo = await _oauthService.ExchangeCodeForTokenAsync(request.Provider, request.Code, cancellationToken);
         return await ProcessExternalLoginFlowAsync(oauthUserInfo, cancellationToken);
     }
 
     // Shared private method to handle the common flow after getting user info from provider
-    private async Task<AuthResponseDto> ProcessExternalLoginFlowAsync(OAuthUserInfo oauthUserInfo, CancellationToken cancellationToken)
+    private async Task<UserDto> ProcessExternalLoginFlowAsync(OAuthUserInfo oauthUserInfo, CancellationToken cancellationToken)
     {
         var existingLogin = await _authQueries.GetExternalLoginAsync(oauthUserInfo.Provider, oauthUserInfo.ProviderKey, cancellationToken);
 
@@ -256,8 +199,10 @@ public class AuthService : IAuthService
         // Update last login time
         user.LastLoginAtUtc = DateTime.UtcNow;
         await _userManager.UpdateAsync(user);
+        
+        await _signInManager.SignInAsync(user, isPersistent: true);
 
-        return await GenerateAuthResponseAsync(user, cancellationToken);
+        return await MapUserDtoAsync(user);
     }
 
     private void UpdateExternalLoginTokens(ExternalLogin login, OAuthUserInfo userInfo)
@@ -392,73 +337,13 @@ public class AuthService : IAuthService
             throw new NotFoundException("User not found.");
         }
 
+        return await MapUserDtoAsync(user);
+    }
+    
+    private async Task<UserDto> MapUserDtoAsync(ApplicationUser user)
+    {
         var userDto = _mapper.Map<UserDto>(user);
         var roles = await _userManager.GetRolesAsync(user);
         return userDto with { Roles = roles.ToList() };
-    }
-
-    private async Task<AuthResponseDto> GenerateAuthResponseAsync(ApplicationUser user, CancellationToken cancellationToken)
-    {
-        var roles = await _userManager.GetRolesAsync(user);
-        var accessToken = GenerateAccessToken(user, roles);
-        var refreshToken = await GenerateRefreshTokenAsync(user, accessToken.Id, cancellationToken);
-
-        var userDto = _mapper.Map<UserDto>(user);
-        userDto = userDto with { Roles = roles.ToList() };
-
-        return new AuthResponseDto(
-            accessToken.Value,
-            refreshToken,
-            _jwtSettings.ExpiryMinutes * 60,
-            "Bearer",
-            userDto
-        );
-    }
-
-    private (string Value, string Id) GenerateAccessToken(ApplicationUser user, IList<string> roles)
-    {
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
-
-        var claims = new List<Claim>
-        {
-            new(JwtRegisteredClaimNames.Sub, user.Id),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(JwtRegisteredClaimNames.Email, user.Email!),
-            new("id", user.Id)
-        };
-
-        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
-
-        var tokenDescriptor = new SecurityTokenDescriptor
-        {
-            Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes),
-            SigningCredentials =
-                new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
-            Issuer = _jwtSettings.Issuer,
-            Audience = _jwtSettings.Audience
-        };
-
-        var token = tokenHandler.CreateToken(tokenDescriptor);
-        return (tokenHandler.WriteToken(token), token.Id);
-    }
-
-    private async Task<string> GenerateRefreshTokenAsync(ApplicationUser user, string jwtId, CancellationToken cancellationToken)
-    {
-        var refreshToken = new RefreshToken
-        {
-            Id = Guid.NewGuid(),
-            JwtId = jwtId,
-            UserId = user.Id,
-            CreationDate = DateTime.UtcNow,
-            ExpiryDate = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays),
-            Token = Guid.NewGuid().ToString()
-        };
-
-        await _context.RefreshTokens.AddAsync(refreshToken, cancellationToken);
-        await _context.SaveChangesAsync(cancellationToken);
-
-        return refreshToken.Token;
     }
 }

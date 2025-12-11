@@ -18,7 +18,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<TranscriptChapter> TranscriptChapters => Set<TranscriptChapter>();
     public DbSet<UploadSession> UploadSessions => Set<UploadSession>();
     
-    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
     public DbSet<ExternalLogin> ExternalLogins => Set<ExternalLogin>();
 
     protected override void OnModelCreating(ModelBuilder builder)

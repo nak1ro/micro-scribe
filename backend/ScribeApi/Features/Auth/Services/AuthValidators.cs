@@ -26,14 +26,6 @@ public class LoginRequestValidator : AbstractValidator<LoginRequestDto>
     }
 }
 
-public class RefreshTokenRequestValidator : AbstractValidator<RefreshTokenRequestDto>
-{
-    public RefreshTokenRequestValidator()
-    {
-        RuleFor(x => x.RefreshToken).NotEmpty();
-    }
-}
-
 public class ForgotPasswordRequestValidator : AbstractValidator<ForgotPasswordRequestDto>
 {
     public ForgotPasswordRequestValidator()

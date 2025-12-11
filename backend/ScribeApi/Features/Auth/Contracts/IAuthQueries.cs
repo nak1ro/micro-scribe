@@ -4,8 +4,7 @@ namespace ScribeApi.Features.Auth.Contracts;
 
 public interface IAuthQueries
 {
-    Task<RefreshToken?> GetRefreshTokenByTokenAsync(string token, CancellationToken cancellationToken = default);
-    Task<List<RefreshToken>> GetRefreshTokensByUserIdAsync(string userId, CancellationToken cancellationToken = default);
+
     Task<ExternalLogin?> GetExternalLoginAsync(string provider, string key, CancellationToken cancellationToken = default);
     Task<List<ExternalLogin>> GetExternalLoginsByUserIdAsync(string userId, CancellationToken cancellationToken = default);
     Task<ExternalLogin?> GetExternalLoginByProviderAsync(string userId, string provider, CancellationToken cancellationToken = default);

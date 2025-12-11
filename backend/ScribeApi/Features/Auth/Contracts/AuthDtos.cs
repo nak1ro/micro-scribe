@@ -2,9 +2,9 @@ namespace ScribeApi.Features.Auth.Contracts;
 
 public record RegisterRequestDto(string Email, string Password, string ConfirmPassword);
 
-public record LoginRequestDto(string Email, string Password);
+public record LoginRequestDto(string Email, string Password, bool RememberMe = false);
 
-public record RefreshTokenRequestDto(string RefreshToken);
+
 
 public record ForgotPasswordRequestDto(string Email);
 
@@ -31,7 +31,7 @@ public record OAuthUserInfo(
     DateTimeOffset? AccessTokenExpiresAt = null
 );
 
-public record AuthResponseDto(string AccessToken, string RefreshToken, int ExpiresIn, string TokenType, UserDto User);
+
 
 public record UserDto
 {

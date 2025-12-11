@@ -17,24 +17,26 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<ActionResult<AuthResponseDto>> Register(RegisterRequestDto request, CancellationToken cancellationToken)
+    public async Task<ActionResult<UserDto>> Register(RegisterRequestDto request, CancellationToken cancellationToken)
     {
         var response = await _authService.RegisterAsync(request, cancellationToken);
+        // We can return CreatedAtAction if we want strictly RESTful, pointing to Me
         return CreatedAtAction(nameof(Me), response);
     }
 
     [HttpPost("login")]
-    public async Task<ActionResult<AuthResponseDto>> Login(LoginRequestDto request, CancellationToken cancellationToken)
+    public async Task<ActionResult<UserDto>> Login(LoginRequestDto request, CancellationToken cancellationToken)
     {
         var response = await _authService.LoginAsync(request, cancellationToken);
         return Ok(response);
     }
 
-    [HttpPost("refresh")]
-    public async Task<ActionResult<AuthResponseDto>> Refresh(RefreshTokenRequestDto request, CancellationToken cancellationToken)
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
-        var response = await _authService.RefreshTokenAsync(request, cancellationToken);
-        return Ok(response);
+        await _authService.LogoutAsync(cancellationToken);
+        return Ok(new { message = "Logged out successfully." });
     }
 
     [HttpPost("forgot-password")]
@@ -69,26 +71,15 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Email confirmed successfully." });
     }
 
-    [Authorize]
-    [HttpPost("revoke-token")]
-    public async Task<IActionResult> RevokeToken(CancellationToken cancellationToken)
-    {
-        var userId = User.GetUserId();
-        if (string.IsNullOrEmpty(userId)) return Unauthorized();
-
-        await _authService.RevokeTokenAsync(userId, cancellationToken);
-        return Ok(new { message = "Tokens revoked successfully." });
-    }
-
     [HttpPost("external-login")]
-    public async Task<ActionResult<AuthResponseDto>> ExternalLogin(ExternalAuthRequestDto request, CancellationToken cancellationToken)
+    public async Task<ActionResult<UserDto>> ExternalLogin(ExternalAuthRequestDto request, CancellationToken cancellationToken)
     {
         var response = await _authService.ExternalLoginAsync(request, cancellationToken);
         return Ok(response);
     }
 
     [HttpPost("oauth/callback")]
-    public async Task<ActionResult<AuthResponseDto>> OAuthCallback(OAuthCallbackRequestDto request, CancellationToken cancellationToken)
+    public async Task<ActionResult<UserDto>> OAuthCallback(OAuthCallbackRequestDto request, CancellationToken cancellationToken)
     {
         var response = await _authService.OAuthCallbackAsync(request, cancellationToken);
         return Ok(response);

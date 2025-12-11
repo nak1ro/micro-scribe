@@ -14,19 +14,7 @@ public class AuthQueries : IAuthQueries
         _context = context;
     }
 
-    public async Task<RefreshToken?> GetRefreshTokenByTokenAsync(string token, CancellationToken cancellationToken = default)
-    {
-        return await _context.RefreshTokens
-            .Include(x => x.User)
-            .SingleOrDefaultAsync(x => x.Token == token, cancellationToken);
-    }
 
-    public async Task<List<RefreshToken>> GetRefreshTokensByUserIdAsync(string userId, CancellationToken cancellationToken = default)
-    {
-        return await _context.RefreshTokens
-            .Where(x => x.UserId == userId)
-            .ToListAsync(cancellationToken);
-    }
 
     public async Task<ExternalLogin?> GetExternalLoginAsync(string provider, string key, CancellationToken cancellationToken = default)
     {
