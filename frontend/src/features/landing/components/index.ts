@@ -1,5 +1,6 @@
 // Landing Page Section Components
 export { HeroSection } from "./HeroSection";
+export { SocialProofSection } from "./SocialProofSection";
 export { ProblemSolutionSection } from "./ProblemSolutionSection";
 export { HowItWorksSection } from "./HowItWorksSection";
 export { FeaturesSection } from "./FeaturesSection";

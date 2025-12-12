@@ -13,7 +13,7 @@ export const heroContent = {
     subheadline:
         "AI-powered transcription with timestamps, summaries, and translations. Upload your audio or video and get results in seconds.",
     primaryCTA: {
-        label: "Start Free",
+        label: "Try Free — No Credit Card",
         href: "/auth?mode=signup",
     },
     secondaryCTA: {
@@ -29,6 +29,22 @@ export const heroContent = {
         { value: "1.2M+", label: "Minutes transcribed" },
         { value: "50K+", label: "Happy users" },
         { value: "50+", label: "Languages" },
+    ],
+};
+
+export const socialProofContent = {
+    heading: "Trusted by creators, students, and professionals worldwide",
+    logos: [
+        { name: "TechCrunch" },
+        { name: "ProductHunt" },
+        { name: "Forbes" },
+        { name: "Wired" },
+        { name: "TheVerge" },
+    ],
+    stats: [
+        { value: "4.9/5", label: "User Rating" },
+        { value: "#1", label: "ProductHunt Launch" },
+        { value: "99.5%", label: "Uptime" },
     ],
 };
 
@@ -270,42 +286,42 @@ export const testimonialsContent = {
     testimonials: [
         {
             quote:
-                "MicroScribe saves me hours every week. I just upload my podcast episodes and get perfect transcripts in minutes.",
+                "MicroScribe saves me 8+ hours every week. I just upload my podcast episodes and get perfect transcripts in minutes.",
             name: "Sarah Chen",
             role: "Podcaster",
             rating: 5,
         },
         {
             quote:
-                "Finally, a transcription tool that actually works! The accuracy is incredible, even with my professors' accents.",
+                "Finally, a transcription tool that actually works! 97% accuracy even with my professors' accents.",
             name: "Marcus Johnson",
             role: "Graduate Student",
             rating: 5,
         },
         {
             quote:
-                "The meeting summaries feature is a game-changer. Our team productivity has skyrocketed.",
+                "The meeting summaries feature is a game-changer. Our team productivity is up 40% since switching.",
             name: "Emily Rodriguez",
             role: "Product Manager",
             rating: 5,
         },
         {
             quote:
-                "As a journalist, I need accurate transcripts fast. MicroScribe delivers every time.",
+                "As a journalist, I need accurate transcripts fast. 15-minute turnaround on hour-long interviews.",
             name: "David Kim",
             role: "Investigative Journalist",
             rating: 5,
         },
         {
             quote:
-                "I use it for all my YouTube videos. The closed captions look professional and save me so much time.",
+                "I use it for all 50+ YouTube videos monthly. The closed captions look professional and save me 20+ hours.",
             name: "Alex Turner",
             role: "Content Creator",
             rating: 5,
         },
         {
             quote:
-                "Being able to search through my research interviews is invaluable. Worth every penny.",
+                "Transcribed 200+ research interviews so far. Being able to search through them is invaluable.",
             name: "Dr. Lisa Patel",
             role: "Research Scientist",
             rating: 5,

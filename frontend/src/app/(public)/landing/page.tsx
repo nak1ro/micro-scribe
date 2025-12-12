@@ -1,6 +1,7 @@
 import { PublicLayout } from "@/components/layout";
 import {
     HeroSection,
+    SocialProofSection,
     ProblemSolutionSection,
     HowItWorksSection,
     FeaturesSection,
@@ -15,14 +16,15 @@ export default function LandingPage() {
     return (
         <PublicLayout>
             <HeroSection />
-            <ProblemSolutionSection />
+            <SocialProofSection />
+            <PricingSection />
             <HowItWorksSection />
             <FeaturesSection />
             <UseCasesSection />
-            <PricingSection />
+            <ProblemSolutionSection />
             <TestimonialsSection />
-            <FAQSection />
             <FinalCTASection />
+            <FAQSection />
         </PublicLayout>
     );
 }
