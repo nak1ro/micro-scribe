@@ -1,18 +1,55 @@
 "use client";
 
 import * as React from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Mic2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 import { AuthTabs, type AuthMode } from "./AuthTabs";
 import { LoginForm } from "./LoginForm";
 import { SignUpForm } from "./SignUpForm";
 import { OAuthButtons } from "./OAuthButtons";
 
 export function AuthCard() {
+    const router = useRouter();
     const searchParams = useSearchParams();
     const modeParam = searchParams.get("mode");
     const activeTab: AuthMode = modeParam === "signup" ? "signup" : "login";
+
+    const { login, register } = useAuth();
+    const [error, setError] = React.useState<string | null>(null);
+
+    const handleLogin = async (data: { email: string; password: string }) => {
+        setError(null);
+        try {
+            await login({ email: data.email, password: data.password });
+            router.push("/transcription");
+        } catch (err: unknown) {
+            const message =
+                err instanceof Error ? err.message : "Login failed. Please try again.";
+            setError(message);
+            throw err; // Re-throw to let form know submission failed
+        }
+    };
+
+    const handleSignUp = async (data: { name: string; email: string; password: string }) => {
+        setError(null);
+        try {
+            // Note: Backend RegisterRequest expects email, password, confirmPassword
+            // The name field is collected for UX but not sent to this endpoint
+            await register({
+                email: data.email,
+                password: data.password,
+                confirmPassword: data.password, // Form already validated match
+            });
+            router.push("/transcription");
+        } catch (err: unknown) {
+            const message =
+                err instanceof Error ? err.message : "Registration failed. Please try again.";
+            setError(message);
+            throw err;
+        }
+    };
 
     return (
         <div className="relative w-full max-w-md md:max-w-lg lg:max-w-xl mx-auto">
@@ -34,7 +71,6 @@ export function AuthCard() {
                     "overflow-hidden"
                 )}
             >
-
 
                 {/* Header with branding */}
                 <div className="relative px-6 pt-8 pb-6 text-center">
@@ -71,6 +107,13 @@ export function AuthCard() {
                     </div>
                 </div>
 
+                {/* Error message */}
+                {error && (
+                    <div className="mx-6 mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm animate-fade-in">
+                        {error}
+                    </div>
+                )}
+
                 {/* OAuth Buttons */}
                 <div className="px-6 pb-4">
                     <OAuthButtons mode={activeTab} />
@@ -96,21 +139,9 @@ export function AuthCard() {
                 {/* Form */}
                 <div className="p-6">
                     {activeTab === "login" ? (
-                        <LoginForm
-                            onSubmit={async (data) => {
-                                // TODO: Implement actual login API call
-                                console.log("Login:", data);
-                                await new Promise((r) => setTimeout(r, 1500));
-                            }}
-                        />
+                        <LoginForm onSubmit={handleLogin} />
                     ) : (
-                        <SignUpForm
-                            onSubmit={async (data) => {
-                                // TODO: Implement actual signup API call
-                                console.log("Sign up:", data);
-                                await new Promise((r) => setTimeout(r, 1500));
-                            }}
-                        />
+                        <SignUpForm onSubmit={handleSignUp} />
                     )}
                 </div>
 

@@ -12,8 +12,8 @@ using ScribeApi.Infrastructure.Persistence;
 namespace ScribeApi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251208223330_AddAuthEntities")]
-    partial class AddAuthEntities
+    [Migration("20251212180603_Update")]
+    partial class Update
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -260,15 +260,59 @@ namespace ScribeApi.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.ExternalLogin", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AccessToken")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<DateTimeOffset?>("AccessTokenExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("ProviderKey")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("RawClaimsJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RefreshToken")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("Provider", "ProviderKey")
+                        .IsUnique();
+
+                    b.ToTable("ExternalLogins");
+                });
+
             modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.MediaFile", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("AudioPath")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                    b.Property<string>("BucketName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("ContentType")
                         .IsRequired()
@@ -280,26 +324,41 @@ namespace ScribeApi.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<Guid>("CreatedFromUploadSessionId")
+                        .HasColumnType("uuid");
+
                     b.Property<double?>("DurationSeconds")
                         .HasColumnType("double precision");
 
-                    b.Property<string>("FileType")
+                    b.Property<string>("ETag")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<int>("FileType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("NormalizedAudioObjectKey")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
 
                     b.Property<string>("OriginalFileName")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
-                    b.Property<string>("OriginalPath")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
                     b.Property<long>("SizeBytes")
                         .HasColumnType("bigint");
+
+                    b.Property<string>("StorageObjectKey")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<string>("StorageProvider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -307,53 +366,16 @@ namespace ScribeApi.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedFromUploadSessionId");
+
                     b.HasIndex("FileType");
+
+                    b.HasIndex("StorageObjectKey")
+                        .IsUnique();
 
                     b.HasIndex("UserId", "CreatedAtUtc");
 
                     b.ToTable("MediaFiles", (string)null);
-                });
-
-            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.RefreshToken", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreationDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("ExpiryDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("Invalidated")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("JwtId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("Used")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Token")
-                        .IsUnique();
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.Subscription", b =>
@@ -453,8 +475,17 @@ namespace ScribeApi.Migrations
                     b.Property<double>("EndSeconds")
                         .HasColumnType("double precision");
 
+                    b.Property<bool>("IsEdited")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastEditedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("Order")
                         .HasColumnType("integer");
+
+                    b.Property<string>("OriginalText")
+                        .HasColumnType("text");
 
                     b.Property<string>("Speaker")
                         .HasMaxLength(100)
@@ -551,47 +582,191 @@ namespace ScribeApi.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("CompletedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("BucketName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
-                    b.Property<string>("ContentType")
+                    b.Property<string>("ClientRequestId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeclaredContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DetectedContainerType")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int?>("DetectedMediaType")
+                        .HasColumnType("integer");
+
+                    b.Property<double?>("DurationSeconds")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("ETag")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
 
                     b.Property<DateTime>("ExpiresAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("MediaFileId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("OriginalFileName")
+                    b.Property<string>("FileName")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
-                    b.Property<int>("ReceivedChunksCount")
-                        .HasColumnType("integer");
+                    b.Property<Guid?>("MediaFileId")
+                        .HasColumnType("uuid");
 
-                    b.Property<string>("Status")
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
 
-                    b.Property<string>("StorageKeyPrefix")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<int>("TotalChunks")
-                        .HasColumnType("integer");
-
-                    b.Property<long?>("TotalSizeBytes")
+                    b.Property<long>("SizeBytes")
                         .HasColumnType("bigint");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<string>("StorageProvider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("UploadId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<DateTime?>("UploadedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UrlExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
+
+                    b.Property<DateTime?>("ValidatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MediaFileId");
+
+                    b.HasIndex("StorageKey")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "ClientRequestId")
+                        .IsUnique()
+                        .HasFilter("\"ClientRequestId\" IS NOT NULL");
+
+                    b.ToTable("UploadSessions");
+                });
+
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.WebhookDelivery", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Event")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("LastAttemptAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("NextRetryAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ResponseBody")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<int?>("ResponseStatusCode")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("SubscriptionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriptionId");
+
+                    b.HasIndex("Status", "NextRetryAtUtc");
+
+                    b.ToTable("WebhookDeliveries");
+                });
+
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.WebhookSubscription", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Events")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastTriggeredAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Secret")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -599,13 +774,9 @@ namespace ScribeApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ExpiresAtUtc");
+                    b.HasIndex("UserId", "IsActive");
 
-                    b.HasIndex("MediaFileId");
-
-                    b.HasIndex("UserId", "Status");
-
-                    b.ToTable("UploadSessions", (string)null);
+                    b.ToTable("WebhookSubscriptions");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -659,10 +830,10 @@ namespace ScribeApi.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.MediaFile", b =>
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.ExternalLogin", b =>
                 {
                     b.HasOne("ScribeApi.Infrastructure.Persistence.Entities.ApplicationUser", "User")
-                        .WithMany("MediaFiles")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -670,10 +841,10 @@ namespace ScribeApi.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.RefreshToken", b =>
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.MediaFile", b =>
                 {
                     b.HasOne("ScribeApi.Infrastructure.Persistence.Entities.ApplicationUser", "User")
-                        .WithMany("RefreshTokens")
+                        .WithMany("MediaFiles")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -741,7 +912,7 @@ namespace ScribeApi.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("ScribeApi.Infrastructure.Persistence.Entities.ApplicationUser", "User")
-                        .WithMany("UploadSessions")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -751,17 +922,35 @@ namespace ScribeApi.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.WebhookDelivery", b =>
+                {
+                    b.HasOne("ScribeApi.Infrastructure.Persistence.Entities.WebhookSubscription", "Subscription")
+                        .WithMany("Deliveries")
+                        .HasForeignKey("SubscriptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Subscription");
+                });
+
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.WebhookSubscription", b =>
+                {
+                    b.HasOne("ScribeApi.Infrastructure.Persistence.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.ApplicationUser", b =>
                 {
                     b.Navigation("MediaFiles");
 
-                    b.Navigation("RefreshTokens");
-
                     b.Navigation("Subscriptions");
 
                     b.Navigation("TranscriptionJobs");
-
-                    b.Navigation("UploadSessions");
                 });
 
             modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.MediaFile", b =>
@@ -774,6 +963,11 @@ namespace ScribeApi.Migrations
                     b.Navigation("Chapters");
 
                     b.Navigation("Segments");
+                });
+
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.WebhookSubscription", b =>
+                {
+                    b.Navigation("Deliveries");
                 });
 #pragma warning restore 612, 618
         }

@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ScribeApi.Migrations
 {
     /// <inheritdoc />
-    public partial class AddAuthEntities : Migration
+    public partial class Update : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -166,6 +166,30 @@ namespace ScribeApi.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ExternalLogins",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    UserId = table.Column<string>(type: "text", nullable: false),
+                    Provider = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    ProviderKey = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    AccessToken = table.Column<string>(type: "character varying(4000)", maxLength: 4000, nullable: true),
+                    RefreshToken = table.Column<string>(type: "character varying(4000)", maxLength: 4000, nullable: true),
+                    AccessTokenExpiresAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    RawClaimsJson = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ExternalLogins", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ExternalLogins_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "MediaFiles",
                 columns: table => new
                 {
@@ -173,10 +197,14 @@ namespace ScribeApi.Migrations
                     UserId = table.Column<string>(type: "text", nullable: false),
                     OriginalFileName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     ContentType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    OriginalPath = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    AudioPath = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    StorageObjectKey = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: false),
+                    BucketName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    StorageProvider = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    ETag = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    CreatedFromUploadSessionId = table.Column<Guid>(type: "uuid", nullable: false),
+                    NormalizedAudioObjectKey = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: true),
                     SizeBytes = table.Column<long>(type: "bigint", nullable: false),
-                    FileType = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    FileType = table.Column<int>(type: "integer", nullable: false),
                     DurationSeconds = table.Column<double>(type: "double precision", nullable: true),
                     CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()")
                 },
@@ -185,31 +213,6 @@ namespace ScribeApi.Migrations
                     table.PrimaryKey("PK_MediaFiles", x => x.Id);
                     table.ForeignKey(
                         name: "FK_MediaFiles_AspNetUsers_UserId",
-                        column: x => x.UserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "RefreshTokens",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Token = table.Column<string>(type: "text", nullable: false),
-                    JwtId = table.Column<string>(type: "text", nullable: false),
-                    CreationDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ExpiryDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Used = table.Column<bool>(type: "boolean", nullable: false),
-                    Invalidated = table.Column<bool>(type: "boolean", nullable: false),
-                    UserId = table.Column<string>(type: "text", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_RefreshTokens", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_RefreshTokens_AspNetUsers_UserId",
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
@@ -236,6 +239,30 @@ namespace ScribeApi.Migrations
                     table.PrimaryKey("PK_Subscriptions", x => x.Id);
                     table.ForeignKey(
                         name: "FK_Subscriptions_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WebhookSubscriptions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<string>(type: "text", nullable: false),
+                    Url = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: false),
+                    Secret = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    Events = table.Column<string>(type: "text", nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LastTriggeredAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WebhookSubscriptions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_WebhookSubscriptions_AspNetUsers_UserId",
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
@@ -283,17 +310,29 @@ namespace ScribeApi.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<string>(type: "text", nullable: false),
-                    OriginalFileName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    TotalSizeBytes = table.Column<long>(type: "bigint", nullable: true),
-                    ContentType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    TotalChunks = table.Column<int>(type: "integer", nullable: false),
-                    ReceivedChunksCount = table.Column<int>(type: "integer", nullable: false),
-                    StorageKeyPrefix = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    Status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
+                    UserId = table.Column<string>(type: "character varying(450)", maxLength: 450, nullable: false),
+                    ClientRequestId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    CorrelationId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    FileName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    DeclaredContentType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    SizeBytes = table.Column<long>(type: "bigint", nullable: false),
+                    DetectedContainerType = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
+                    DetectedMediaType = table.Column<int>(type: "integer", nullable: true),
+                    DurationSeconds = table.Column<double>(type: "double precision", nullable: true),
+                    StorageKey = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: false),
+                    UploadId = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    ETag = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    StorageProvider = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    BucketName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    ErrorMessage = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: true),
+                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     ExpiresAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CompletedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UrlExpiresAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UploadedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ValidatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "bytea", rowVersion: true, nullable: false),
                     MediaFileId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
@@ -311,6 +350,33 @@ namespace ScribeApi.Migrations
                         principalTable: "MediaFiles",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WebhookDeliveries",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    SubscriptionId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Event = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Payload = table.Column<string>(type: "text", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    Attempts = table.Column<int>(type: "integer", nullable: false),
+                    ResponseStatusCode = table.Column<int>(type: "integer", nullable: true),
+                    ResponseBody = table.Column<string>(type: "character varying(4000)", maxLength: 4000, nullable: true),
+                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LastAttemptAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    NextRetryAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WebhookDeliveries", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_WebhookDeliveries_WebhookSubscriptions_SubscriptionId",
+                        column: x => x.SubscriptionId,
+                        principalTable: "WebhookSubscriptions",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -345,7 +411,10 @@ namespace ScribeApi.Migrations
                     StartSeconds = table.Column<double>(type: "double precision", nullable: false),
                     EndSeconds = table.Column<double>(type: "double precision", nullable: false),
                     Order = table.Column<int>(type: "integer", nullable: false),
-                    Speaker = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true)
+                    Speaker = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    OriginalText = table.Column<string>(type: "text", nullable: true),
+                    IsEdited = table.Column<bool>(type: "boolean", nullable: false),
+                    LastEditedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -417,25 +486,36 @@ namespace ScribeApi.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_ExternalLogins_Provider_ProviderKey",
+                table: "ExternalLogins",
+                columns: new[] { "Provider", "ProviderKey" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ExternalLogins_UserId",
+                table: "ExternalLogins",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MediaFiles_CreatedFromUploadSessionId",
+                table: "MediaFiles",
+                column: "CreatedFromUploadSessionId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_MediaFiles_FileType",
                 table: "MediaFiles",
                 column: "FileType");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MediaFiles_UserId_CreatedAtUtc",
+                name: "IX_MediaFiles_StorageObjectKey",
                 table: "MediaFiles",
-                columns: new[] { "UserId", "CreatedAtUtc" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RefreshTokens_Token",
-                table: "RefreshTokens",
-                column: "Token",
+                column: "StorageObjectKey",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_RefreshTokens_UserId",
-                table: "RefreshTokens",
-                column: "UserId");
+                name: "IX_MediaFiles_UserId_CreatedAtUtc",
+                table: "MediaFiles",
+                columns: new[] { "UserId", "CreatedAtUtc" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Subscriptions_StripeCustomerId",
@@ -489,19 +569,37 @@ namespace ScribeApi.Migrations
                 columns: new[] { "TranscriptionJobId", "StartSeconds" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_UploadSessions_ExpiresAtUtc",
-                table: "UploadSessions",
-                column: "ExpiresAtUtc");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_UploadSessions_MediaFileId",
                 table: "UploadSessions",
                 column: "MediaFileId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UploadSessions_UserId_Status",
+                name: "IX_UploadSessions_StorageKey",
                 table: "UploadSessions",
-                columns: new[] { "UserId", "Status" });
+                column: "StorageKey",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UploadSessions_UserId_ClientRequestId",
+                table: "UploadSessions",
+                columns: new[] { "UserId", "ClientRequestId" },
+                unique: true,
+                filter: "\"ClientRequestId\" IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WebhookDeliveries_Status_NextRetryAtUtc",
+                table: "WebhookDeliveries",
+                columns: new[] { "Status", "NextRetryAtUtc" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WebhookDeliveries_SubscriptionId",
+                table: "WebhookDeliveries",
+                column: "SubscriptionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WebhookSubscriptions_UserId_IsActive",
+                table: "WebhookSubscriptions",
+                columns: new[] { "UserId", "IsActive" });
         }
 
         /// <inheritdoc />
@@ -523,7 +621,7 @@ namespace ScribeApi.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "RefreshTokens");
+                name: "ExternalLogins");
 
             migrationBuilder.DropTable(
                 name: "Subscriptions");
@@ -538,10 +636,16 @@ namespace ScribeApi.Migrations
                 name: "UploadSessions");
 
             migrationBuilder.DropTable(
+                name: "WebhookDeliveries");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
                 name: "TranscriptionJobs");
+
+            migrationBuilder.DropTable(
+                name: "WebhookSubscriptions");
 
             migrationBuilder.DropTable(
                 name: "MediaFiles");

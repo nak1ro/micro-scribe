@@ -472,8 +472,17 @@ namespace ScribeApi.Migrations
                     b.Property<double>("EndSeconds")
                         .HasColumnType("double precision");
 
+                    b.Property<bool>("IsEdited")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastEditedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("Order")
                         .HasColumnType("integer");
+
+                    b.Property<string>("OriginalText")
+                        .HasColumnType("text");
 
                     b.Property<string>("Speaker")
                         .HasMaxLength(100)
@@ -678,6 +687,95 @@ namespace ScribeApi.Migrations
                     b.ToTable("UploadSessions");
                 });
 
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.WebhookDelivery", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Event")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("LastAttemptAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("NextRetryAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ResponseBody")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<int?>("ResponseStatusCode")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("SubscriptionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriptionId");
+
+                    b.HasIndex("Status", "NextRetryAtUtc");
+
+                    b.ToTable("WebhookDeliveries");
+                });
+
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.WebhookSubscription", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Events")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastTriggeredAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Secret")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "IsActive");
+
+                    b.ToTable("WebhookSubscriptions");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -821,6 +919,28 @@ namespace ScribeApi.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.WebhookDelivery", b =>
+                {
+                    b.HasOne("ScribeApi.Infrastructure.Persistence.Entities.WebhookSubscription", "Subscription")
+                        .WithMany("Deliveries")
+                        .HasForeignKey("SubscriptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Subscription");
+                });
+
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.WebhookSubscription", b =>
+                {
+                    b.HasOne("ScribeApi.Infrastructure.Persistence.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.ApplicationUser", b =>
                 {
                     b.Navigation("MediaFiles");
@@ -840,6 +960,11 @@ namespace ScribeApi.Migrations
                     b.Navigation("Chapters");
 
                     b.Navigation("Segments");
+                });
+
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.WebhookSubscription", b =>
+                {
+                    b.Navigation("Deliveries");
                 });
 #pragma warning restore 612, 618
         }

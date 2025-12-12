@@ -15,6 +15,10 @@ app.UseErrorHandling();
 
 app.UseHttpsRedirection();
 
+app.UseRouting();
+
+app.UseCors("LocalhostPolicy"); 
+
 app.UseAuthentication();
 app.UseAuthorization();
 
