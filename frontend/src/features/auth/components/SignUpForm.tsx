@@ -3,8 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
-import { Input } from "@/components/ui/Input";
-import { Label } from "@/components/ui/Label";
+import { FormField } from "./FormField";
 
 interface SignUpFormData {
     name: string;
@@ -78,78 +77,51 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-                <Label htmlFor="signup-name">Full name</Label>
-                <Input
-                    id="signup-name"
-                    type="text"
-                    placeholder="John Doe"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    hasError={!!errors.name}
-                    autoComplete="name"
-                />
-                {errors.name && (
-                    <p className="text-xs text-destructive animate-fade-in">
-                        {errors.name}
-                    </p>
-                )}
-            </div>
+            <FormField
+                id="signup-name"
+                label="Full name"
+                type="text"
+                placeholder="John Doe"
+                value={name}
+                onChange={setName}
+                error={errors.name}
+                autoComplete="name"
+            />
 
-            <div className="space-y-2">
-                <Label htmlFor="signup-email">Email</Label>
-                <Input
-                    id="signup-email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    hasError={!!errors.email}
-                    autoComplete="email"
-                />
-                {errors.email && (
-                    <p className="text-xs text-destructive animate-fade-in">
-                        {errors.email}
-                    </p>
-                )}
-            </div>
+            <FormField
+                id="signup-email"
+                label="Email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={setEmail}
+                error={errors.email}
+                autoComplete="email"
+            />
 
-            <div className="space-y-2">
-                <Label htmlFor="signup-password">Password</Label>
-                <Input
-                    id="signup-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    hasError={!!errors.password}
-                    autoComplete="new-password"
-                />
-                {errors.password && (
-                    <p className="text-xs text-destructive animate-fade-in">
-                        {errors.password}
-                    </p>
-                )}
-            </div>
+            <FormField
+                id="signup-password"
+                label="Password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={setPassword}
+                error={errors.password}
+                autoComplete="new-password"
+            />
 
-            <div className="space-y-2">
-                <Label htmlFor="signup-confirm">Confirm password</Label>
-                <Input
-                    id="signup-confirm"
-                    type="password"
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    hasError={!!errors.confirmPassword}
-                    autoComplete="new-password"
-                />
-                {errors.confirmPassword && (
-                    <p className="text-xs text-destructive animate-fade-in">
-                        {errors.confirmPassword}
-                    </p>
-                )}
-            </div>
+            <FormField
+                id="signup-confirm"
+                label="Confirm password"
+                type="password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={setConfirmPassword}
+                error={errors.confirmPassword}
+                autoComplete="new-password"
+            />
 
+            {/* Terms checkbox */}
             <div className="flex items-start gap-2">
                 <input
                     type="checkbox"

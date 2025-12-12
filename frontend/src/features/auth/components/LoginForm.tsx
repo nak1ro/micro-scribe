@@ -4,8 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
-import { Input } from "@/components/ui/Input";
-import { Label } from "@/components/ui/Label";
+import { FormField } from "./FormField";
 
 interface LoginFormProps {
     onSubmit?: (data: { email: string; password: string }) => Promise<void>;
@@ -45,27 +44,27 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-                <Label htmlFor="login-email">Email</Label>
-                <Input
-                    id="login-email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    hasError={!!errors.email}
-                    autoComplete="email"
-                />
-                {errors.email && (
-                    <p className="text-xs text-destructive animate-fade-in">
-                        {errors.email}
-                    </p>
-                )}
-            </div>
+            <FormField
+                id="login-email"
+                label="Email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={setEmail}
+                error={errors.email}
+                autoComplete="email"
+            />
 
-            <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                    <Label htmlFor="login-password">Password</Label>
+            <FormField
+                id="login-password"
+                label="Password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={setPassword}
+                error={errors.password}
+                autoComplete="current-password"
+                labelExtra={
                     <Link
                         href="/auth/forgot-password"
                         className={cn(
@@ -75,22 +74,8 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
                     >
                         Forgot password?
                     </Link>
-                </div>
-                <Input
-                    id="login-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    hasError={!!errors.password}
-                    autoComplete="current-password"
-                />
-                {errors.password && (
-                    <p className="text-xs text-destructive animate-fade-in">
-                        {errors.password}
-                    </p>
-                )}
-            </div>
+                }
+            />
 
             <Button type="submit" className="w-full" size="lg" isLoading={isLoading}>
                 Log in

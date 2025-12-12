@@ -79,12 +79,14 @@ export function Header({ isAuthenticated = false, user }: HeaderProps) {
                         ) : (
                             <>
                                 <Link href="/auth?mode=login" className="hidden sm:block">
-                                    <Button variant="ghost" size="sm">
+                                    <Button variant="ghost" size="md" className="text-base px-5">
                                         Log in
                                     </Button>
                                 </Link>
                                 <Link href="/auth?mode=signup">
-                                    <Button size="sm">Sign up</Button>
+                                    <Button size="md" className="text-base px-5 animate-glow-border">
+                                        Sign up
+                                    </Button>
                                 </Link>
                             </>
                         )}
