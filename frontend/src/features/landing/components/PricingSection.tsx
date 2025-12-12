@@ -7,8 +7,12 @@ import { pricingContent } from "../data/content";
 
 export function PricingSection() {
     return (
-        <section id="pricing" className="py-16 sm:py-20 bg-muted scroll-mt-16">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <section id="pricing" className="relative py-16 sm:py-20 scroll-mt-16 overflow-hidden">
+            {/* Slightly stronger glow to emphasize pricing */}
+            <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] rounded-full bg-primary/8 blur-3xl" />
+            </div>
+            <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 {/* Heading */}
                 <div className="text-center mb-12">
                     <h2 className="text-3xl font-bold text-foreground sm:text-4xl">

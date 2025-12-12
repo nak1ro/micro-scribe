@@ -11,8 +11,15 @@ const iconMap = {
 
 export function ProblemSolutionSection() {
     return (
-        <section className="bg-muted py-16 sm:py-20">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <section className="relative py-16 sm:py-20 overflow-visible">
+            {/* Glows positioned to blend with hero section above */}
+            <div className="absolute inset-0 overflow-visible pointer-events-none">
+                {/* Top glow blends with Hero's bottom glow */}
+                <div className="absolute -top-16 left-1/3 w-[500px] h-[300px] rounded-full bg-secondary/8 blur-3xl" />
+                {/* Center glow */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full bg-primary/5 blur-3xl" />
+            </div>
+            <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 {/* Heading */}
                 <div className="text-center mb-12">
                     <h2 className="text-sm font-semibold text-primary uppercase tracking-wide">

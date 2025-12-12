@@ -194,6 +194,50 @@
   }
 }
 
+/* Section Transitions - Smooth gradient blending between sections */
+@layer utilities {
+  .section-transition-top {
+    position: relative;
+  }
+
+  .section-transition-top::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(to bottom, hsl(var(--background)), transparent);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .section-transition-bottom {
+    position: relative;
+  }
+
+  .section-transition-bottom::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(to top, hsl(var(--background)), transparent);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Muted section variants */
+  .section-transition-muted-bottom::after {
+    background: linear-gradient(to top, hsl(var(--muted)), transparent);
+  }
+
+  .section-transition-muted-top::before {
+    background: linear-gradient(to bottom, hsl(var(--muted)), transparent);
+  }
+}
+
 /* Keyframe Animations */
 @keyframes shake {
 
