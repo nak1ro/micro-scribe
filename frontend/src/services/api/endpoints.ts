@@ -21,10 +21,17 @@ export const API_ENDPOINTS = {
     },
     UPLOADS: {
         SESSIONS: '/uploads/sessions',
+        GET: (sessionId: string) => `/uploads/sessions/${sessionId}`,
+        COMPLETE: (sessionId: string) => `/uploads/sessions/${sessionId}/complete`,
+        ABORT: (sessionId: string) => `/uploads/sessions/${sessionId}`,
         UPLOAD_CHUNK: (sessionId: string, chunkIndex: number) => `/uploads/sessions/${sessionId}/chunks/${chunkIndex}`,
     },
     TRANSCRIPTIONS: {
         CREATE: '/transcriptions',
         GET: (jobId: string) => `/transcriptions/${jobId}`,
+        CANCEL: (jobId: string) => `/transcriptions/${jobId}/cancel`,
+        EXPORT: (jobId: string) => `/transcriptions/${jobId}/export`,
+        UPDATE_SEGMENT: (jobId: string, segmentId: string) => `/transcriptions/${jobId}/segments/${segmentId}`,
+        REVERT_SEGMENT: (jobId: string, segmentId: string) => `/transcriptions/${jobId}/segments/${segmentId}/revert`,
     },
 } as const;

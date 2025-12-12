@@ -12,6 +12,8 @@ import {
     Sparkles,
     X,
     Menu,
+    FileAudio,
+    Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/context/SidebarContext";
@@ -85,13 +87,24 @@ export function Sidebar({
             )}
 
             {/* Main Navigation */}
-            <nav className="flex-1 p-2">
+            <nav className="flex-1 p-2 space-y-1">
                 <NavItem
-                    href="/dashboard/folders"
+                    href="/transcription"
+                    icon={FileAudio}
+                    label="My Transcriptions"
+                    isCollapsed={isCollapsed}
+                />
+                <NavItem
+                    href="/folders"
                     icon={FolderOpen}
                     label="Folders"
                     isCollapsed={isCollapsed}
                 />
+
+                {/* New Transcription Button */}
+                <div className="pt-2">
+                    <NewTranscriptionButton isCollapsed={isCollapsed} />
+                </div>
             </nav>
 
             {/* Bottom Navigation */}
@@ -316,6 +329,29 @@ function NavItem({ href, icon: Icon, label, isCollapsed }: NavItemProps) {
         >
             <Icon className="h-5 w-5 shrink-0" />
             {!isCollapsed && <span className="text-sm font-medium">{label}</span>}
+        </Link>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────
+// New Transcription Button
+// ─────────────────────────────────────────────────────────────
+
+function NewTranscriptionButton({ isCollapsed }: { isCollapsed: boolean }) {
+    return (
+        <Link href="/transcription?action=new">
+            <Button
+                variant="outline"
+                size={isCollapsed ? "icon" : "sm"}
+                className={cn(
+                    "w-full border-dashed",
+                    "hover:border-primary hover:bg-primary/5",
+                    isCollapsed && "h-10 w-10"
+                )}
+            >
+                <Plus className="h-4 w-4" />
+                {!isCollapsed && <span>New Transcription</span>}
+            </Button>
         </Link>
     );
 }
