@@ -19,6 +19,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseHangfireDashboard(app.Environment.IsDevelopment());
+app.UseHangfireConfig();
 
 app.MapControllers();
 

@@ -25,7 +25,26 @@ public static class HangfireSetup
             options.WorkerCount = Environment.ProcessorCount * 2;
         });
 
+        // Register job
+        // Note: For recurring jobs, it's often better to do this in the app startup (Configure) 
+        // but we can't easily inject IRecurringJobManager here in AddHangfireServices.
+        // We will do it in Program.cs or a separate helper if possible.
+        // Actually, let's keep this method focused on Service registration.
+        
         return services;
+    }
+
+    public static IApplicationBuilder UseHangfireConfig(
+        this IApplicationBuilder app)
+    {
+        var manager = app.ApplicationServices.GetRequiredService<IRecurringJobManager>();
+        
+        manager.AddOrUpdate<CleanupStaleUploadsJob>(
+            "cleanup-stale-uploads",
+            job => job.RunAsync(CancellationToken.None),
+            Cron.Hourly);
+
+        return app;
     }
 
     public static IApplicationBuilder UseHangfireDashboard(
