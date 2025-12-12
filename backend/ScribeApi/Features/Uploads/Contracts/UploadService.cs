@@ -41,27 +41,41 @@ public class UploadService : IUploadService
 
     public async Task<UploadSessionResponse> InitiateUploadAsync(InitiateUploadRequest request, string userId, CancellationToken ct)
     {
-        await ValidatePlanLimitsAsync(userId, request.SizeBytes, ct);
-
-        var existingSession = await CheckIdempotencyAsync(request.ClientRequestId, userId, ct);
-        if (existingSession != null)
+        // Use Serializable transaction to prevent race conditions on plan limits (e.g. concurrent large uploads)
+        await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+        try
         {
-            return await RefreshAndReturnExistingSessionAsync(existingSession, request, ct);
+            await ValidatePlanLimitsAsync(userId, request.SizeBytes, ct);
+
+            var existingSession = await CheckIdempotencyAsync(request.ClientRequestId, userId, ct);
+            if (existingSession != null)
+            {
+                // Optimization: Rollback transaction early since we are just reading/returning existing
+                await transaction.RollbackAsync(ct);
+                return await RefreshAndReturnExistingSessionAsync(existingSession, request, ct);
+            }
+
+            var uniqueId = Guid.NewGuid();
+            var storageKey = $"uploads/{userId}/{uniqueId}{Path.GetExtension(request.FileName)}";
+
+            var (uploadUrl, uploadId, urlExpiry) = await DetermineUploadStrategyAsync(storageKey, request, ct);
+            
+            var session = CreateSessionEntity(uniqueId, userId, request, storageKey, uploadId, urlExpiry);
+
+            _context.UploadSessions.Add(session);
+            await _context.SaveChangesAsync(ct);
+
+            await transaction.CommitAsync(ct);
+
+            _logger.LogInformation("Created upload session {SessionId} for file {FileName}", session.Id, request.FileName);
+
+            return MapToResponse(session, uploadUrl, uploadId);
         }
-
-        var uniqueId = Guid.NewGuid();
-        var storageKey = $"uploads/{userId}/{uniqueId}{Path.GetExtension(request.FileName)}";
-
-        var (uploadUrl, uploadId, urlExpiry) = await DetermineUploadStrategyAsync(storageKey, request, ct);
-        
-        var session = CreateSessionEntity(uniqueId, userId, request, storageKey, uploadId, urlExpiry);
-
-        _context.UploadSessions.Add(session);
-        await _context.SaveChangesAsync(ct);
-
-        _logger.LogInformation("Created upload session {SessionId} for file {FileName}", session.Id, request.FileName);
-
-        return MapToResponse(session, uploadUrl, uploadId);
+        catch (Exception)
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
+        }
     }
 
     public async Task<UploadSessionStatusResponse> CompleteUploadAsync(Guid sessionId, CompleteUploadRequest request, string userId, CancellationToken ct)

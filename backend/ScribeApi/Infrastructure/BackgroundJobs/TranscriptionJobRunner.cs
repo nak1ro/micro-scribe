@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using ScribeApi.Core.Interfaces;
 using ScribeApi.Features.Transcriptions.Contracts;
 using ScribeApi.Features.Media.Contracts;
@@ -125,7 +126,6 @@ public class TranscriptionJobRunner
     }
 
 
-
     private async Task RunTranscriptionAsync(TranscriptionJob job, CancellationToken ct)
     {
         var audioPath = job.MediaFile.NormalizedAudioObjectKey
@@ -144,7 +144,7 @@ public class TranscriptionJobRunner
         job.LanguageCode = result.DetectedLanguage;
 
         AddSegments(job, result.Segments);
-        
+
         await _context.SaveChangesAsync(ct);
     }
 
@@ -171,15 +171,18 @@ public class TranscriptionJobRunner
         }
     }
 
-   private async Task UpdateUserUsageAsync(TranscriptionJob job, CancellationToken ct)
+    private async Task UpdateUserUsageAsync(TranscriptionJob job, CancellationToken ct)
     {
-        if (job.DurationSeconds.HasValue)
-        {
-             job.User.UsedMinutesThisMonth += job.DurationSeconds.Value / 60.0;
-             await _context.SaveChangesAsync(ct);
-             
-             _logger.LogInformation("Updated usage for user {UserId}: +{Minutes:F2} min", job.UserId, job.DurationSeconds.Value / 60.0);
-        }
+        if (!job.DurationSeconds.HasValue) return;
+
+        var usageMinutes = job.DurationSeconds.Value / 60.0;
+
+        // Use atomic update to prevent race conditions on usage stats
+        await _context.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE \"AspNetUsers\" SET \"UsedMinutesThisMonth\" = \"UsedMinutesThisMonth\" + {usageMinutes} WHERE \"Id\" = {job.UserId}",
+            ct);
+
+        _logger.LogInformation("Updated usage for user {UserId}: +{Minutes:F2} min", job.UserId, usageMinutes);
     }
 
     private async Task MarkAsCompletedAsync(TranscriptionJob job, CancellationToken ct)
