@@ -173,15 +173,8 @@ public class TranscriptionJobRunner
 
    private async Task UpdateUserUsageAsync(TranscriptionJob job, CancellationToken ct)
     {
-        // Job.User is included in the query (tracked entity), so we can update it directly.
-        if (job.User != null && job.DurationSeconds.HasValue)
+        if (job.DurationSeconds.HasValue)
         {
-            // Convert seconds to minutes (ceiling to charge full minutes?) 
-            // Usually usage is tracked in seconds or minute fractions.
-            // Let's assume UsedMinutesThisMonth is a double or decimal
-            // Checking ApplicationUser entity would be wise, but assuming double for now based on Plan definitions.
-            
-            // Simple update:
              job.User.UsedMinutesThisMonth += job.DurationSeconds.Value / 60.0;
              await _context.SaveChangesAsync(ct);
              

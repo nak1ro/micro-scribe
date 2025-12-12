@@ -41,123 +41,143 @@ public class UploadService : IUploadService
 
     public async Task<UploadSessionResponse> InitiateUploadAsync(InitiateUploadRequest request, string userId, CancellationToken ct)
     {
-        // 0. Plan Validation
-        var user = await _context.Users.FindAsync(new object[] { userId }, ct);
-        if (user == null)
-            throw new UnauthorizedAccessException("User not found.");
+        await ValidatePlanLimitsAsync(userId, request.SizeBytes, ct);
+
+        var existingSession = await CheckIdempotencyAsync(request.ClientRequestId, userId, ct);
+        if (existingSession != null)
+        {
+            return await RefreshAndReturnExistingSessionAsync(existingSession, request, ct);
+        }
+
+        var uniqueId = Guid.NewGuid();
+        var storageKey = $"uploads/{userId}/{uniqueId}{Path.GetExtension(request.FileName)}";
+
+        var (uploadUrl, uploadId, urlExpiry) = await DetermineUploadStrategyAsync(storageKey, request, ct);
+        
+        var session = CreateSessionEntity(uniqueId, userId, request, storageKey, uploadId, urlExpiry);
+
+        _context.UploadSessions.Add(session);
+        await _context.SaveChangesAsync(ct);
+
+        _logger.LogInformation("Created upload session {SessionId} for file {FileName}", session.Id, request.FileName);
+
+        return MapToResponse(session, uploadUrl, uploadId);
+    }
+
+    public async Task<UploadSessionStatusResponse> CompleteUploadAsync(Guid sessionId, CompleteUploadRequest request, string userId, CancellationToken ct)
+    {
+        var session = await GetSessionOrThrowAsync(sessionId, userId, ct);
+
+        if (IsSessionCompleted(session))
+            return MapToStatusResponse(session);
+
+        ValidateSessionForCompletion(session);
+
+        var finalObjectInfo = await FinalizeStorageAsync(session, request, ct);
+
+        await UpdateSessionFinalStateAsync(session, finalObjectInfo, ct);
+
+        try
+        {
+            await _context.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            _logger.LogWarning("Concurrency conflict updating session {SessionId}, reloading...", sessionId);
+            await _context.Entry(session).ReloadAsync(ct);
+            if (IsSessionCompleted(session)) return MapToStatusResponse(session);
+            throw;
+        }
+
+        _backgroundJobClient.Enqueue<FileValidationJob>(job => job.ValidateFileAsync(session.Id, CancellationToken.None));
+
+        return MapToStatusResponse(session);
+    }
+
+    public async Task<UploadSessionStatusResponse> GetSessionStatusAsync(Guid sessionId, string userId, CancellationToken ct)
+    {
+        var session = await _context.UploadSessions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId, ct);
+
+        if (session == null)
+            throw new KeyNotFoundException($"Upload session {sessionId} not found.");
+
+        return MapToStatusResponse(session);
+    }
+
+    public async Task AbortSessionAsync(Guid sessionId, string userId, CancellationToken ct)
+    {
+        var session = await _context.UploadSessions.FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId, ct);
+        if (session == null) return;
+
+        await CleanupStorageAsync(session, ct);
+
+        session.Status = UploadSessionStatus.Aborted;
+        session.DeletedAtUtc = DateTime.UtcNow;
+        await _context.SaveChangesAsync(ct);
+    }
+
+    // Helpers
+
+    private async Task ValidatePlanLimitsAsync(string userId, long sizeBytes, CancellationToken ct)
+    {
+        var user = await _context.Users.FindAsync([userId], ct);
+        if (user == null) throw new UnauthorizedAccessException("User not found.");
 
         var plan = _planResolver.GetPlanDefinition(user.Plan);
-        _planGuard.EnsureFileSize(plan, request.SizeBytes);
+        _planGuard.EnsureFileSize(plan, sizeBytes);
+    }
 
-        // 1. Idempotency Check
-        if (!string.IsNullOrEmpty(request.ClientRequestId))
+    private async Task<UploadSession?> CheckIdempotencyAsync(string? clientRequestId, string userId, CancellationToken ct)
+    {
+        if (string.IsNullOrEmpty(clientRequestId)) return null;
+        return await _context.UploadSessions.FirstOrDefaultAsync(s => s.UserId == userId && s.ClientRequestId == clientRequestId, ct);
+    }
+
+    private async Task<UploadSessionResponse> RefreshAndReturnExistingSessionAsync(UploadSession session, InitiateUploadRequest request, CancellationToken ct)
+    {
+        string? uploadUrl = null;
+        if (session.Status is UploadSessionStatus.Created or UploadSessionStatus.Uploading && session.UploadId == null)
         {
-            var existingSession = await _context.UploadSessions
-                .FirstOrDefaultAsync(s => s.UserId == userId && 
-                                          s.ClientRequestId == request.ClientRequestId, ct);
-
-            if (existingSession != null)
+            // Regenerate URL if expired or for immediate use
+            if (session.UrlExpiresAtUtc == null || session.UrlExpiresAtUtc < DateTime.UtcNow)
             {
-                // If failed, aborted or expired -> Allow retry (create new)? 
-                // Plan said: "If the same client request is replayed, the backend must return the same session"
-                // But if it's expired/failed, we probably want to allow a new one or return 409 depending on policy.
-                // Assuming we return the existing one if it's still 'active' or 'done'.
-                // If it's Expired, sticking to "idempotency" usually means "same result", so returning expired session is technicaly correct,
-                // BUT user might want to retry. Let's assume strict idempotency for now: Return what we have.
-                
-                // If Created/Uploading but URL expired, regenerate URL
-                string? existingUrl = null;
-                if ((existingSession.Status == UploadSessionStatus.Created || existingSession.Status == UploadSessionStatus.Uploading) 
-                    && existingSession.UploadId == null) // Single PUT
-                {
-                     // Check if URL expired
-                     if (existingSession.UrlExpiresAtUtc == null || existingSession.UrlExpiresAtUtc < DateTime.UtcNow)
-                     {
-                         // Regenerate
-                         var urlResult = await _storageService.GenerateUploadUrlAsync(
-                            existingSession.StorageKey, 
-                            existingSession.DeclaredContentType, 
-                            existingSession.SizeBytes, 
-                            ct);
-                         existingUrl = urlResult.UploadUrl;
-                         
-                         // Update URL expiry in DB? We don't store the URL, just the time. 
-                         // But we should update the entity to reflect a new "window" if strict?
-                         // Ideally we update UrlExpiresAtUtc.
-                         existingSession.UrlExpiresAtUtc = urlResult.ExpiresAt;
-                         await _context.SaveChangesAsync(ct);
-                     }
-                     else 
-                     {
-                         // We don't store the URL itself! We can't return it if we don't regenerate it.
-                         // Wait, GenerateUploadUrlAsync returns a signed URL. We can't "retrieve" a previously generated one unless we stored it.
-                         // Using S3 presigned URLs, they are valid until expiry. We CAN regenerate identical one if we use same params?
-                         // No, signature uses timestamp.
-                         // So we MUST regenerate it every time we return the session if the client needs it.
-                         // But that invalidates the concept of "UrlExpiresAtUtc" stored in DB?
-                         // "UrlExpiresAtUtc" in DB is mostly for "when does the *window* close".
-                         // Let's just always regenerate if status is Created/Uploading.
-                         var urlResult = await _storageService.GenerateUploadUrlAsync(
-                            existingSession.StorageKey, 
-                            existingSession.DeclaredContentType, 
-                            existingSession.SizeBytes, 
-                            ct);
-                         existingUrl = urlResult.UploadUrl;
-                     }
-                }
-                
-                _logger.LogInformation("Returning existing session {SessionId} for client request {ClientRequestId}", 
-                    existingSession.Id, request.ClientRequestId);
-
-                return new UploadSessionResponse(
-                    existingSession.Id,
-                    existingSession.Status.ToString(),
-                    existingUrl,
-                    existingSession.UploadId,
-                    existingSession.StorageKey,
-                    existingSession.UploadId != null ? _storageSettings.PartSizeBytes : existingSession.SizeBytes,
-                    existingSession.ExpiresAtUtc,
-                    existingSession.CorrelationId
-                );
+                var urlResult = await _storageService.GenerateUploadUrlAsync(session.StorageKey, session.DeclaredContentType, session.SizeBytes, ct);
+                uploadUrl = urlResult.UploadUrl;
+                session.UrlExpiresAtUtc = urlResult.ExpiresAt;
+                await _context.SaveChangesAsync(ct);
+            }
+            else
+            {
+                var urlResult = await _storageService.GenerateUploadUrlAsync(session.StorageKey, session.DeclaredContentType, session.SizeBytes, ct);
+                uploadUrl = urlResult.UploadUrl;
             }
         }
 
-        // 2. Generate Key
-        var uniqueId = Guid.NewGuid();
-        var extension = Path.GetExtension(request.FileName);
-        var storageKey = $"uploads/{userId}/{uniqueId}{extension}";
-        
-        // 3. Determine Strategy
-        string? uploadUrl = null;
-        string? uploadId = null;
+        _logger.LogInformation("Returning existing session {SessionId}", session.Id);
+        return MapToResponse(session, uploadUrl, session.UploadId);
+    }
+
+    private async Task<(string? UploadUrl, string? UploadId, DateTime UrlExpiry)> DetermineUploadStrategyAsync(string storageKey, InitiateUploadRequest request, CancellationToken ct)
+    {
         DateTime urlExpiry = DateTime.UtcNow.AddMinutes(_storageSettings.PresignedUrlExpiryMinutes);
-        
+
         if (request.SizeBytes > _storageSettings.MultipartThresholdBytes)
         {
-            // Multipart
-            var initResult = await _storageService.InitiateMultipartUploadAsync(
-                storageKey, 
-                request.ContentType, 
-                request.SizeBytes, 
-                ct);
-            uploadId = initResult.UploadId;
-        }
-        else
-        {
-            // Single PUT
-            var urlResult = await _storageService.GenerateUploadUrlAsync(
-                storageKey, 
-                request.ContentType, 
-                request.SizeBytes, 
-                ct);
-            uploadUrl = urlResult.UploadUrl;
-            urlExpiry = urlResult.ExpiresAt;
+            var initResult = await _storageService.InitiateMultipartUploadAsync(storageKey, request.ContentType, request.SizeBytes, ct);
+            return (null, initResult.UploadId, urlExpiry);
         }
 
-        // 4. Create Entity
-        var session = new UploadSession
+        var urlResult = await _storageService.GenerateUploadUrlAsync(storageKey, request.ContentType, request.SizeBytes, ct);
+        return (urlResult.UploadUrl, null, urlResult.ExpiresAt);
+    }
+
+    private UploadSession CreateSessionEntity(Guid id, string userId, InitiateUploadRequest request, string storageKey, string? uploadId, DateTime urlExpiry)
+    {
+        return new UploadSession
         {
-            Id = uniqueId,
+            Id = id,
             UserId = userId,
             ClientRequestId = request.ClientRequestId,
             CorrelationId = Guid.NewGuid().ToString(),
@@ -170,146 +190,86 @@ public class UploadService : IUploadService
             Status = UploadSessionStatus.Created,
             CreatedAtUtc = DateTime.UtcNow,
             UrlExpiresAtUtc = urlExpiry,
-            ExpiresAtUtc = DateTime.UtcNow.AddHours(24), // Hard limit for session life
+            ExpiresAtUtc = DateTime.UtcNow.AddHours(24),
             StorageProvider = _storageSettings.Provider
         };
-
-        _context.UploadSessions.Add(session);
-        await _context.SaveChangesAsync(ct);
-
-        _logger.LogInformation("Created upload session {SessionId} for file {FileName}", session.Id, request.FileName);
-
-        return new UploadSessionResponse(
-            session.Id,
-            session.Status.ToString(),
-            uploadUrl,
-            session.UploadId,
-            session.StorageKey,
-            session.UploadId != null ? _storageSettings.PartSizeBytes : session.SizeBytes,
-            session.ExpiresAtUtc,
-            session.CorrelationId
-        );
     }
 
-    public async Task<UploadSessionStatusResponse> CompleteUploadAsync(Guid sessionId, CompleteUploadRequest request, string userId, CancellationToken ct)
+    private async Task<UploadSession> GetSessionOrThrowAsync(Guid sessionId, string userId, CancellationToken ct)
     {
-        var session = await _context.UploadSessions
-            .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId, ct);
+        var session = await _context.UploadSessions.FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId, ct);
+        if (session == null) throw new KeyNotFoundException($"Upload session {sessionId} not found.");
+        return session;
+    }
 
-        if (session == null)
-            throw new KeyNotFoundException($"Upload session {sessionId} not found.");
+    private bool IsSessionCompleted(UploadSession session)
+    {
+        return session.Status == UploadSessionStatus.Uploaded || 
+               session.Status == UploadSessionStatus.Validating || 
+               session.Status == UploadSessionStatus.Ready;
+    }
 
-        if (session.Status == UploadSessionStatus.Uploaded || session.Status == UploadSessionStatus.Validating || session.Status == UploadSessionStatus.Ready)
-        {
-             // Idempotent success
-             return MapToStatusResponse(session);
-        }
-        
+    private void ValidateSessionForCompletion(UploadSession session)
+    {
         if (session.Status != UploadSessionStatus.Created && session.Status != UploadSessionStatus.Uploading)
-        {
-             throw new InvalidOperationException($"Session status is {session.Status}, cannot complete.");
-        }
+            throw new InvalidOperationException($"Session status is {session.Status}, cannot complete.");
+    }
 
-        // 0. Pre-check existence locally to avoid erroring on multipart complete if already done but DB failed update
+    private async Task<StorageObjectInfo> FinalizeStorageAsync(UploadSession session, CompleteUploadRequest request, CancellationToken ct)
+    {
         var existingInfo = await _storageService.GetObjectInfoAsync(session.StorageKey, ct);
         if (existingInfo != null)
         {
-            // Already exists in storage! Skip completion logic and go straight to update.
-            _logger.LogInformation("File already exists in storage for session {SessionId}, skipping upload completion calls", sessionId);
+            _logger.LogInformation("File already exists in storage for session {SessionId}", session.Id);
+            return existingInfo;
         }
-        else
+
+        if (session.UploadId != null)
         {
-            // 1. Storage Completion
-            if (session.UploadId != null)
-            {
-                if (request.Parts == null || !request.Parts.Any())
-                    throw new ArgumentException("Parts are required for multipart completion.");
+            if (request.Parts == null || !request.Parts.Any())
+                throw new ArgumentException("Parts are required for multipart completion.");
 
-                var internalParts = request.Parts
-                    .Select(p => new UploadPartInfo(p.PartNumber, p.ETag))
-                    .ToList();
-
-                try 
-                {
-                    await _storageService.CompleteMultipartUploadAsync(session.StorageKey, session.UploadId, internalParts, ct);
-                }
-                catch (Exception ex)
-                {
-                     _logger.LogError(ex, "Failed to complete multipart upload for session {SessionId}", sessionId);
-                     // If it failed because it doesn't exist, we throw. 
-                     // But if it failed because it's ALREADY completed? S3 might throw.
-                     // The getObjectInfo check above hopefully mitigates this.
-                     throw;
-                }
-            }
-            
-            // 2. Refresh info
-            existingInfo = await _storageService.GetObjectInfoAsync(session.StorageKey, ct);
-            if (existingInfo == null)
-                throw new FileNotFoundException("File not found in storage after completion.");
+            var internalParts = request.Parts.Select(p => new UploadPartInfo(p.PartNumber, p.ETag)).ToList();
+            await _storageService.CompleteMultipartUploadAsync(session.StorageKey, session.UploadId, internalParts, ct);
         }
 
+        return await _storageService.GetObjectInfoAsync(session.StorageKey, ct) 
+               ?? throw new FileNotFoundException("File not found in storage after completion.");
+    }
+
+    private Task UpdateSessionFinalStateAsync(UploadSession session, StorageObjectInfo info, CancellationToken ct)
+    {
         session.Status = UploadSessionStatus.Uploaded;
         session.UploadedAtUtc = DateTime.UtcNow;
-        session.ETag = existingInfo.ETag;
-        session.SizeBytes = existingInfo.SizeBytes; // Update with actual size
-
-        try
-        {
-            await _context.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            _logger.LogWarning("Concurrency conflict updating session {SessionId} completion. verifying status...", sessionId);
-            // Reload
-            await _context.Entry(session).ReloadAsync(ct);
-            if (session.Status == UploadSessionStatus.Uploaded || session.Status == UploadSessionStatus.Validating || session.Status == UploadSessionStatus.Ready)
-            {
-                return MapToStatusResponse(session);
-            }
-            throw; // Re-throw if it wasn't a successful completion by someone else
-        }
-
-        // 3. Background Validation (Enqueued only if we successfully transitioned to Uploaded)
-        _backgroundJobClient.Enqueue<FileValidationJob>(job => job.ValidateFileAsync(session.Id, CancellationToken.None));
-        
-        return MapToStatusResponse(session);
+        session.ETag = info.ETag;
+        session.SizeBytes = info.SizeBytes;
+        return Task.CompletedTask;
     }
 
-    public async Task<UploadSessionStatusResponse> GetSessionStatusAsync(Guid sessionId, string userId, CancellationToken ct)
+    private async Task CleanupStorageAsync(UploadSession session, CancellationToken ct)
     {
-         var session = await _context.UploadSessions
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId, ct);
-
-        if (session == null)
-            throw new KeyNotFoundException($"Upload session {sessionId} not found.");
-
-        return MapToStatusResponse(session);
-    }
-
-    public async Task AbortSessionAsync(Guid sessionId, string userId, CancellationToken ct)
-    {
-        var session = await _context.UploadSessions
-            .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId, ct);
-
-        if (session == null) return; // Idempotent
-
-        if (session.Status == UploadSessionStatus.Ready || session.Status == UploadSessionStatus.Uploaded)
+        if (IsSessionCompleted(session))
         {
-             // Cleanup file?
-             try {
-                await _storageService.DeleteAsync(session.StorageKey, ct);
-             } catch {}
+            try { await _storageService.DeleteAsync(session.StorageKey, ct); } catch {}
         }
         else if (session.Status == UploadSessionStatus.Created && session.UploadId != null)
         {
-             await _storageService.AbortMultipartUploadAsync(session.StorageKey, session.UploadId, ct);
+            await _storageService.AbortMultipartUploadAsync(session.StorageKey, session.UploadId, ct);
         }
-        
-        session.Status = UploadSessionStatus.Aborted;
-        session.DeletedAtUtc = DateTime.UtcNow;
-        await _context.SaveChangesAsync(ct);
+    }
+
+    private UploadSessionResponse MapToResponse(UploadSession s, string? uploadUrl, string? uploadId)
+    {
+        return new UploadSessionResponse(
+            s.Id,
+            s.Status.ToString(),
+            uploadUrl,
+            uploadId,
+            s.StorageKey,
+            uploadId != null ? _storageSettings.PartSizeBytes : s.SizeBytes,
+            s.ExpiresAtUtc,
+            s.CorrelationId
+        );
     }
 
     private static UploadSessionStatusResponse MapToStatusResponse(UploadSession s)
