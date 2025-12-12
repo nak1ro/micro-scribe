@@ -1,11 +1,9 @@
-using ScribeApi.Infrastructure.Persistence.Entities;
-
 namespace ScribeApi.Infrastructure.Persistence.Entities;
 
 public enum UploadSessionStatus
 {
     Created = 0,
-    Uploading = 1, // Client started upload (optional tracking)
+    Uploading = 1,
     Uploaded = 2,
     Validating = 3,
     Ready = 4,
@@ -17,49 +15,83 @@ public enum UploadSessionStatus
 
 public class UploadSession
 {
+    // Unique identifier
     public Guid Id { get; set; }
 
-    // Owner
+    // FK to owning user
     public required string UserId { get; set; }
-    public ApplicationUser User { get; set; } = null!;
 
-    // Identity & Safety
-    public string? ClientRequestId { get; set; } // For idempotency
-    public required string CorrelationId { get; set; } // For tracing
+    // Client-provided request ID for idempotency
+    public string? ClientRequestId { get; set; }
 
-    // File Metadata
+    // Correlation ID for distributed tracing
+    public required string CorrelationId { get; set; }
+
+    // Original file name from client
     public required string FileName { get; set; }
-    public required string DeclaredContentType { get; set; } // Was ContentType
+
+    // MIME type declared by client
+    public required string DeclaredContentType { get; set; }
+
+    // File size in bytes
     public long SizeBytes { get; set; }
-    
-    // Detected during validation
-    public string? DetectedContainerType { get; set; } // e.g. "mp4", "wav"
-    public MediaFileType? DetectedMediaType { get; set; } // Audio/Video
+
+    // Container type detected during validation
+    public string? DetectedContainerType { get; set; }
+
+    // Media type detected during validation
+    public MediaFileType? DetectedMediaType { get; set; }
+
+    // Media duration in seconds
     public double? DurationSeconds { get; set; }
 
-    // Storage Metadata
+    // Object key in storage bucket
     public required string StorageKey { get; set; }
-    public string? UploadId { get; set; } // For multipart S3
+
+    // Multipart upload ID for S3
+    public string? UploadId { get; set; }
+
+    // ETag from storage for integrity
     public string? ETag { get; set; }
+
+    // Storage provider identifier
     public string StorageProvider { get; set; } = "S3";
+
+    // Storage bucket name
     public required string BucketName { get; set; }
 
-    // Lifecycle
+    // Current session status
     public UploadSessionStatus Status { get; set; } = UploadSessionStatus.Created;
-    public string? ErrorMessage { get; set; }
-    
-    // Timestamps
-    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
-    public DateTime ExpiresAtUtc { get; set; }
-    public DateTime? UrlExpiresAtUtc { get; set; }
-    public DateTime? UploadedAtUtc { get; set; }
-    public DateTime? ValidatedAtUtc { get; set; }
-    public DateTime? DeletedAtUtc { get; set; } // Soft delete / Abort
 
+    // Error message if failed
+    public string? ErrorMessage { get; set; }
+
+    // When session was created
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    // When session expires
+    public DateTime ExpiresAtUtc { get; set; }
+
+    // When presigned URL expires
+    public DateTime? UrlExpiresAtUtc { get; set; }
+
+    // When file was uploaded
+    public DateTime? UploadedAtUtc { get; set; }
+
+    // When validation completed
+    public DateTime? ValidatedAtUtc { get; set; }
+
+    // Soft delete timestamp
+    public DateTime? DeletedAtUtc { get; set; }
+
+    // Concurrency control token
     [System.ComponentModel.DataAnnotations.Timestamp]
     public byte[] RowVersion { get; set; } = null!;
 
-    // Linkage
+    // FK to created media file
     public Guid? MediaFileId { get; set; }
+
+    // Nav
+    public ApplicationUser User { get; set; } = null!;
     public MediaFile? MediaFile { get; set; }
 }

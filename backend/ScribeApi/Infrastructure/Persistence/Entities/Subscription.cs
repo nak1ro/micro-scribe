@@ -18,21 +18,36 @@ public enum SubscriptionStatus
 
 public class Subscription
 {
+    // Unique identifier
     public Guid Id { get; set; }
 
+    // FK to owning user
     public required string UserId { get; set; }
-    public required ApplicationUser User { get; set; }
 
+    // Subscription plan type
     public PlanType Plan { get; set; } = PlanType.Free;
 
+    // Stripe customer identifier
     public required string StripeCustomerId { get; set; }
+
+    // Stripe subscription identifier
     public required string StripeSubscriptionId { get; set; }
 
+    // Current subscription status
     public SubscriptionStatus Status { get; set; } = SubscriptionStatus.Active;
 
+    // Start of current billing period
     public DateTime CurrentPeriodStartUtc { get; set; }
+
+    // End of current billing period
     public DateTime CurrentPeriodEndUtc { get; set; }
 
+    // When the subscription was created
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    // When the subscription was canceled
     public DateTime? CanceledAtUtc { get; set; }
+
+    // Nav
+    public required ApplicationUser User { get; set; }
 }

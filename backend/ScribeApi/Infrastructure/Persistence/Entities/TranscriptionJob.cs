@@ -11,49 +11,58 @@ public enum TranscriptionJobStatus
 
 public enum TranscriptionQuality
 {
-    Fast = 0, // lower cost, lower accuracy
-    Balanced = 1, // default
-    Accurate = 2 // slower, more expensive, best quality
+    Fast = 0,
+    Balanced = 1,
+    Accurate = 2
 }
 
 public class TranscriptionJob
 {
+    // Unique identifier
     public Guid Id { get; set; }
 
+    // FK to owning user
     public required string UserId { get; set; }
-    public required ApplicationUser User { get; set; }
 
-    // The media file this job is based on.
+    // FK to source media file
     public Guid MediaFileId { get; set; }
-    public required MediaFile MediaFile { get; set; }
 
-    // Current status in the processing pipeline.
+    // Current status in processing pipeline
     public TranscriptionJobStatus Status { get; set; } = TranscriptionJobStatus.Pending;
 
+    // Transcription quality setting
     public TranscriptionQuality Quality { get; set; } = TranscriptionQuality.Balanced;
 
-    // Full transcript text after successful processing.
+    // Full transcript text after processing
     public string? Transcript { get; set; }
 
-    // Optional summary of the transcript 
+    // Summary of transcript content
     public string? Summary { get; set; }
 
-    // Error message if the job failed.
+    // Error message if job failed
     public string? ErrorMessage { get; set; }
 
-    // Detected or requested language code (e.g. "en", "pl").
+    // Detected or requested language code
     public string? LanguageCode { get; set; }
 
-    // Duration of audio that was actually processed (in seconds).
+    // Duration of processed audio in seconds
     public double? DurationSeconds { get; set; }
 
+    // When the job was created
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    // When processing started
     public DateTime? StartedAtUtc { get; set; }
+
+    // When processing completed
     public DateTime? CompletedAtUtc { get; set; }
-    
+
+    // Soft delete flag
+    public bool IsDeleted { get; set; }
+
+    // Nav
+    public required ApplicationUser User { get; set; }
+    public required MediaFile MediaFile { get; set; }
     public ICollection<TranscriptSegment> Segments { get; set; } = new List<TranscriptSegment>();
     public ICollection<TranscriptChapter> Chapters { get; set; } = new List<TranscriptChapter>();
-
-    // Soft delete flag if you ever want to hide jobs without removing them.
-    public bool IsDeleted { get; set; }
 }
