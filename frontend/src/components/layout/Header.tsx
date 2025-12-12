@@ -2,21 +2,14 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Menu, X, Mic2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Menu, X, Mic2, LayoutDashboard, CreditCard, User, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { useAuth } from "@/hooks/useAuth";
 
-interface HeaderProps {
-    /** Whether the user is authenticated */
-    isAuthenticated?: boolean;
-    /** User info for avatar (when authenticated) */
-    user?: {
-        name: string;
-        email: string;
-        avatarUrl?: string;
-    };
-}
+
 
 const navLinks = [
     { href: "/features", label: "Features" },
@@ -24,8 +17,9 @@ const navLinks = [
     { href: "/about", label: "About" },
 ];
 
-export function Header({ isAuthenticated = false, user }: HeaderProps) {
+export function Header() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+    const { user, isAuthenticated, isLoading } = useAuth();
 
     return (
         <header
@@ -74,8 +68,15 @@ export function Header({ isAuthenticated = false, user }: HeaderProps) {
                     {/* Right: Theme toggle + Auth buttons or User menu */}
                     <div className="flex items-center gap-2">
                         <ThemeToggle />
-                        {isAuthenticated && user ? (
-                            <UserMenu user={user} />
+                        {isLoading ? (
+                            <div className="h-9 w-9 rounded-full bg-muted animate-pulse" />
+                        ) : isAuthenticated && user ? (
+                            <UserMenu
+                                user={{
+                                    name: user.email.split("@")[0],
+                                    email: user.email,
+                                }}
+                            />
                         ) : (
                             <>
                                 <Link href="/auth?mode=login" className="hidden sm:block">
@@ -113,6 +114,7 @@ export function Header({ isAuthenticated = false, user }: HeaderProps) {
                 <MobileMenu
                     navLinks={navLinks}
                     isAuthenticated={isAuthenticated}
+                    user={user}
                     onClose={() => setIsMobileMenuOpen(false)}
                 />
             )}
@@ -135,6 +137,8 @@ interface UserMenuProps {
 function UserMenu({ user }: UserMenuProps) {
     const [isOpen, setIsOpen] = React.useState(false);
     const menuRef = React.useRef<HTMLDivElement>(null);
+    const router = useRouter();
+    const { logout } = useAuth();
 
     // Close on outside click
     React.useEffect(() => {
@@ -152,7 +156,16 @@ function UserMenu({ user }: UserMenuProps) {
         .map((n) => n[0])
         .join("")
         .toUpperCase()
-        .slice(0, 2);
+        .slice(0, 2) || "U";
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+            router.push("/");
+        } catch (err) {
+            console.error("Logout failed:", err);
+        }
+    };
 
     return (
         <div className="relative" ref={menuRef}>
@@ -191,25 +204,27 @@ function UserMenu({ user }: UserMenuProps) {
                         <p className="text-xs text-muted-foreground">{user.email}</p>
                     </div>
                     <div className="p-1">
-                        <DropdownLink href="/dashboard">Dashboard</DropdownLink>
-                        <DropdownLink href="/dashboard/account">Account</DropdownLink>
-                        <DropdownLink href="/dashboard/subscription">
-                            Subscription
+                        <DropdownLink href="/dashboard" icon={LayoutDashboard}>
+                            Dashboard
+                        </DropdownLink>
+                        <DropdownLink href="/dashboard/subscription" icon={CreditCard}>
+                            Manage Subscription
+                        </DropdownLink>
+                        <DropdownLink href="/dashboard/account" icon={User}>
+                            Account
                         </DropdownLink>
                     </div>
                     <div className="p-1 border-t border-border">
                         <button
                             type="button"
                             className={cn(
-                                "w-full px-3 py-2 text-left text-sm rounded-md",
+                                "flex items-center gap-2 w-full px-3 py-2 text-left text-sm rounded-md",
                                 "text-destructive hover:bg-destructive/10 transition-colors"
                             )}
-                            onClick={() => {
-                                // TODO: Implement sign out
-                                console.log("Sign out clicked");
-                            }}
+                            onClick={handleLogout}
                         >
-                            Sign out
+                            <LogOut className="h-4 w-4" />
+                            Log out
                         </button>
                     </div>
                 </div>
@@ -220,19 +235,22 @@ function UserMenu({ user }: UserMenuProps) {
 
 function DropdownLink({
     href,
+    icon: Icon,
     children,
 }: {
     href: string;
+    icon?: React.ComponentType<{ className?: string }>;
     children: React.ReactNode;
 }) {
     return (
         <Link
             href={href}
             className={cn(
-                "block px-3 py-2 text-sm rounded-md",
+                "flex items-center gap-2 px-3 py-2 text-sm rounded-md",
                 "text-foreground hover:bg-accent transition-colors"
             )}
         >
+            {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
             {children}
         </Link>
     );
@@ -245,10 +263,11 @@ function DropdownLink({
 interface MobileMenuProps {
     navLinks: { href: string; label: string }[];
     isAuthenticated: boolean;
+    user?: { email: string } | null;
     onClose: () => void;
 }
 
-function MobileMenu({ navLinks, isAuthenticated, onClose }: MobileMenuProps) {
+function MobileMenu({ navLinks, isAuthenticated, user, onClose }: MobileMenuProps) {
     return (
         <div
             className={cn(

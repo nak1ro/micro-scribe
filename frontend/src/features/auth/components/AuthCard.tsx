@@ -23,7 +23,7 @@ export function AuthCard() {
         setError(null);
         try {
             await login({ email: data.email, password: data.password });
-            router.push("/transcription");
+            router.push("/dashboard");
         } catch (err: unknown) {
             const message =
                 err instanceof Error ? err.message : "Login failed. Please try again.";
@@ -42,7 +42,7 @@ export function AuthCard() {
                 password: data.password,
                 confirmPassword: data.password, // Form already validated match
             });
-            router.push("/transcription");
+            router.push("/dashboard");
         } catch (err: unknown) {
             const message =
                 err instanceof Error ? err.message : "Registration failed. Please try again.";

@@ -89,7 +89,7 @@ export function Sidebar({
             {/* Main Navigation */}
             <nav className="flex-1 p-2 space-y-1">
                 <NavItem
-                    href="/transcription"
+                    href="/dashboard"
                     icon={FileAudio}
                     label="My Transcriptions"
                     isCollapsed={isCollapsed}
@@ -339,7 +339,7 @@ function NavItem({ href, icon: Icon, label, isCollapsed }: NavItemProps) {
 
 function NewTranscriptionButton({ isCollapsed }: { isCollapsed: boolean }) {
     return (
-        <Link href="/transcription?action=new">
+        <Link href="/dashboard?action=new">
             <Button
                 variant="outline"
                 size={isCollapsed ? "icon" : "sm"}
