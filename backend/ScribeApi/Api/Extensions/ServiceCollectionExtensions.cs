@@ -47,6 +47,21 @@ public static class ServiceCollectionExtensions
             c.SwaggerDoc("v1", new OpenApiInfo { Title = "ScribeApi", Version = "v1" });
 
         });
+        
+        services.AddCors(options =>
+        {
+            options.AddPolicy("LocalhostPolicy", policy =>
+            {
+                policy.WithOrigins(
+                        "http://localhost:3000",
+                        "http://localhost:5173",
+                        "http://localhost:4200"
+                    )
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+            });
+        });
 
         // DbContext
         var connectionString = configuration.GetConnectionString("DefaultConnection");
