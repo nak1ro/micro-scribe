@@ -31,6 +31,15 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasIndex(u => u.Email)
             .IsUnique();
 
+        builder.Entity<UploadSession>()
+            .HasIndex(s => new { s.UserId, s.ClientRequestId })
+            .IsUnique()
+            .HasFilter("\"ClientRequestId\" IS NOT NULL");
+
+        builder.Entity<UploadSession>()
+            .Property(s => s.RowVersion)
+            .IsRowVersion();
+
 
     }
 }

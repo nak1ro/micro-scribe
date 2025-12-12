@@ -1,9 +1,9 @@
 using System.Text;
+using Amazon.S3;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-
 using Microsoft.OpenApi.Models;
 using ScribeApi.Api.Filters;
 using ScribeApi.Core.Configuration;
@@ -15,11 +15,10 @@ using ScribeApi.Features.Auth.Services;
 using ScribeApi.Features.Media;
 using ScribeApi.Features.Media.Contracts;
 using ScribeApi.Features.Media.Services;
+using ScribeApi.Features.Uploads; // Added
 using ScribeApi.Features.Transcriptions.Contracts;
 using ScribeApi.Features.Transcriptions.Services;
-using ScribeApi.Features.Uploads;
 using ScribeApi.Features.Uploads.Contracts;
-using ScribeApi.Features.Uploads.Services;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
 using ScribeApi.Infrastructure.Storage;
@@ -42,12 +41,8 @@ public static class ServiceCollectionExtensions
         services.AddEndpointsApiExplorer();
 
         // Swagger
-        services.AddSwaggerGen(c =>
-        {
-            c.SwaggerDoc("v1", new OpenApiInfo { Title = "ScribeApi", Version = "v1" });
+        services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new OpenApiInfo { Title = "ScribeApi", Version = "v1" }); });
 
-        });
-        
         services.AddCors(options =>
         {
             options.AddPolicy("LocalhostPolicy", policy =>
@@ -90,13 +85,13 @@ public static class ServiceCollectionExtensions
             options.Cookie.SameSite = SameSiteMode.Strict;
             options.ExpireTimeSpan = TimeSpan.FromDays(30);
             options.SlidingExpiration = true;
-            
+
             options.Events.OnRedirectToLogin = context =>
             {
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 return Task.CompletedTask;
             };
-            
+
             options.Events.OnRedirectToAccessDenied = context =>
             {
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
@@ -117,33 +112,53 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IOAuthService, OAuthService>();
         services.AddScoped<IAuthQueries, AuthQueries>();
-        services.AddScoped<IFileStorageService, LocalFileStorageService>();
-        services.AddScoped<IUploadService, UploadService>();
-        services.AddScoped<IUploadQueries, UploadQueries>();
         services.AddScoped<IMediaService, MediaService>();
         services.AddScoped<IMediaQueries, MediaQueries>();
         services.AddScoped<ITranscriptionJobService, TranscriptionJobService>();
         services.AddScoped<ITranscriptionJobQueries, TranscriptionJobQueries>();
+        services.AddScoped<IMediaQueries, MediaQueries>();
+        services.AddScoped<ITranscriptionJobService, TranscriptionJobService>();
+        services.AddScoped<ITranscriptionJobQueries, TranscriptionJobQueries>();
+
         // Transcription Provider
         services.Configure<OpenAiSettings>(configuration.GetSection("OpenAi"));
-        
+
         services.AddHttpClient<OpenAiTranscriptionProvider>();
         services.AddScoped<ITranscriptionProvider, OpenAiTranscriptionProvider>();
         services.AddScoped<IFfmpegMediaService, FfmpegMediaService>();
         services.AddScoped<TranscriptionJobRunner>();
+        services.AddScoped<FileValidationJob>();
+        services.AddScoped<IUploadService, UploadService>();
 
         // Hangfire
         services.AddHangfireServices(configuration);
 
         // HttpClient for OAuthService
         services.AddHttpClient<IOAuthService, OAuthService>();
+
+        // Storage
+        var storageProvider = configuration["Storage:Provider"] ?? "Local";
+
+        if (storageProvider.Equals("S3", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddDefaultAWSOptions(configuration.GetAWSOptions());
+            services.AddAWSService<IAmazonS3>();
+            
+            // Bind your S3 settings (non-secret)
+            services.Configure<S3Settings>(configuration.GetSection("Storage:S3"));
+
+            services.AddScoped<IFileStorageService, S3MediaStorageService>();
+        }
+        else
+        {
+            services.AddScoped<IFileStorageService, LocalFileStorageService>();
+        }
         
-
-
         // Options binding (non-secret config)
         services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
         services.Configure<PlansOptions>(configuration.GetSection("Plans"));
         services.Configure<OAuthSettings>(configuration.GetSection("OAuth"));
+        services.Configure<StorageSettings>(configuration.GetSection("Storage"));
 
         services.AddSingleton<IPlanResolver, PlanResolver>();
         services.AddSingleton<IPlanGuard, PlanGuard>();

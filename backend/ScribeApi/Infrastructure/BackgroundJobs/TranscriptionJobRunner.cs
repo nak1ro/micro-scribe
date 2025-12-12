@@ -103,7 +103,8 @@ public class TranscriptionJobRunner
         var mediaFile = job.MediaFile;
 
         // Skip if audio already prepared
-        if (!string.IsNullOrEmpty(mediaFile.AudioPath) && mediaFile.DurationSeconds.HasValue)
+        // Skip if audio already prepared
+        if (!string.IsNullOrEmpty(mediaFile.NormalizedAudioObjectKey) && mediaFile.DurationSeconds.HasValue)
         {
             _logger.LogDebug("Audio already prepared for MediaFile {Id}, skipping extraction", mediaFile.Id);
             job.DurationSeconds = mediaFile.DurationSeconds;
@@ -113,10 +114,10 @@ public class TranscriptionJobRunner
         _logger.LogInformation("Extracting audio for MediaFile {Id}", mediaFile.Id);
 
         var ffmpegResult = await _ffmpegService.ConvertToAudioAsync(
-            mediaFile.OriginalPath,
+            mediaFile.StorageObjectKey,
             ct);
 
-        mediaFile.AudioPath = ffmpegResult.AudioPath;
+        mediaFile.NormalizedAudioObjectKey = ffmpegResult.AudioPath;
         mediaFile.DurationSeconds = ffmpegResult.Duration.TotalSeconds;
         job.DurationSeconds = ffmpegResult.Duration.TotalSeconds;
 
@@ -127,8 +128,8 @@ public class TranscriptionJobRunner
 
     private async Task RunTranscriptionAsync(TranscriptionJob job, CancellationToken ct)
     {
-        var audioPath = job.MediaFile.AudioPath
-                        ?? throw new InvalidOperationException("AudioPath is null");
+        var audioPath = job.MediaFile.NormalizedAudioObjectKey
+                        ?? throw new InvalidOperationException("NormalizedAudioObjectKey is null");
 
         await using var audioStream = await _storageService.OpenReadAsync(audioPath, ct);
 
@@ -141,11 +142,6 @@ public class TranscriptionJobRunner
 
         job.Transcript = result.FullTranscript;
         job.LanguageCode = result.DetectedLanguage;
-
-        if (result.Chapters != null)
-        {
-            AddChapters(job, result.Chapters);
-        }
 
         AddSegments(job, result.Segments);
         
@@ -175,29 +171,7 @@ public class TranscriptionJobRunner
         }
     }
 
-    private void AddChapters(
-        TranscriptionJob job,
-        List<TranscriptChapterData> chapters)
-    {
-        var order = 0;
-        foreach (var chapterData in chapters)
-        {
-            var chapter = new TranscriptChapter
-            {
-                Id = Guid.NewGuid(),
-                TranscriptionJobId = job.Id,
-                TranscriptionJob = job,
-                Title = chapterData.Title,
-                StartSeconds = chapterData.StartSeconds,
-                EndSeconds = chapterData.EndSeconds,
-                Order = order++
-            };
-
-            _context.TranscriptChapters.Add(chapter);
-        }
-    }
-
-    private async Task UpdateUserUsageAsync(TranscriptionJob job, CancellationToken ct)
+   private async Task UpdateUserUsageAsync(TranscriptionJob job, CancellationToken ct)
     {
         // Job.User is included in the query (tracked entity), so we can update it directly.
         if (job.User != null && job.DurationSeconds.HasValue)

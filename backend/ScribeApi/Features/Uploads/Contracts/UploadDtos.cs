@@ -2,23 +2,35 @@ using ScribeApi.Infrastructure.Persistence.Entities;
 
 namespace ScribeApi.Features.Uploads.Contracts;
 
-public record InitUploadRequest(
+public record InitiateUploadRequest(
     string FileName,
     string ContentType,
-    long TotalSizeBytes,
-    int ChunkSizeBytes,  
-    double DurationMinutes  
+    long SizeBytes,
+    string? ClientRequestId = null
 );
 
-public record UploadSessionDto(
+public record UploadSessionResponse(
     Guid Id,
-    string StorageKeyPrefix,
-    UploadSessionStatus Status,
-    DateTime ExpiresAtUtc
+    string Status,
+    string? UploadUrl, // Single file upload URL
+    string? UploadId, // Multipart Upload ID (if multipart)
+    string Key,       // Storage Key
+    long InitialChunkSize, // Suggest chunk size or total size for client logic
+    DateTime ExpiresAtUtc,
+    string CorrelationId
 );
 
-public record UploadChunkRequest(
-    Guid SessionId,
-    int ChunkIndex,
-    IFormFile Chunk
+public record CompleteUploadRequest(
+    List<PartETagDto>? Parts = null // Null for single file, required for multipart
+);
+
+public record PartETagDto(int PartNumber, string ETag); // Maps to UploadPartInfo
+
+public record UploadSessionStatusResponse(
+    Guid Id,
+    string Status,
+    string? ErrorMessage,
+    DateTime CreatedAtUtc,
+    DateTime? UploadedAtUtc,
+    DateTime? ValidatedAtUtc
 );

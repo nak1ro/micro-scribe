@@ -1,9 +1,9 @@
-using ScribeApi.Infrastructure.Persistence.Entities;
-
 namespace ScribeApi.Features.Uploads.Contracts;
 
 public interface IUploadService
 {
-    Task<UploadSession> CreateSessionAsync(string userId, InitUploadRequest request, CancellationToken ct);
-    Task<MediaFile?> UploadChunkAsync(Guid sessionId, int chunkIndex, Stream chunkStream, string userId, CancellationToken ct);
+    Task<UploadSessionResponse> InitiateUploadAsync(InitiateUploadRequest request, string userId, CancellationToken ct);
+    Task<UploadSessionStatusResponse> CompleteUploadAsync(Guid sessionId, CompleteUploadRequest request, string userId, CancellationToken ct);
+    Task<UploadSessionStatusResponse> GetSessionStatusAsync(Guid sessionId, string userId, CancellationToken ct);
+    Task AbortSessionAsync(Guid sessionId, string userId, CancellationToken ct);
 }

@@ -66,26 +66,27 @@ public class MediaService : IMediaService
 
     public async Task DeleteMediaFilesAsync(MediaFile mediaFile, CancellationToken ct = default)
     {
-        if (!string.IsNullOrEmpty(mediaFile.OriginalPath))
+        if (!string.IsNullOrEmpty(mediaFile.StorageObjectKey))
         {
-            try 
+            try
             {
-                await _fileStorageService.DeleteAsync(mediaFile.OriginalPath, ct);
+                await _fileStorageService.DeleteAsync(mediaFile.StorageObjectKey, ct);
             }
-            catch 
-            { 
+            catch
+            {
                 // Ignored for cleanup resilience 
             }
         }
 
-        if (!string.IsNullOrEmpty(mediaFile.AudioPath) && mediaFile.AudioPath != mediaFile.OriginalPath)
+        if (!string.IsNullOrEmpty(mediaFile.NormalizedAudioObjectKey) &&
+            mediaFile.NormalizedAudioObjectKey != mediaFile.StorageObjectKey)
         {
-             try 
+            try
             {
-                await _fileStorageService.DeleteAsync(mediaFile.AudioPath, ct);
+                await _fileStorageService.DeleteAsync(mediaFile.NormalizedAudioObjectKey, ct);
             }
-            catch 
-            { 
+            catch
+            {
                 // Ignored for cleanup resilience 
             }
         }

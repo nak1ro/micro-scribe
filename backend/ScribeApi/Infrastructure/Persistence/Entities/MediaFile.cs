@@ -11,16 +11,23 @@ public class MediaFile
     public Guid Id { get; set; }
 
     public required string UserId { get; set; }
-    public required ApplicationUser User { get; set; }
+    public ApplicationUser User { get; set; } = null!;
 
     public required string OriginalFileName { get; set; }
 
     public required string ContentType { get; set; }
 
-    public required string OriginalPath { get; set; }
+    // Immutable Storage Reference
+    public required string StorageObjectKey { get; set; }
+    public required string BucketName { get; set; }
+    public required string StorageProvider { get; set; }
+    public required string ETag { get; set; }
 
-    // Normalized audio (ie wav, mp3 or ogg)
-    public string? AudioPath { get; set; }
+    // Linkage to Source
+    public required Guid CreatedFromUploadSessionId { get; set; }
+
+    // Normalized audio object key (ie wav, mp3 or ogg) in same bucket/provider
+    public string? NormalizedAudioObjectKey { get; set; }
 
     public long SizeBytes { get; set; }
 

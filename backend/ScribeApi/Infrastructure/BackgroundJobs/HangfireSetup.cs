@@ -1,5 +1,6 @@
 using Hangfire;
 using Hangfire.PostgreSql;
+using ScribeApi.Infrastructure.BackgroundJobs;
 
 namespace ScribeApi.Infrastructure.BackgroundJobs;
 
@@ -38,4 +39,5 @@ public static class HangfireSetup
 
         return app;
     }
+
 }

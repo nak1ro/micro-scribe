@@ -1,58 +1,65 @@
+using ScribeApi.Infrastructure.Persistence.Entities;
+
 namespace ScribeApi.Infrastructure.Persistence.Entities;
 
 public enum UploadSessionStatus
 {
-    Active = 0,
-    Completed = 1,
-    Expired = 2,
-    Cancelled = 3,
-    Failed = 4
+    Created = 0,
+    Uploading = 1, // Client started upload (optional tracking)
+    Uploaded = 2,
+    Validating = 3,
+    Ready = 4,
+    Invalid = 5,
+    Failed = 6,
+    Aborted = 7,
+    Expired = 8
 }
 
 public class UploadSession
 {
     public Guid Id { get; set; }
 
-
+    // Owner
     public required string UserId { get; set; }
-    public required ApplicationUser User { get; set; }
+    public ApplicationUser User { get; set; } = null!;
 
-    // Original file name as provided by the client.
-    public required string OriginalFileName { get; set; }
+    // Identity & Safety
+    public string? ClientRequestId { get; set; } // For idempotency
+    public required string CorrelationId { get; set; } // For tracing
 
-    // Reported total size of the file in bytes (optional but useful for validation).
-    public long? TotalSizeBytes { get; set; }
+    // File Metadata
+    public required string FileName { get; set; }
+    public required string DeclaredContentType { get; set; } // Was ContentType
+    public long SizeBytes { get; set; }
+    
+    // Detected during validation
+    public string? DetectedContainerType { get; set; } // e.g. "mp4", "wav"
+    public MediaFileType? DetectedMediaType { get; set; } // Audio/Video
+    public double? DurationSeconds { get; set; }
 
-    // MIME type sent by the client (e.g. "video/mp4", "audio/mpeg").
-    public string? ContentType { get; set; }
+    // Storage Metadata
+    public required string StorageKey { get; set; }
+    public string? UploadId { get; set; } // For multipart S3
+    public string? ETag { get; set; }
+    public string StorageProvider { get; set; } = "S3";
+    public required string BucketName { get; set; }
 
-    // Total number of chunks expected for this upload.
-    public int TotalChunks { get; set; }
-
-    // How many chunks have been successfully received so far.
-    public int ReceivedChunksCount { get; set; }
-
-    // List of indices of chunks that have been successfully uploaded.
-    public List<int> UploadedChunkIndices { get; set; } = new();
-
-    // A prefix/folder/key under which chunks are stored in your storage backend.
-    // For example: "uploads/sessions/{Id}/".
-    public required string StorageKeyPrefix { get; set; }
-
-    // Current status of the upload session.
-    public UploadSessionStatus Status { get; set; } = UploadSessionStatus.Active;
-
-    // When the session was created.
+    // Lifecycle
+    public UploadSessionStatus Status { get; set; } = UploadSessionStatus.Created;
+    public string? ErrorMessage { get; set; }
+    
+    // Timestamps
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
-
-    // When the session should be considered expired and eligible for cleanup.
     public DateTime ExpiresAtUtc { get; set; }
+    public DateTime? UrlExpiresAtUtc { get; set; }
+    public DateTime? UploadedAtUtc { get; set; }
+    public DateTime? ValidatedAtUtc { get; set; }
+    public DateTime? DeletedAtUtc { get; set; } // Soft delete / Abort
 
-    // When the upload was fully completed and merged (if it was).
-    public DateTime? CompletedAtUtc { get; set; }
+    [System.ComponentModel.DataAnnotations.Timestamp]
+    public byte[] RowVersion { get; set; } = null!;
 
-    // Link to the resulting MediaFile once chunks are merged and stored.
+    // Linkage
     public Guid? MediaFileId { get; set; }
-
     public MediaFile? MediaFile { get; set; }
 }

@@ -4,7 +4,8 @@ namespace ScribeApi.Features.Transcriptions.Contracts;
 
 // Request to start a transcription job
 public record CreateTranscriptionJobRequest(
-    Guid MediaFileId,
+    Guid? MediaFileId,
+    Guid? UploadSessionId,
     TranscriptionQuality Quality = TranscriptionQuality.Balanced,
     string? LanguageCode = null
 );

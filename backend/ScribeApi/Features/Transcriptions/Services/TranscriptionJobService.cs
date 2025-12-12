@@ -1,5 +1,6 @@
 using Hangfire;
 using Hangfire.States;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using ScribeApi.Core.Domain.Plans;
 using ScribeApi.Core.Exceptions;
@@ -40,12 +41,29 @@ public class TranscriptionJobService : ITranscriptionJobService
         CreateTranscriptionJobRequest request,
         CancellationToken ct)
     {
-        await ValidateMediaFileAsync(request.MediaFileId, userId, ct);
+        Guid finalMediaFileId;
 
-        // Check for duplicate pending jobs
-        if (await _queries.HasPendingJobForMediaAsync(request.MediaFileId, userId, ct))
+        // 1. Resolve MediaFileId (Direct vs Promotion)
+        if (request.UploadSessionId.HasValue)
         {
-            throw new InvalidOperationException($"A transcription job for MediaFile {request.MediaFileId} is already pending or processing.");
+            finalMediaFileId = await PromoteSessionToAssetAsync(request.UploadSessionId.Value, userId, ct);
+        }
+        else if (request.MediaFileId.HasValue)
+        {
+            finalMediaFileId = request.MediaFileId.Value;
+        }
+        else
+        {
+            throw new ArgumentException("Either MediaFileId or UploadSessionId must be provided.");
+        }
+
+        // 2. Validate MediaFile existence & ownership
+        await ValidateMediaFileAsync(finalMediaFileId, userId, ct);
+
+        // 3. Check for duplicate pending jobs
+        if (await _queries.HasPendingJobForMediaAsync(finalMediaFileId, userId, ct))
+        {
+            throw new InvalidOperationException($"A transcription job for MediaFile {finalMediaFileId} is already pending or processing.");
         }
         
         var user = await _queries.GetUserByIdAsync(userId, ct);
@@ -56,27 +74,92 @@ public class TranscriptionJobService : ITranscriptionJobService
 
         var plan = _planResolver.GetPlanDefinition(user.Plan);
         
-        // Validate Daily Limit
+        // 4. Validate Limits
         var dailyCount = await _queries.CountDailyJobsAsync(userId, DateTime.UtcNow, ct);
         _planGuard.EnsureDailyTranscriptionLimit(plan, dailyCount);
 
-        // Validate Concurrent Jobs
         var activeJobsCount = await _queries.CountActiveJobsAsync(userId, ct);
         _planGuard.EnsureConcurrentJobs(plan, activeJobsCount);
 
-        var job = await CreateAndPersistJobAsync(userId, request, ct);
+        // 5. Create Job
+        var job = await CreateAndPersistJobAsync(userId, finalMediaFileId, request, ct);
 
+        // 6. Enqueue
         EnqueueBackgroundJob(job.Id, plan);
 
         _logger.LogInformation(
-            "Transcription job {JobId} created for MediaFile {MediaFileId}",
-            job.Id, request.MediaFileId);
+            "Transcription job {JobId} created for MediaFile {MediaFileId} (Source Session: {SessionId})",
+            job.Id, finalMediaFileId, request.UploadSessionId);
 
         return new TranscriptionJobResponse(
             job.Id,
             job.MediaFileId,
             job.Status,
             job.CreatedAtUtc);
+    }
+
+    private async Task<Guid> PromoteSessionToAssetAsync(Guid sessionId, string userId, CancellationToken ct)
+    {
+        // Fetch session with tracking to update
+        var session = await _context.UploadSessions
+            .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId, ct);
+
+        if (session == null)
+            throw new NotFoundException($"Upload session {sessionId} not found.");
+
+        if (session.Status != UploadSessionStatus.Ready)
+            throw new InvalidOperationException($"Upload session {sessionId} is not in Ready state (Status: {session.Status}).");
+
+        // Idempotency: Check if already promoted
+        if (session.MediaFileId.HasValue)
+        {
+             // Verify it actually exists
+             var exists = await _context.MediaFiles.AnyAsync(m => m.Id == session.MediaFileId.Value, ct);
+             if (exists) return session.MediaFileId.Value;
+             // Else fall through to recreate (data inconsistency, strictness?)
+             // strictness: we have StorageKey. We can recreate.
+        }
+
+        // Check if created but linkage missing (improbable if transaction successful, but possible manually?)
+        // Enforce invariants: "Replacing a file must create a new MediaFile."
+        // So we create a NEW MediaFile.
+        
+        var mediaFile = new MediaFile
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            OriginalFileName = session.FileName,
+            ContentType = session.DeclaredContentType,
+            StorageObjectKey = session.StorageKey,
+            ETag = session.ETag ?? string.Empty,
+            BucketName = session.BucketName,
+            StorageProvider = session.StorageProvider,
+            CreatedFromUploadSessionId = session.Id,
+            
+            // NormalizedAudioObjectKey replaces AudioPath
+            // We initialize it as null or if we detected audio, maybe same as storage key?
+            // If it's audio, NormalizedAudio is initially null until processed? Or if uploaded as mp3?
+            // "Normalized" implies post-processing.
+            NormalizedAudioObjectKey = null, 
+            
+            SizeBytes = session.SizeBytes,
+            FileType = session.DetectedMediaType.HasValue && session.DetectedMediaType == MediaFileType.Video 
+                ? MediaFileType.Video 
+                : MediaFileType.Audio, // Default or map directly if session uses MediaFileType
+            DurationSeconds = session.DurationSeconds,
+            CreatedAtUtc = DateTime.UtcNow
+        };
+
+        _context.MediaFiles.Add(mediaFile);
+        
+        // Link session
+        session.MediaFileId = mediaFile.Id;
+        
+        await _context.SaveChangesAsync(ct);
+        
+        _logger.LogInformation("Promoted UploadSession {SessionId} to MediaFile {MediaFileId}", sessionId, mediaFile.Id);
+        
+        return mediaFile.Id;
     }
 
     private async Task ValidateMediaFileAsync(
@@ -95,6 +178,7 @@ public class TranscriptionJobService : ITranscriptionJobService
 
     private async Task<TranscriptionJob> CreateAndPersistJobAsync(
         string userId,
+        Guid mediaFileId,
         CreateTranscriptionJobRequest request,
         CancellationToken ct)
     {
@@ -103,7 +187,7 @@ public class TranscriptionJobService : ITranscriptionJobService
             Id = Guid.NewGuid(),
             UserId = userId,
             User = null!,
-            MediaFileId = request.MediaFileId,
+            MediaFileId = mediaFileId,
             MediaFile = null!,
             Status = TranscriptionJobStatus.Pending,
             Quality = request.Quality,
