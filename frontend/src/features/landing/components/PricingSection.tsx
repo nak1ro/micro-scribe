@@ -25,6 +25,9 @@ const iconMap: Record<string, React.ElementType> = {
 export function PricingSection() {
     return (
         <section id="pricing" className="relative min-h-screen flex items-center py-12 scroll-mt-16 overflow-hidden">
+            {/* Dot grid pattern overlay */}
+            <div className="absolute inset-0 bg-dot-grid pointer-events-none" />
+
             {/* Slightly stronger glow to emphasize pricing */}
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] rounded-full bg-primary/8 blur-3xl" />
@@ -48,7 +51,7 @@ export function PricingSection() {
                             <div
                                 key={index}
                                 className={cn(
-                                    "relative rounded-2xl overflow-hidden",
+                                    "relative rounded-2xl overflow-hidden bg-card",
                                     "shadow-lg hover:shadow-xl transition-shadow duration-300",
                                     isPro && "md:scale-[1.02]"
                                 )}

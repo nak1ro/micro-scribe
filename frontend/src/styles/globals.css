@@ -236,6 +236,30 @@
   .section-transition-muted-top::before {
     background: linear-gradient(to bottom, hsl(var(--muted)), transparent);
   }
+
+  /* Dot grid pattern - subtle background texture */
+  .bg-dot-grid {
+    background-image: radial-gradient(rgba(0, 0, 0, 0.1) 1.5px,
+        transparent 1px);
+    background-size: 25px 25px;
+  }
+
+  .dark .bg-dot-grid {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1.5px,
+        transparent 1px);
+  }
+
+  /* Lighter variant */
+  .bg-dot-grid-light {
+    background-image: radial-gradient(rgba(0, 0, 0, 0.1) 1px,
+        transparent 1px);
+    background-size: 25px 25px;
+  }
+
+  .dark .bg-dot-grid-light {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px,
+        transparent 1px);
+  }
 }
 
 /* Keyframe Animations */
