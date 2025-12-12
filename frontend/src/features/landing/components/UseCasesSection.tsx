@@ -21,28 +21,28 @@ const iconMap = {
 
 export function UseCasesSection() {
     return (
-        <section className="relative py-16 sm:py-20 overflow-hidden">
+        <section className="relative min-h-screen flex items-center py-12 overflow-hidden">
             {/* Subtle glow */}
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full bg-secondary/5 blur-3xl" />
             </div>
             <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 {/* Heading */}
-                <div className="text-center mb-12">
-                    <h2 className="text-3xl font-bold text-foreground sm:text-4xl">
+                <div className="text-center mb-8">
+                    <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
                         {useCasesContent.heading}
                     </h2>
                 </div>
 
                 {/* Use Cases Grid */}
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {useCasesContent.cases.map((useCase, index) => {
                         const Icon = iconMap[useCase.icon as keyof typeof iconMap];
                         return (
                             <div
                                 key={index}
                                 className={cn(
-                                    "p-6 rounded-xl",
+                                    "p-4 rounded-xl",
                                     "bg-card border border-border",
                                     "shadow-card",
                                     "transition-all duration-[var(--transition-fast)] ease-[var(--easing-soft)]",

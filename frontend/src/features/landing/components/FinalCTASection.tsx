@@ -7,7 +7,7 @@ import { finalCTAContent } from "../data/content";
 
 export function FinalCTASection() {
     return (
-        <section className="relative py-20 sm:py-28 overflow-hidden">
+        <section className="relative min-h-screen flex items-center py-12 overflow-hidden">
             {/* Accent glow for CTA differentiation */}
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full bg-accent/30 blur-3xl" />

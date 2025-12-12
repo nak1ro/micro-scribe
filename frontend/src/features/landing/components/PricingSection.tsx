@@ -1,107 +1,169 @@
 import * as React from "react";
 import Link from "next/link";
-import { Check, X } from "lucide-react";
+import {
+    Infinity,
+    Upload,
+    Sparkles,
+    Zap,
+    Clock,
+    CheckCircle,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
 import { pricingContent } from "../data/content";
 
+// Icon mapping for features
+const iconMap: Record<string, React.ElementType> = {
+    Infinity,
+    Upload,
+    Sparkles,
+    Zap,
+    Clock,
+    CheckCircle,
+};
+
 export function PricingSection() {
     return (
-        <section id="pricing" className="relative py-16 sm:py-20 scroll-mt-16 overflow-hidden">
+        <section id="pricing" className="relative min-h-screen flex items-center py-12 scroll-mt-16 overflow-hidden">
             {/* Slightly stronger glow to emphasize pricing */}
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] rounded-full bg-primary/8 blur-3xl" />
             </div>
             <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 {/* Heading */}
-                <div className="text-center mb-12">
-                    <h2 className="text-3xl font-bold text-foreground sm:text-4xl">
+                <div className="text-center mb-10">
+                    <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
                         {pricingContent.heading}
                     </h2>
-                    <p className="mt-4 text-lg text-muted-foreground">
+                    <p className="mt-3 text-base text-muted-foreground">
                         {pricingContent.subheading}
                     </p>
                 </div>
 
                 {/* Pricing Cards */}
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-2 max-w-4xl mx-auto">
-                    {pricingContent.tiers.map((tier, index) => (
-                        <div
-                            key={index}
-                            className={cn(
-                                "relative p-8 rounded-2xl",
-                                "bg-card border-2",
-                                "shadow-card",
-                                tier.highlighted
-                                    ? "border-primary shadow-lg scale-[1.02]"
-                                    : "border-border"
-                            )}
-                        >
-                            {/* Badge */}
-                            {tier.badge && (
-                                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                                    <span className="px-4 py-1 rounded-full bg-primary text-primary-foreground text-sm font-medium">
-                                        {tier.badge}
-                                    </span>
-                                </div>
-                            )}
-
-                            {/* Tier Header */}
-                            <div className="text-center mb-6">
-                                <h3 className="text-xl font-semibold text-foreground">
-                                    {tier.name}
-                                </h3>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    {tier.description}
-                                </p>
-                            </div>
-
-                            {/* Price */}
-                            <div className="text-center mb-6">
-                                <span className="text-5xl font-bold text-foreground">
-                                    {tier.price}
-                                </span>
-                                <span className="text-muted-foreground">/{tier.period}</span>
-                            </div>
-
-                            {/* CTA */}
-                            <Link href={tier.cta.href} className="block mb-8">
-                                <Button
-                                    variant={tier.cta.variant}
-                                    size="lg"
-                                    className="w-full text-base"
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 max-w-5xl mx-auto">
+                    {pricingContent.tiers.map((tier, index) => {
+                        const isPro = tier.highlighted;
+                        return (
+                            <div
+                                key={index}
+                                className={cn(
+                                    "relative rounded-2xl overflow-hidden",
+                                    "shadow-lg hover:shadow-xl transition-shadow duration-300",
+                                    isPro && "md:scale-[1.02]"
+                                )}
+                            >
+                                {/* Header with gradient for Pro */}
+                                <div
+                                    className={cn(
+                                        "px-6 py-6 text-center",
+                                        isPro
+                                            ? "bg-gradient-to-br from-primary via-primary to-secondary text-primary-foreground"
+                                            : "bg-card border-b border-border"
+                                    )}
                                 >
-                                    {tier.cta.label}
-                                </Button>
-                            </Link>
+                                    {tier.badge && (
+                                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-xs font-medium mb-2">
+                                            {tier.badge}
+                                        </div>
+                                    )}
 
-                            {/* Features */}
-                            <div className="space-y-3">
-                                {tier.features.map((feature, featureIndex) => (
-                                    <div
-                                        key={featureIndex}
-                                        className="flex items-start gap-3 text-sm"
+                                    <h3
+                                        className={cn(
+                                            "text-sm font-medium mb-1",
+                                            isPro ? "text-white/80" : "text-muted-foreground"
+                                        )}
                                     >
-                                        <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                                        <span className="text-foreground">{feature}</span>
+                                        {tier.name}
+                                        {isPro && " – " + tier.description}
+                                    </h3>
+
+                                    {/* Price */}
+                                    <div className="flex items-baseline justify-center gap-1">
+                                        <span
+                                            className={cn(
+                                                "text-4xl sm:text-5xl font-bold",
+                                                isPro ? "text-white" : "text-foreground"
+                                            )}
+                                        >
+                                            {tier.price}
+                                        </span>
+                                        <span
+                                            className={cn(
+                                                "text-base",
+                                                isPro ? "text-white/70" : "text-muted-foreground"
+                                            )}
+                                        >
+                                            /{tier.period}
+                                        </span>
                                     </div>
-                                ))}
-                                {tier.limitations.map((limitation, limitationIndex) => (
-                                    <div
-                                        key={limitationIndex}
-                                        className="flex items-start gap-3 text-sm"
-                                    >
-                                        <X className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-                                        <span className="text-muted-foreground">{limitation}</span>
+
+                                    {tier.priceLabel && (
+                                        <p
+                                            className={cn(
+                                                "text-xs mt-1",
+                                                isPro ? "text-white/60" : "text-muted-foreground"
+                                            )}
+                                        >
+                                            {tier.priceLabel}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Features */}
+                                <div className="bg-card px-6 py-6">
+                                    <div className="space-y-5 mb-6">
+                                        {tier.features.map((feature, featureIndex) => {
+                                            const Icon = iconMap[feature.icon] || CheckCircle;
+                                            return (
+                                                <div key={featureIndex} className="flex items-start gap-3">
+                                                    <div
+                                                        className={cn(
+                                                            "shrink-0 w-9 h-9 rounded-lg flex items-center justify-center",
+                                                            isPro ? "bg-primary/10" : "bg-muted"
+                                                        )}
+                                                    >
+                                                        <Icon
+                                                            className={cn(
+                                                                "h-5 w-5",
+                                                                isPro ? "text-primary" : "text-primary"
+                                                            )}
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="text-sm font-semibold text-foreground">
+                                                            {feature.title}
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                                            {feature.description}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
-                                ))}
+
+                                    {/* CTA */}
+                                    <Link href={tier.cta.href}>
+                                        <Button
+                                            variant={isPro ? "default" : "outline"}
+                                            size="lg"
+                                            className={cn(
+                                                "w-full text-sm font-semibold uppercase tracking-wide",
+                                                isPro && "bg-primary hover:bg-primary/90"
+                                            )}
+                                        >
+                                            {tier.cta.label}
+                                        </Button>
+                                    </Link>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 {/* Note */}
-                <p className="text-center text-sm text-muted-foreground mt-8">
+                <p className="text-center text-sm text-muted-foreground mt-6">
                     {pricingContent.note}
                 </p>
             </div>

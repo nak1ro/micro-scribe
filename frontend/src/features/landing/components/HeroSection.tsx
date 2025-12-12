@@ -9,7 +9,7 @@ import { heroContent, siteConfig } from "../data/content";
 
 export function HeroSection() {
     return (
-        <section className="relative overflow-visible">
+        <section className="relative min-h-screen flex items-center overflow-visible">
             {/* Background glow - stronger for hero */}
             <div className="absolute inset-0 overflow-visible pointer-events-none">
                 <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-primary/15 blur-3xl" />
@@ -17,7 +17,7 @@ export function HeroSection() {
                 <div className="absolute -bottom-16 right-1/4 w-[500px] h-[400px] rounded-full bg-secondary/10 blur-3xl" />
             </div>
 
-            <div className="relative mx-auto max-w-7xl px-4 pt-12 pb-20 sm:px-6 sm:pt-16 sm:pb-28 lg:px-8 lg:pt-20 lg:pb-36">
+            <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
                 <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16 items-center">
                     {/* Left Column - Content */}
                     <div className="text-center lg:text-left">

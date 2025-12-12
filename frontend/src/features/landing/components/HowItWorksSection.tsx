@@ -13,7 +13,7 @@ const iconMap = {
 
 export function HowItWorksSection() {
     return (
-        <section id="how-it-works" className="relative py-16 sm:py-20 scroll-mt-16 overflow-hidden">
+        <section id="how-it-works" className="relative min-h-screen flex items-center py-12 scroll-mt-16 overflow-hidden">
             {/* Subtle glow */}
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[250px] rounded-full bg-primary/5 blur-3xl" />

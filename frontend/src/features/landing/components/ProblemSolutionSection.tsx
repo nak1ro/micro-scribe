@@ -11,7 +11,7 @@ const iconMap = {
 
 export function ProblemSolutionSection() {
     return (
-        <section className="relative py-16 sm:py-20 overflow-visible">
+        <section className="relative min-h-screen flex items-center py-12 overflow-visible">
             {/* Glows positioned to blend with hero section above */}
             <div className="absolute inset-0 overflow-visible pointer-events-none">
                 {/* Top glow blends with Hero's bottom glow */}
