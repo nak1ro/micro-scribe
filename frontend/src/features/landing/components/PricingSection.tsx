@@ -25,8 +25,15 @@ const iconMap: Record<string, React.ElementType> = {
 export function PricingSection() {
     return (
         <section id="pricing" className="relative min-h-screen flex items-center py-12 scroll-mt-16 overflow-hidden">
-            {/* Dot grid pattern overlay */}
-            <div className="absolute inset-0 bg-dot-grid pointer-events-none" />
+            {/* Dot grid pattern overlay with fade masks for smooth transition */}
+            <div className="absolute inset-0 pointer-events-none">
+                {/* Dot grid */}
+                <div className="absolute inset-0 bg-dot-grid" />
+                {/* Top fade - transitions from previous section */}
+                <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-background to-transparent" />
+                {/* Bottom fade - transitions to next section */}
+                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
+            </div>
 
             {/* Slightly stronger glow to emphasize pricing */}
             <div className="absolute inset-0 pointer-events-none">

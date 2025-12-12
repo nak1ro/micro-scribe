@@ -1,6 +1,8 @@
 import * as React from "react";
+import Link from "next/link";
 import { Upload, Zap, Edit } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui";
 import { howItWorksContent } from "../data/content";
 
 const iconMap = {
@@ -57,6 +59,15 @@ export function HowItWorksSection() {
                             );
                         })}
                     </div>
+                </div>
+
+                {/* CTA */}
+                <div className="mt-16 text-center">
+                    <Link href={howItWorksContent.cta.href}>
+                        <Button size="lg" className="text-base px-8">
+                            {howItWorksContent.cta.label}
+                        </Button>
+                    </Link>
                 </div>
             </div>
         </section>

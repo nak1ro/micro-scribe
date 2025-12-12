@@ -10,6 +10,10 @@ export function SocialProofSection() {
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[200px] rounded-full bg-muted/30 blur-3xl" />
             </div>
 
+            {/* Top and bottom fades for smooth transition */}
+            <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-background to-transparent pointer-events-none" />
+            <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+
             <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 {/* Heading */}
                 <p className="text-center text-sm font-medium text-muted-foreground uppercase tracking-wide mb-8">

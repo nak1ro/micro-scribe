@@ -14,6 +14,10 @@ export function FinalCTASection() {
                 <div className="absolute top-1/4 right-1/4 w-[400px] h-[300px] rounded-full bg-secondary/10 blur-3xl" />
             </div>
 
+            {/* Top and bottom fades for smooth transition */}
+            <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-background to-transparent pointer-events-none" />
+            <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+
             <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
                 {/* Heading */}
                 <h2 className="text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl">

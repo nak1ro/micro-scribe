@@ -17,6 +17,9 @@ export function HeroSection() {
                 <div className="absolute -bottom-16 right-1/4 w-[500px] h-[400px] rounded-full bg-secondary/10 blur-3xl" />
             </div>
 
+            {/* Bottom fade for smooth transition */}
+            <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background via-background/50 to-transparent pointer-events-none" />
+
             <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
                 <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16 items-center">
                     {/* Left Column - Content */}

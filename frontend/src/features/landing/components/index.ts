@@ -9,3 +9,4 @@ export { PricingSection } from "./PricingSection";
 export { TestimonialsSection } from "./TestimonialsSection";
 export { FAQSection } from "./FAQSection";
 export { FinalCTASection } from "./FinalCTASection";
+export { SectionSeparator } from "./SectionSeparator";
