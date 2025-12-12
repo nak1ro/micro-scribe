@@ -17,7 +17,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<TranscriptSegment> TranscriptSegments => Set<TranscriptSegment>();
     public DbSet<TranscriptChapter> TranscriptChapters => Set<TranscriptChapter>();
     public DbSet<UploadSession> UploadSessions => Set<UploadSession>();
-    
+    public DbSet<WebhookSubscription> WebhookSubscriptions => Set<WebhookSubscription>();
+    public DbSet<WebhookDelivery> WebhookDeliveries => Set<WebhookDelivery>();
 
     public DbSet<ExternalLogin> ExternalLogins => Set<ExternalLogin>();
 

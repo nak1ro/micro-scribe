@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using ScribeApi.Core.Domain.Plans;
 using ScribeApi.Core.Exceptions;
 using ScribeApi.Features.Transcriptions.Contracts;
+using ScribeApi.Features.Webhooks.Contracts;
 using ScribeApi.Infrastructure.BackgroundJobs;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
@@ -19,6 +20,7 @@ public class TranscriptionJobService : ITranscriptionJobService
     private readonly IPlanResolver _planResolver;
     private readonly IPlanGuard _planGuard;
     private readonly IBackgroundJobClient _backgroundJobClient;
+    private readonly IWebhookService _webhookService;
     private readonly ILogger<TranscriptionJobService> _logger;
 
     public TranscriptionJobService(
@@ -27,6 +29,7 @@ public class TranscriptionJobService : ITranscriptionJobService
         IPlanResolver planResolver,
         IPlanGuard planGuard,
         IBackgroundJobClient backgroundJobClient,
+        IWebhookService webhookService,
         ILogger<TranscriptionJobService> logger)
     {
         _context = context;
@@ -34,6 +37,7 @@ public class TranscriptionJobService : ITranscriptionJobService
         _planResolver = planResolver;
         _planGuard = planGuard;
         _backgroundJobClient = backgroundJobClient;
+        _webhookService = webhookService;
         _logger = logger;
     }
 
@@ -215,10 +219,18 @@ public class TranscriptionJobService : ITranscriptionJobService
             }
 
             job.Status = TranscriptionJobStatus.Cancelled;
-            job.CompletedAtUtc = DateTime.UtcNow; // Terminated
+            job.CompletedAtUtc = DateTime.UtcNow;
 
             await _context.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
+            
+            // Trigger webhook
+            await _webhookService.EnqueueAsync(userId, WebhookEvents.JobCancelled, new
+            {
+                jobId = job.Id,
+                mediaFileId = job.MediaFileId,
+                status = "Cancelled"
+            }, ct);
         }
         catch (Exception)
         {

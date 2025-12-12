@@ -3,6 +3,7 @@ using ScribeApi.Core.Exceptions;
 using ScribeApi.Core.Interfaces;
 using ScribeApi.Features.Transcriptions.Contracts;
 using ScribeApi.Features.Media.Contracts;
+using ScribeApi.Features.Webhooks.Contracts;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
 using ScribeApi.Infrastructure.Storage;
@@ -17,6 +18,7 @@ public class TranscriptionJobRunner
     private readonly ITranscriptionProvider _transcriptionProvider;
     private readonly IFileStorageService _storageService;
     private readonly IMediaService _mediaService;
+    private readonly IWebhookService _webhookService;
     private readonly ILogger<TranscriptionJobRunner> _logger;
 
     public TranscriptionJobRunner(
@@ -26,6 +28,7 @@ public class TranscriptionJobRunner
         ITranscriptionProvider transcriptionProvider,
         IFileStorageService storageService,
         IMediaService mediaService,
+        IWebhookService webhookService,
         ILogger<TranscriptionJobRunner> logger)
     {
         _context = context;
@@ -34,6 +37,7 @@ public class TranscriptionJobRunner
         _transcriptionProvider = transcriptionProvider;
         _storageService = storageService;
         _mediaService = mediaService;
+        _webhookService = webhookService;
         _logger = logger;
     }
 
@@ -214,6 +218,16 @@ public class TranscriptionJobRunner
         {
              // Status updated successfully.
              job.Status = TranscriptionJobStatus.Completed;
+             
+             // Trigger webhook
+             await _webhookService.EnqueueAsync(job.UserId, WebhookEvents.JobCompleted, new
+             {
+                 jobId = job.Id,
+                 mediaFileId = job.MediaFileId,
+                 status = "Completed",
+                 durationSeconds = job.DurationSeconds,
+                 languageCode = job.LanguageCode
+             }, ct);
         }
     }
 
@@ -226,5 +240,14 @@ public class TranscriptionJobRunner
         job.ErrorMessage = errorMessage;
         job.CompletedAtUtc = DateTime.UtcNow;
         await _context.SaveChangesAsync(ct);
+        
+        // Trigger webhook
+        await _webhookService.EnqueueAsync(job.UserId, WebhookEvents.JobFailed, new
+        {
+            jobId = job.Id,
+            mediaFileId = job.MediaFileId,
+            status = "Failed",
+            errorMessage = errorMessage
+        }, ct);
     }
 }

@@ -35,7 +35,6 @@
 
   <ItemGroup>
     <Folder Include="Api\Filters\" />
-    <Folder Include="Common\Interfaces\" />
     <Folder Include="Core\Domain\Billing\" />
     <Folder Include="Features\Billing\" />
     <Folder Include="Features\Usage\" />
