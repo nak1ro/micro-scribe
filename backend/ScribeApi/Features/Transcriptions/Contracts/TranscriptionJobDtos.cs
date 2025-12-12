@@ -29,7 +29,32 @@ public record TranscriptionJobDetailResponse(
     string? Transcript,
     string? ErrorMessage,
     double? DurationSeconds,
+    List<TranscriptSegmentDto> Segments,
     DateTime CreatedAtUtc,
     DateTime? StartedAtUtc,
     DateTime? CompletedAtUtc
 );
+
+// Segment DTO with timestamps
+public record TranscriptSegmentDto(
+    Guid Id,
+    string Text,
+    double StartSeconds,
+    double EndSeconds,
+    string? Speaker,
+    int Order,
+    bool IsEdited,
+    string? OriginalText
+);
+
+// Request to update a segment
+public record UpdateSegmentRequest(string Text);
+
+// Export format enum
+public enum ExportFormat
+{
+    Txt,
+    Srt,
+    Vtt,
+    Json
+}

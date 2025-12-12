@@ -78,6 +78,16 @@ public class TranscriptionJobQueries : ITranscriptionJobQueries
             .FirstOrDefaultAsync(j => j.Id == jobId, ct);
     }
 
+    public async Task<TranscriptionJob?> GetJobWithSegmentsAsync(
+        Guid jobId,
+        CancellationToken ct)
+    {
+        return await _context.TranscriptionJobs
+            .Include(j => j.MediaFile)
+            .Include(j => j.Segments.OrderBy(s => s.Order))
+            .FirstOrDefaultAsync(j => j.Id == jobId, ct);
+    }
+
     public async Task<ApplicationUser?> GetUserByIdAsync(
         string userId, 
         CancellationToken ct)

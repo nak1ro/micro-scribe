@@ -12,6 +12,9 @@ public class TranscriptionJobMappingProfile : Profile
 
         CreateMap<TranscriptionJob, TranscriptionJobDetailResponse>()
             .ForCtorParam("JobId", opt => opt.MapFrom(src => src.Id))
-            .ForCtorParam("OriginalFileName", opt => opt.MapFrom(src => src.MediaFile.OriginalFileName));
+            .ForCtorParam("OriginalFileName", opt => opt.MapFrom(src => src.MediaFile.OriginalFileName))
+            .ForCtorParam("Segments", opt => opt.MapFrom(src => src.Segments.OrderBy(s => s.Order)));
+
+        CreateMap<TranscriptSegment, TranscriptSegmentDto>();
     }
 }

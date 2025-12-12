@@ -119,8 +119,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IMediaQueries, MediaQueries>();
         services.AddScoped<ITranscriptionJobService, TranscriptionJobService>();
         services.AddScoped<ITranscriptionJobQueries, TranscriptionJobQueries>();
-
-        // Transcription Provider
+        services.AddScoped<ITranscriptExportService, TranscriptExportService>();
+        services.AddScoped<ITranscriptEditService, TranscriptEditService>();
+        services.AddScoped<IUploadService, UploadService>();
         services.Configure<OpenAiSettings>(configuration.GetSection("OpenAi"));
 
         services.AddHttpClient<OpenAiTranscriptionProvider>();

@@ -8,8 +8,6 @@ public interface ITranscriptionJobQueries
 
     Task<int> CountDailyJobsAsync(string userId, DateTime dateUtc, CancellationToken ct);
 
-
-
     Task<bool> HasPendingJobForMediaAsync(Guid mediaFileId, string userId, CancellationToken ct);
 
     Task<MediaFile?> GetMediaFileByIdAsync(Guid mediaFileId, string userId, CancellationToken ct);
@@ -17,6 +15,8 @@ public interface ITranscriptionJobQueries
     Task<TranscriptionJob?> GetJobByIdAsync(Guid jobId, CancellationToken ct);
 
     Task<TranscriptionJob?> GetJobWithMediaAsync(Guid jobId, CancellationToken ct);
+
+    Task<TranscriptionJob?> GetJobWithSegmentsAsync(Guid jobId, CancellationToken ct);
 
     Task<ApplicationUser?> GetUserByIdAsync(string userId, CancellationToken ct);
 }

@@ -19,6 +19,11 @@ public class TranscriptSegment
     // Order of this segment in the transcript.
     public int Order { get; set; }
 
-    // Optional speaker label if you ever support diarization ("Speaker 1", "Speaker 2", ...).
+    // Optional speaker label if you ever support diarization.
     public string? Speaker { get; set; }
+
+    // Edit tracking fields (Option B)
+    public string? OriginalText { get; set; }
+    public bool IsEdited { get; set; }
+    public DateTime? LastEditedAtUtc { get; set; }
 }
