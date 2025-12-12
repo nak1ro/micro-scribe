@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using ScribeApi.Core.Configuration;
 using ScribeApi.Core.Domain.Plans;
+using ScribeApi.Core.Exceptions;
 using ScribeApi.Core.Interfaces;
 using ScribeApi.Core.Storage;
 using ScribeApi.Infrastructure.BackgroundJobs;
@@ -115,7 +116,7 @@ public class UploadService : IUploadService
             .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId, ct);
 
         if (session == null)
-            throw new KeyNotFoundException($"Upload session {sessionId} not found.");
+            throw new NotFoundException("Upload session not found.");
 
         return MapToStatusResponse(session);
     }
@@ -137,7 +138,7 @@ public class UploadService : IUploadService
     private async Task ValidatePlanLimitsAsync(string userId, long sizeBytes, CancellationToken ct)
     {
         var user = await _context.Users.FindAsync([userId], ct);
-        if (user == null) throw new UnauthorizedAccessException("User not found.");
+        if (user == null) throw new NotFoundException("Upload session not found.");
 
         var plan = _planResolver.GetPlanDefinition(user.Plan);
         _planGuard.EnsureFileSize(plan, sizeBytes);
@@ -212,7 +213,7 @@ public class UploadService : IUploadService
     private async Task<UploadSession> GetSessionOrThrowAsync(Guid sessionId, string userId, CancellationToken ct)
     {
         var session = await _context.UploadSessions.FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId, ct);
-        if (session == null) throw new KeyNotFoundException($"Upload session {sessionId} not found.");
+        if (session == null) throw new NotFoundException("Upload session not found.");
         return session;
     }
 
@@ -226,7 +227,7 @@ public class UploadService : IUploadService
     private void ValidateSessionForCompletion(UploadSession session)
     {
         if (session.Status != UploadSessionStatus.Created && session.Status != UploadSessionStatus.Uploading)
-            throw new InvalidOperationException($"Session status is {session.Status}, cannot complete.");
+            throw new ValidationException($"Cannot complete upload: session is in '{session.Status}' status.");
     }
 
     private async Task<StorageObjectInfo> FinalizeStorageAsync(UploadSession session, CompleteUploadRequest request, CancellationToken ct)
@@ -241,14 +242,14 @@ public class UploadService : IUploadService
         if (session.UploadId != null)
         {
             if (request.Parts == null || !request.Parts.Any())
-                throw new ArgumentException("Parts are required for multipart completion.");
+                throw new ValidationException("Parts list is required for multipart upload completion.");
 
             var internalParts = request.Parts.Select(p => new UploadPartInfo(p.PartNumber, p.ETag)).ToList();
             await _storageService.CompleteMultipartUploadAsync(session.StorageKey, session.UploadId, internalParts, ct);
         }
 
         return await _storageService.GetObjectInfoAsync(session.StorageKey, ct) 
-               ?? throw new FileNotFoundException("File not found in storage after completion.");
+               ?? throw new NotFoundException("Uploaded file could not be verified in storage.");
     }
 
     private Task UpdateSessionFinalStateAsync(UploadSession session, StorageObjectInfo info, CancellationToken ct)

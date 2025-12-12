@@ -38,6 +38,19 @@ public class TranscriptionsController : ControllerBase
             result);
     }
 
+
+
+    [HttpPost("{jobId:guid}/cancel")]
+    public async Task<IActionResult> CancelJob(Guid jobId, CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        await _jobService.CancelJobAsync(jobId, userId, ct);
+
+        return NoContent();
+    }
+
     [HttpGet("{jobId:guid}")]
     public async Task<ActionResult<TranscriptionJobDetailResponse>> GetJob(
         Guid jobId,

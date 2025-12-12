@@ -37,7 +37,8 @@ public class TranscriptionJobService : ITranscriptionJobService
         _logger = logger;
     }
 
-    public async Task<TranscriptionJobResponse> StartJobAsync(string userId, CreateTranscriptionJobRequest request, CancellationToken ct)
+    public async Task<TranscriptionJobResponse> StartJobAsync(string userId, CreateTranscriptionJobRequest request,
+        CancellationToken ct)
     {
         // Use Serializable transaction to prevent race conditions on limits and duplicate jobs
         await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
@@ -49,7 +50,7 @@ public class TranscriptionJobService : ITranscriptionJobService
             await EnsurePlanLimitsAsync(userId, ct);
 
             var job = await CreateAndPersistJobAsync(userId, mediaFileId, request, ct);
-            
+
             await transaction.CommitAsync(ct);
 
             // Enqueue after commit to ensure job exists for worker
@@ -60,7 +61,7 @@ public class TranscriptionJobService : ITranscriptionJobService
         catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("unique") == true)
         {
             // Fallback for duplicates caught by DB constraints
-            throw new InvalidOperationException("A concurrent job creation was detected.", ex);
+            throw new ConflictException("A transcription job is already being created for this file.");
         }
         catch (Exception)
         {
@@ -71,7 +72,8 @@ public class TranscriptionJobService : ITranscriptionJobService
 
     // Helpers
 
-    private async Task<Guid> ResolveAndValidateMediaFileAsync(string userId, CreateTranscriptionJobRequest request, CancellationToken ct)
+    private async Task<Guid> ResolveAndValidateMediaFileAsync(string userId, CreateTranscriptionJobRequest request,
+        CancellationToken ct)
     {
         Guid mediaFileId;
         if (request.UploadSessionId.HasValue)
@@ -84,7 +86,7 @@ public class TranscriptionJobService : ITranscriptionJobService
         }
         else
         {
-            throw new ArgumentException("Either MediaFileId or UploadSessionId must be provided.");
+            throw new ValidationException("Either MediaFileId or UploadSessionId must be provided.");
         }
 
         await ValidateMediaFileAccessAsync(mediaFileId, userId, ct);
@@ -93,17 +95,19 @@ public class TranscriptionJobService : ITranscriptionJobService
 
     private async Task<Guid> PromoteSessionToMediaFileAsync(Guid sessionId, string userId, CancellationToken ct)
     {
-        var session = await _context.UploadSessions.FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId, ct);
+        var session =
+            await _context.UploadSessions.FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId, ct);
         if (session == null) throw new NotFoundException($"Upload session {sessionId} not found.");
 
         // Idempotency: return existing if already promoted
-        if (session.MediaFileId.HasValue && await _context.MediaFiles.AnyAsync(m => m.Id == session.MediaFileId.Value, ct))
+        if (session.MediaFileId.HasValue &&
+            await _context.MediaFiles.AnyAsync(m => m.Id == session.MediaFileId.Value, ct))
         {
             return session.MediaFileId.Value;
         }
 
         if (session.Status != UploadSessionStatus.Ready)
-            throw new InvalidOperationException($"Session {sessionId} is not Ready (Status: {session.Status}).");
+            throw new ValidationException($"Upload session is not ready for transcription. Current status: {session.Status}");
 
         var mediaFile = new MediaFile
         {
@@ -125,7 +129,7 @@ public class TranscriptionJobService : ITranscriptionJobService
 
         _context.MediaFiles.Add(mediaFile);
         session.MediaFileId = mediaFile.Id;
-        
+
         await _context.SaveChangesAsync(ct);
         _logger.LogInformation("Promoted session {SessionId} to media file {MediaFileId}", sessionId, mediaFile.Id);
 
@@ -141,13 +145,13 @@ public class TranscriptionJobService : ITranscriptionJobService
     private async Task EnsureNoPendingJobsAsync(Guid mediaFileId, string userId, CancellationToken ct)
     {
         if (await _queries.HasPendingJobForMediaAsync(mediaFileId, userId, ct))
-            throw new InvalidOperationException($"Job already pending for MediaFile {mediaFileId}.");
+            throw new ConflictException("A transcription job is already in progress for this media file.");
     }
 
     private async Task EnsurePlanLimitsAsync(string userId, CancellationToken ct)
     {
         var plan = await GetUserPlanAsync(userId, ct);
-        
+
         var dailyCount = await _queries.CountDailyJobsAsync(userId, DateTime.UtcNow, ct);
         _planGuard.EnsureDailyTranscriptionLimit(plan, dailyCount);
 
@@ -162,7 +166,8 @@ public class TranscriptionJobService : ITranscriptionJobService
         return _planResolver.GetPlanDefinition(user.Plan);
     }
 
-    private async Task<TranscriptionJob> CreateAndPersistJobAsync(string userId, Guid mediaFileId, CreateTranscriptionJobRequest request, CancellationToken ct)
+    private async Task<TranscriptionJob> CreateAndPersistJobAsync(string userId, Guid mediaFileId,
+        CreateTranscriptionJobRequest request, CancellationToken ct)
     {
         var job = new TranscriptionJob
         {
@@ -180,6 +185,46 @@ public class TranscriptionJobService : ITranscriptionJobService
         _context.TranscriptionJobs.Add(job);
         await _context.SaveChangesAsync(ct); // Part of transaction
         return job;
+    }
+
+    public async Task CancelJobAsync(Guid jobId, string userId, CancellationToken ct)
+    {
+        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        try
+        {
+            var job = await _context.TranscriptionJobs
+                .Include(j => j.MediaFile)
+                .FirstOrDefaultAsync(j => j.Id == jobId && j.UserId == userId, ct);
+
+            if (job == null) throw new NotFoundException($"Transcription job {jobId} not found.");
+
+            if (job.Status is TranscriptionJobStatus.Completed or TranscriptionJobStatus.Failed
+                or TranscriptionJobStatus.Cancelled)
+            {
+                return;
+            }
+
+            if (job.MediaFile.DurationSeconds.HasValue)
+            {
+                var usageMinutes = job.MediaFile.DurationSeconds.Value / 60.0;
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                    $"UPDATE \"AspNetUsers\" SET \"UsedMinutesThisMonth\" = \"UsedMinutesThisMonth\" + {usageMinutes} WHERE \"Id\" = {userId}",
+                    ct);
+                _logger.LogInformation("Charged user {UserId} {Minutes:F2} min for cancelled job {JobId}", userId,
+                    usageMinutes, jobId);
+            }
+
+            job.Status = TranscriptionJobStatus.Cancelled;
+            job.CompletedAtUtc = DateTime.UtcNow; // Terminated
+
+            await _context.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
+        }
     }
 
     private void EnqueueBackgroundJob(Guid jobId, PlanDefinition plan)

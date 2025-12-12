@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using ScribeApi.Core.Exceptions;
 using ScribeApi.Core.Interfaces;
 
 namespace ScribeApi.Infrastructure.MediaProcessing;
@@ -158,7 +159,7 @@ public partial class FfmpegMediaService : IFfmpegMediaService
         {
             if (!process.Start())
             {
-                throw new InvalidOperationException($"Failed to start FFmpeg process.");
+                throw new TranscriptionException("FFmpeg failed to start. Ensure FFmpeg is installed and accessible.");
             }
         }
         catch (Exception ex)
@@ -194,7 +195,7 @@ public partial class FfmpegMediaService : IFfmpegMediaService
 
             if (timeoutCts.IsCancellationRequested)
             {
-                throw new TimeoutException($"FFmpeg process timed out after {FfmpegTimeout.TotalMinutes} minutes.");
+                throw new TranscriptionException($"Media processing timed out after {FfmpegTimeout.TotalMinutes} minutes.");
             }
             throw;
         }
@@ -203,7 +204,7 @@ public partial class FfmpegMediaService : IFfmpegMediaService
         {
             var error = errorBuilder.ToString();
             _logger.LogError("FFmpeg failed with exit code {ExitCode}. Error: {Error}", process.ExitCode, error);
-            throw new InvalidOperationException($"FFmpeg conversion failed with exit code {process.ExitCode}");
+            throw new TranscriptionException($"Media conversion failed with FFmpeg exit code {process.ExitCode}.");
         }
 
         return new ProcessResult(outputBuilder.ToString(), errorBuilder.ToString(), process.ExitCode);

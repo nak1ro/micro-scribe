@@ -87,6 +87,10 @@ public sealed class ExceptionHandlingMiddleware
             ConflictException => (HttpStatusCode.Conflict, "Conflict"),
             ValidationException => (HttpStatusCode.BadRequest, "Validation failed"),
             OAuthException => (HttpStatusCode.BadGateway, "External authentication error"),
+            AccountLinkingException => (HttpStatusCode.Conflict, "Account linking conflict"),
+            PlanLimitExceededException => (HttpStatusCode.PaymentRequired, "Plan limit exceeded"),
+            TranscriptionException => (HttpStatusCode.UnprocessableEntity, "Transcription processing error"),
+            StorageException => (HttpStatusCode.ServiceUnavailable, "Storage service error"),
             _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred")
         };
     }
