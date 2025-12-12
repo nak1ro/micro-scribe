@@ -27,7 +27,7 @@ export function PricingSection() {
                             className={cn(
                                 "relative p-8 rounded-2xl",
                                 "bg-card border-2",
-                                "shadow-[0_1px_3px_rgba(0,0,0,0.04)]",
+                                "shadow-card",
                                 tier.highlighted
                                     ? "border-primary shadow-lg scale-[1.02]"
                                     : "border-border"

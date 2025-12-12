@@ -96,9 +96,9 @@ export function HeroSection() {
                             {/* Mockup Header */}
                             <div className="flex items-center gap-2 px-4 py-3 bg-muted/50 border-b border-border">
                                 <div className="flex gap-1.5">
-                                    <div className="w-3 h-3 rounded-full bg-red-400" />
-                                    <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                                    <div className="w-3 h-3 rounded-full bg-green-400" />
+                                    <div className="w-3 h-3 rounded-full bg-destructive/70" />
+                                    <div className="w-3 h-3 rounded-full bg-warning" />
+                                    <div className="w-3 h-3 rounded-full bg-success" />
                                 </div>
                                 <div className="flex-1 text-center text-sm text-muted-foreground">
                                     {siteConfig.name}
@@ -149,7 +149,7 @@ export function HeroSection() {
                         {/* Floating badge */}
                         <div className="absolute -bottom-4 -right-4 px-4 py-2 rounded-lg bg-card border border-border shadow-lg">
                             <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
                                 <span className="text-sm font-medium">Processing complete</span>
                             </div>
                         </div>

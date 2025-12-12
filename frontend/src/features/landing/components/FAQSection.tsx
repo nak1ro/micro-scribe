@@ -25,7 +25,7 @@ export function FAQSection() {
                             key={index}
                             className={cn(
                                 "rounded-xl border border-border bg-card overflow-hidden",
-                                "shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
+                                "shadow-card"
                             )}
                         >
                             <button

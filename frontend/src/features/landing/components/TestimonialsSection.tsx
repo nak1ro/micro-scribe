@@ -22,7 +22,7 @@ export function TestimonialsSection() {
                             className={cn(
                                 "p-6 rounded-xl",
                                 "bg-card border border-border",
-                                "shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
+                                "shadow-card"
                             )}
                         >
                             {/* Stars */}
@@ -30,7 +30,7 @@ export function TestimonialsSection() {
                                 {Array.from({ length: testimonial.rating }).map((_, i) => (
                                     <Star
                                         key={i}
-                                        className="h-4 w-4 fill-yellow-400 text-yellow-400"
+                                        className="h-4 w-4 fill-warning text-warning"
                                     />
                                 ))}
                             </div>

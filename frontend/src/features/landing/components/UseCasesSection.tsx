@@ -40,7 +40,7 @@ export function UseCasesSection() {
                                 className={cn(
                                     "p-6 rounded-xl",
                                     "bg-card border border-border",
-                                    "shadow-[0_1px_3px_rgba(0,0,0,0.04)]",
+                                    "shadow-card",
                                     "transition-all duration-[var(--transition-fast)] ease-[var(--easing-soft)]",
                                     "hover:-translate-y-1 hover:shadow-md"
                                 )}

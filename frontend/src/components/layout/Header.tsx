@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Menu, X, Mic2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 interface HeaderProps {
     /** Whether the user is authenticated */
@@ -70,8 +71,9 @@ export function Header({ isAuthenticated = false, user }: HeaderProps) {
                         </nav>
                     </div>
 
-                    {/* Right: Auth buttons or User menu */}
-                    <div className="flex items-center gap-3">
+                    {/* Right: Theme toggle + Auth buttons or User menu */}
+                    <div className="flex items-center gap-2">
+                        <ThemeToggle />
                         {isAuthenticated && user ? (
                             <UserMenu user={user} />
                         ) : (
