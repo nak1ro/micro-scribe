@@ -1,51 +1,53 @@
 "use client";
 
 import * as React from "react";
-import { cn } from "@/lib/utils";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import {
     TranscriptionList,
     NewTranscriptionButtons,
+    CreateTranscriptionModal,
     type TranscriptionListItem,
+    type TranscriptionFormData,
 } from "@/features/transcription";
 import { transcriptionApi } from "@/services/transcription/api";
-import { TranscriptionJobStatus } from "@/types/api/transcription";
 
-export default function TranscriptionPage() {
+export default function DashboardPage() {
     const [items, setItems] = React.useState<TranscriptionListItem[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = React.useState(false);
 
     // Fetch media files on mount
     React.useEffect(() => {
-        async function fetchData() {
-            try {
-                setIsLoading(true);
-                const response = await transcriptionApi.listMedia({ page: 1, pageSize: 50 });
-
-                // Transform API response to list items
-                const listItems: TranscriptionListItem[] = response.items.map((media) => ({
-                    id: media.id,
-                    fileName: media.originalFileName,
-                    uploadDate: media.createdAtUtc,
-                    status: "completed", // TODO: Fetch actual transcription status
-                    duration: media.durationSeconds,
-                    language: null, // TODO: Fetch from transcription job
-                }));
-
-                setItems(listItems);
-            } catch (err) {
-                console.error("Failed to fetch media:", err);
-                setError("Failed to load transcriptions");
-                // Use placeholder data for demo
-                setItems(getPlaceholderData());
-            } finally {
-                setIsLoading(false);
-            }
-        }
-
         fetchData();
     }, []);
+
+    const fetchData = async () => {
+        try {
+            setIsLoading(true);
+            const response = await transcriptionApi.listMedia({ page: 1, pageSize: 50 });
+
+            // Transform API response to list items
+            const listItems: TranscriptionListItem[] = response.items.map((media) => ({
+                id: media.id,
+                fileName: media.originalFileName,
+                uploadDate: media.createdAtUtc,
+                status: "completed", // TODO: Fetch actual transcription status
+                duration: media.durationSeconds,
+                language: null, // TODO: Fetch from transcription job
+            }));
+
+            setItems(listItems);
+            setError(null);
+        } catch (err) {
+            console.error("Failed to fetch media:", err);
+            setError("Failed to load transcriptions");
+            // Use placeholder data for demo
+            setItems(getPlaceholderData());
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleEdit = (id: string) => {
         // TODO: Navigate to edit page or open edit modal
@@ -53,7 +55,7 @@ export default function TranscriptionPage() {
     };
 
     const handleDelete = async (id: string) => {
-        // TODO: Implement delete confirmation and API call
+        // TODO: Implement delete confirmation
         console.log("Delete transcription:", id);
         try {
             await transcriptionApi.deleteMedia(id);
@@ -63,10 +65,19 @@ export default function TranscriptionPage() {
         }
     };
 
-    const handleNewClick = () => {
-        // Scroll to new transcription section or open modal
-        console.log("New transcription clicked");
+    const handleTranscriptionSubmit = async (data: TranscriptionFormData) => {
+        console.log("Creating transcription:", data);
+
+        // TODO: Implement actual upload and transcription flow
+        // 1. If file: Upload to S3 via presigned URL
+        // 2. Create transcription job
+        // 3. Refresh list
+
+        // For now, just refresh the list
+        await fetchData();
     };
+
+    const openModal = () => setIsModalOpen(true);
 
     return (
         <DashboardLayout>
@@ -87,9 +98,9 @@ export default function TranscriptionPage() {
                         Create New Transcription
                     </h2>
                     <NewTranscriptionButtons
-                        onUploadClick={() => console.log("Upload clicked")}
-                        onYoutubeClick={() => console.log("YouTube clicked")}
-                        onMicClick={() => console.log("Mic clicked")}
+                        onUploadClick={openModal}
+                        onYoutubeClick={openModal}
+                        onMicClick={openModal}
                     />
                 </section>
 
@@ -110,10 +121,17 @@ export default function TranscriptionPage() {
                         isLoading={isLoading}
                         onEdit={handleEdit}
                         onDelete={handleDelete}
-                        onNewClick={handleNewClick}
+                        onNewClick={openModal}
                     />
                 </section>
             </div>
+
+            {/* Create Transcription Modal */}
+            <CreateTranscriptionModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSubmit={handleTranscriptionSubmit}
+            />
         </DashboardLayout>
     );
 }
