@@ -1,8 +1,8 @@
 # ScribeApi - API Documentation
 
-> **Version:** 1.0  
+> **Version:** 2.0  
 > **Base URL:** `/api`  
-> **Last Updated:** December 11, 2024
+> **Last Updated:** December 12, 2024
 
 This document provides comprehensive API documentation for the ScribeApi backend, designed for frontend developers. It covers all endpoints, request/response schemas, validation rules, and TypeScript interfaces.
 
@@ -14,8 +14,9 @@ This document provides comprehensive API documentation for the ScribeApi backend
 2. [Media Files](#media-files)
 3. [Uploads](#uploads)
 4. [Transcriptions](#transcriptions)
-5. [Common Types & Enums](#common-types--enums)
-6. [Error Handling](#error-handling)
+5. [Webhooks](#webhooks)
+6. [Common Types & Enums](#common-types--enums)
+7. [Error Handling](#error-handling)
 
 ---
 
@@ -427,9 +428,9 @@ interface MediaFileResponse {
   originalFileName: string;
   sizeBytes: number;
   contentType: string;
-  fileType: MediaFileType;       // 0 = Audio, 1 = Video
+  fileType: MediaFileType;            // 0 = Audio, 1 = Video
   durationSeconds: number | null;
-  audioPath: string | null;
+  normalizedAudioObjectKey: string | null;
   createdAtUtc: string;
 }
 
@@ -479,16 +480,18 @@ interface PagedResponse<T> {
 
 ## Uploads
 
-Uploads use a **chunked upload** pattern for large files.
+Uploads use a **direct-to-storage** pattern with presigned URLs. The API supports both single-file uploads and multipart uploads for large files.
 
 ### Upload Flow
-1. **Create Session** - Initialize upload with file metadata
-2. **Upload Chunks** - Send file chunks sequentially
-3. **Complete** - Final chunk triggers merge and returns MediaFile
 
-### Endpoint: Create Upload Session
+1. **Initiate Session** - Request presigned URL(s) and storage configuration
+2. **Upload to Storage** - Client uploads directly to S3/storage using presigned URL
+3. **Complete Upload** - Notify API that upload is complete, triggers validation
+4. **Poll Status** - Check session status until validation completes
 
-**Description:** Initializes a new chunked upload session.
+### Endpoint: Initiate Upload Session
+
+**Description:** Creates a new upload session and returns presigned URL for direct storage upload.
 
 **Method:** `POST`  
 **URL:** `/api/uploads/sessions`  
@@ -496,12 +499,21 @@ Uploads use a **chunked upload** pattern for large files.
 
 #### Request Body
 ```typescript
-interface InitUploadRequest {
-  fileName: string;        // Required
-  contentType: string;     // Required, MIME type
-  totalSizeBytes: number;  // Required, must be > 0
-  chunkSizeBytes: number;  // Required, must be > 0
-  durationMinutes: number; // Required
+interface InitiateUploadRequest {
+  fileName: string;           // Required, original file name
+  contentType: string;        // Required, MIME type (e.g., "audio/mp3")
+  sizeBytes: number;          // Required, file size in bytes
+  clientRequestId?: string;   // Optional, for idempotency
+}
+```
+
+**Example Request:**
+```json
+{
+  "fileName": "interview.mp3",
+  "contentType": "audio/mp3",
+  "sizeBytes": 52428800,
+  "clientRequestId": "client-123-abc"
 }
 ```
 
@@ -510,45 +522,130 @@ interface InitUploadRequest {
 **Success (200 OK)**
 ```typescript
 interface UploadSessionResponse {
-  id: string;
-  storageKeyPrefix: string;
-  status: UploadSessionStatus;
-  expiresAtUtc: string;
+  id: string;                 // Session GUID
+  status: string;             // "Created"
+  uploadUrl: string | null;   // Presigned URL for single-file upload
+  uploadId: string | null;    // Multipart upload ID (if multipart)
+  key: string;                // Storage object key
+  initialChunkSize: number;   // Suggested chunk size for multipart
+  expiresAtUtc: string;       // When session expires
+  correlationId: string;      // For distributed tracing
+}
+```
+
+**Example Response:**
+```json
+{
+  "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "status": "Created",
+  "uploadUrl": "https://bucket.s3.amazonaws.com/uploads/...",
+  "uploadId": null,
+  "key": "uploads/user123/f47ac10b.mp3",
+  "initialChunkSize": 52428800,
+  "expiresAtUtc": "2024-12-12T18:00:00Z",
+  "correlationId": "corr-abc-123"
 }
 ```
 
 ---
 
-### Endpoint: Upload Chunk
+### Endpoint: Complete Upload
 
-**Description:** Uploads a single chunk. Final chunk triggers merge and returns MediaFile.
+**Description:** Notifies the API that the file upload is complete. Triggers background validation.
 
-**Method:** `PUT`  
-**URL:** `/api/uploads/sessions/{sessionId}/chunks/{chunkIndex}`  
-**Authorization:** Required (Authenticated)  
-**Content-Type:** `multipart/form-data`
+**Method:** `POST`  
+**URL:** `/api/uploads/sessions/{id}/complete`  
+**Authorization:** Required (Authenticated)
 
 #### Route Parameters
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| sessionId | string (GUID) | Yes | Upload session ID |
-| chunkIndex | number | Yes | Zero-based chunk index |
+| id | string (GUID) | Yes | Upload session ID |
 
-#### Form Data
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| chunk | File | Yes | Binary file chunk |
+#### Request Body
+```typescript
+interface CompleteUploadRequest {
+  parts?: PartETagDto[] | null;  // Required for multipart, null for single-file
+}
 
-#### Response
-
-**Chunk Received (202 Accepted):**
-```json
-{
-  "message": "Chunk received"
+interface PartETagDto {
+  partNumber: number;   // 1-indexed part number
+  eTag: string;         // ETag from S3 upload response
 }
 ```
 
-**Upload Complete (200 OK):** Returns `MediaFileResponse`
+**Example Request (Single File):**
+```json
+{}
+```
+
+**Example Request (Multipart):**
+```json
+{
+  "parts": [
+    { "partNumber": 1, "eTag": "\"abc123\"" },
+    { "partNumber": 2, "eTag": "\"def456\"" }
+  ]
+}
+```
+
+#### Response
+
+**Success (200 OK)**
+```typescript
+interface UploadSessionStatusResponse {
+  id: string;
+  status: string;               // "Uploaded", "Validating", "Ready", etc.
+  errorMessage: string | null;
+  createdAtUtc: string;
+  uploadedAtUtc: string | null;
+  validatedAtUtc: string | null;
+}
+```
+
+---
+
+### Endpoint: Get Upload Session Status
+
+**Description:** Returns the current status of an upload session. Use for polling after completion.
+
+**Method:** `GET`  
+**URL:** `/api/uploads/sessions/{id}`  
+**Authorization:** Required (Authenticated)
+
+#### Route Parameters
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| id | string (GUID) | Yes | Upload session ID |
+
+#### Response
+
+**Success (200 OK)** - Returns `UploadSessionStatusResponse`
+
+**Session Status Flow:**
+- `Created` → `Uploaded` → `Validating` → `Ready` (success)
+- `Created` → `Uploaded` → `Validating` → `Invalid` (validation failed)
+- `Created` → `Aborted` (user cancelled)
+- `Created` → `Expired` (session timeout)
+
+---
+
+### Endpoint: Abort Upload Session
+
+**Description:** Aborts an upload session and cleans up storage.
+
+**Method:** `DELETE`  
+**URL:** `/api/uploads/sessions/{id}`  
+**Authorization:** Required (Authenticated)
+
+#### Route Parameters
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| id | string (GUID) | Yes | Upload session ID |
+
+#### Response
+
+**Success (204 No Content)**
 
 ---
 
@@ -556,7 +653,7 @@ interface UploadSessionResponse {
 
 ### Endpoint: Create Transcription Job
 
-**Description:** Creates a new transcription job for a media file.
+**Description:** Creates a new transcription job. Can reference either a MediaFile ID or an UploadSession ID.
 
 **Method:** `POST`  
 **URL:** `/api/transcriptions`  
@@ -565,9 +662,21 @@ interface UploadSessionResponse {
 #### Request Body
 ```typescript
 interface CreateTranscriptionJobRequest {
-  mediaFileId: string;               // Required
+  mediaFileId?: string;              // Optional, existing media file GUID
+  uploadSessionId?: string;          // Optional, upload session GUID (for direct flow)
   quality?: TranscriptionQuality;    // Optional, default: 1 (Balanced)
   languageCode?: string | null;      // Optional, e.g., "en", "pl"
+}
+```
+
+> **Note:** Provide either `mediaFileId` OR `uploadSessionId`, not both.
+
+**Example Request:**
+```json
+{
+  "uploadSessionId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "quality": 2,
+  "languageCode": "en"
 }
 ```
 
@@ -587,7 +696,7 @@ interface TranscriptionJobResponse {
 
 ### Endpoint: Get Transcription Job
 
-**Description:** Returns detailed information about a transcription job.
+**Description:** Returns detailed information about a transcription job, including segments.
 
 **Method:** `GET`  
 **URL:** `/api/transcriptions/{jobId}`  
@@ -607,9 +716,282 @@ interface TranscriptionJobDetailResponse {
   transcript: string | null;
   errorMessage: string | null;
   durationSeconds: number | null;
+  segments: TranscriptSegmentDto[];
   createdAtUtc: string;
   startedAtUtc: string | null;
   completedAtUtc: string | null;
+}
+
+interface TranscriptSegmentDto {
+  id: string;
+  text: string;
+  startSeconds: number;
+  endSeconds: number;
+  speaker: string | null;
+  order: number;
+  isEdited: boolean;
+  originalText: string | null;
+}
+```
+
+---
+
+### Endpoint: Cancel Transcription Job
+
+**Description:** Cancels a pending or processing transcription job.
+
+**Method:** `POST`  
+**URL:** `/api/transcriptions/{jobId}/cancel`  
+**Authorization:** Required (Authenticated)
+
+#### Response
+
+**Success (204 No Content)**
+
+---
+
+### Endpoint: Export Transcript
+
+**Description:** Exports transcript in various formats.
+
+**Method:** `GET`  
+**URL:** `/api/transcriptions/{jobId}/export`  
+**Authorization:** Required (Authenticated)
+
+#### Query Parameters
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| format | ExportFormat | No | Txt | Export format |
+
+#### Response
+
+**Success (200 OK)** - Returns file download with appropriate content-type
+
+---
+
+### Endpoint: Update Transcript Segment
+
+**Description:** Edits the text of a specific transcript segment.
+
+**Method:** `PATCH`  
+**URL:** `/api/transcriptions/{jobId}/segments/{segmentId}`  
+**Authorization:** Required (Authenticated)
+
+#### Request Body
+```typescript
+interface UpdateSegmentRequest {
+  text: string;  // New segment text
+}
+```
+
+#### Response
+
+**Success (200 OK)** - Returns updated `TranscriptSegmentDto`
+
+---
+
+### Endpoint: Revert Transcript Segment
+
+**Description:** Reverts a segment to its original text.
+
+**Method:** `POST`  
+**URL:** `/api/transcriptions/{jobId}/segments/{segmentId}/revert`  
+**Authorization:** Required (Authenticated)
+
+#### Response
+
+**Success (200 OK)** - Returns reverted `TranscriptSegmentDto`
+
+---
+
+## Webhooks
+
+Subscribe to receive HTTP callbacks when transcription jobs complete, fail, or are cancelled.
+
+### Supported Events
+- `job.completed` - Transcription job completed successfully
+- `job.failed` - Transcription job failed
+- `job.cancelled` - Transcription job was cancelled
+
+### Webhook Security
+
+All webhook deliveries include an HMAC-SHA256 signature header for verification:
+
+```
+X-Webhook-Signature: sha256=<hex-encoded-signature>
+```
+
+Verify by computing HMAC-SHA256 of the raw request body using your secret.
+
+---
+
+### Endpoint: Create Webhook Subscription
+
+**Description:** Creates a new webhook subscription.
+
+**Method:** `POST`  
+**URL:** `/api/webhooks`  
+**Authorization:** Required (Authenticated)
+
+#### Request Body
+```typescript
+interface CreateWebhookRequest {
+  url: string;           // Required, HTTPS endpoint URL
+  secret: string;        // Required, shared secret for HMAC signing
+  events: string[];      // Required, list of event types to subscribe
+}
+```
+
+**Example Request:**
+```json
+{
+  "url": "https://myapp.com/webhooks/scribe",
+  "secret": "my-secure-secret-key",
+  "events": ["job.completed", "job.failed"]
+}
+```
+
+#### Response
+
+**Success (201 Created)**
+```typescript
+interface WebhookSubscriptionDto {
+  id: string;
+  url: string;
+  events: string[];
+  isActive: boolean;
+  createdAtUtc: string;
+  lastTriggeredAtUtc: string | null;
+}
+```
+
+---
+
+### Endpoint: List Webhook Subscriptions
+
+**Description:** Returns all webhook subscriptions for the authenticated user.
+
+**Method:** `GET`  
+**URL:** `/api/webhooks`  
+**Authorization:** Required (Authenticated)
+
+#### Response
+
+**Success (200 OK)** - Returns `WebhookSubscriptionDto[]`
+
+---
+
+### Endpoint: Get Webhook Subscription
+
+**Description:** Returns details of a specific webhook subscription.
+
+**Method:** `GET`  
+**URL:** `/api/webhooks/{id}`  
+**Authorization:** Required (Authenticated)
+
+#### Response
+
+**Success (200 OK)** - Returns `WebhookSubscriptionDto`
+
+---
+
+### Endpoint: Update Webhook Subscription
+
+**Description:** Updates a webhook subscription. All fields are optional.
+
+**Method:** `PATCH`  
+**URL:** `/api/webhooks/{id}`  
+**Authorization:** Required (Authenticated)
+
+#### Request Body
+```typescript
+interface UpdateWebhookRequest {
+  url?: string;
+  secret?: string;
+  events?: string[];
+  isActive?: boolean;
+}
+```
+
+**Example Request:**
+```json
+{
+  "isActive": false
+}
+```
+
+#### Response
+
+**Success (200 OK)** - Returns updated `WebhookSubscriptionDto`
+
+---
+
+### Endpoint: Delete Webhook Subscription
+
+**Description:** Deletes a webhook subscription.
+
+**Method:** `DELETE`  
+**URL:** `/api/webhooks/{id}`  
+**Authorization:** Required (Authenticated)
+
+#### Response
+
+**Success (204 No Content)**
+
+---
+
+### Endpoint: Get Webhook Deliveries
+
+**Description:** Returns delivery history for a webhook subscription.
+
+**Method:** `GET`  
+**URL:** `/api/webhooks/{id}/deliveries`  
+**Authorization:** Required (Authenticated)
+
+#### Query Parameters
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| limit | number | No | 50 | Maximum number of deliveries to return |
+
+#### Response
+
+**Success (200 OK)**
+```typescript
+interface WebhookDeliveryDto {
+  id: string;
+  event: string;
+  status: WebhookDeliveryStatus;  // 0 = Pending, 1 = Sent, 2 = Failed
+  attempts: number;
+  responseStatusCode: number | null;
+  createdAtUtc: string;
+  lastAttemptAtUtc: string | null;
+}
+```
+
+---
+
+### Webhook Payload Format
+
+When a webhook is triggered, the following payload is sent to your endpoint:
+
+```typescript
+interface WebhookPayload {
+  event: string;       // Event type (e.g., "job.completed")
+  timestamp: string;   // ISO 8601 timestamp
+  data: object;        // Event-specific data
+}
+```
+
+**Example Payload (job.completed):**
+```json
+{
+  "event": "job.completed",
+  "timestamp": "2024-12-12T15:30:00Z",
+  "data": {
+    "jobId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "mediaFileId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    "durationSeconds": 125.5
+  }
 }
 ```
 
@@ -624,11 +1006,15 @@ enum MediaFileType {
 }
 
 enum UploadSessionStatus {
-  Active = 0,
-  Completed = 1,
-  Expired = 2,
-  Cancelled = 3,
-  Failed = 4
+  Created = 0,
+  Uploading = 1,
+  Uploaded = 2,
+  Validating = 3,
+  Ready = 4,
+  Invalid = 5,
+  Failed = 6,
+  Aborted = 7,
+  Expired = 8
 }
 
 enum TranscriptionJobStatus {
@@ -643,6 +1029,19 @@ enum TranscriptionQuality {
   Fast = 0,       // Lower cost, lower accuracy
   Balanced = 1,   // Default
   Accurate = 2    // Best quality
+}
+
+enum ExportFormat {
+  Txt = 0,
+  Srt = 1,
+  Vtt = 2,
+  Json = 3
+}
+
+enum WebhookDeliveryStatus {
+  Pending = 0,
+  Sent = 1,
+  Failed = 2
 }
 
 enum PlanType {
@@ -671,11 +1070,12 @@ interface ValidationProblemDetails {
 |------|-------------|
 | `200 OK` | Success |
 | `201 Created` | Resource created |
-| `202 Accepted` | Request accepted (chunk upload) |
 | `204 No Content` | Success, no body |
 | `400 Bad Request` | Validation error |
 | `401 Unauthorized` | Not authenticated |
 | `404 Not Found` | Resource not found |
+| `409 Conflict` | Resource conflict (e.g., duplicate) |
+| `422 Unprocessable Entity` | Semantic validation error |
 
 ---
 
@@ -699,7 +1099,19 @@ interface ValidationProblemDetails {
 | `GET` | `/api/media` | ✅ | List media files |
 | `GET` | `/api/media/{id}` | ✅ | Get media file |
 | `DELETE` | `/api/media/{id}` | ✅ | Delete media file |
-| `POST` | `/api/uploads/sessions` | ✅ | Create upload session |
-| `PUT` | `/api/uploads/sessions/{id}/chunks/{idx}` | ✅ | Upload chunk |
+| `POST` | `/api/uploads/sessions` | ✅ | Initiate upload session |
+| `POST` | `/api/uploads/sessions/{id}/complete` | ✅ | Complete upload |
+| `GET` | `/api/uploads/sessions/{id}` | ✅ | Get upload session status |
+| `DELETE` | `/api/uploads/sessions/{id}` | ✅ | Abort upload session |
 | `POST` | `/api/transcriptions` | ✅ | Create transcription job |
 | `GET` | `/api/transcriptions/{jobId}` | ✅ | Get transcription job |
+| `POST` | `/api/transcriptions/{jobId}/cancel` | ✅ | Cancel transcription job |
+| `GET` | `/api/transcriptions/{jobId}/export` | ✅ | Export transcript |
+| `PATCH` | `/api/transcriptions/{jobId}/segments/{segmentId}` | ✅ | Update segment |
+| `POST` | `/api/transcriptions/{jobId}/segments/{segmentId}/revert` | ✅ | Revert segment |
+| `POST` | `/api/webhooks` | ✅ | Create webhook subscription |
+| `GET` | `/api/webhooks` | ✅ | List webhook subscriptions |
+| `GET` | `/api/webhooks/{id}` | ✅ | Get webhook subscription |
+| `PATCH` | `/api/webhooks/{id}` | ✅ | Update webhook subscription |
+| `DELETE` | `/api/webhooks/{id}` | ✅ | Delete webhook subscription |
+| `GET` | `/api/webhooks/{id}/deliveries` | ✅ | Get webhook deliveries |
