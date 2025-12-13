@@ -4,9 +4,6 @@ import * as React from "react";
 import Link from "next/link";
 import {
     Mic2,
-    FolderOpen,
-    User,
-    CreditCard,
     ChevronLeft,
     ChevronRight,
     Sparkles,
@@ -14,6 +11,7 @@ import {
     Menu,
     FileAudio,
     Plus,
+    Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/context/SidebarContext";
@@ -26,6 +24,8 @@ interface SidebarProps {
     transcriptionsUsed?: number;
     /** Max transcriptions per day (for free users) */
     transcriptionsLimit?: number;
+    /** Callback when New Transcription is clicked */
+    onNewTranscription?: () => void;
 }
 
 const SIDEBAR_WIDTH = 240;
@@ -35,6 +35,7 @@ export function Sidebar({
     isPremium = false,
     transcriptionsUsed = 0,
     transcriptionsLimit = 10,
+    onNewTranscription,
 }: SidebarProps) {
     const { isCollapsed, isMobileOpen, toggleCollapse, closeMobile } =
         useSidebar();
@@ -57,8 +58,16 @@ export function Sidebar({
                 </Link>
             </div>
 
+            {/* New Transcription Button - Prominent CTA */}
+            <div className="p-3">
+                <NewTranscriptionButton
+                    isCollapsed={isCollapsed}
+                    onClick={onNewTranscription}
+                />
+            </div>
+
             {/* Usage / Premium Status */}
-            <div className="p-4 border-b border-border">
+            <div className="px-3 pb-3">
                 {isPremium ? (
                     <PremiumBadge isCollapsed={isCollapsed} />
                 ) : (
@@ -70,55 +79,46 @@ export function Sidebar({
                 )}
             </div>
 
-            {/* Get Premium CTA (free users only) */}
+            {/* Get Premium CTA (free users only) - Prominent */}
             {!isPremium && (
-                <div className="p-4 border-b border-border">
+                <div className="px-3 pb-3">
                     <Link href="/dashboard/subscription">
-                        <Button
-                            variant="default"
-                            size={isCollapsed ? "icon" : "sm"}
-                            className={cn("w-full", isCollapsed && "h-10 w-10")}
+                        <div
+                            className={cn(
+                                "flex items-center gap-2 px-3 py-2.5 rounded-lg",
+                                "bg-gradient-to-r from-amber-500/10 to-orange-500/10",
+                                "border border-amber-500/20",
+                                "text-amber-600 dark:text-amber-400",
+                                "hover:from-amber-500/20 hover:to-orange-500/20",
+                                "transition-all duration-200 cursor-pointer",
+                                isCollapsed && "justify-center px-2"
+                            )}
                         >
-                            <Sparkles className="h-4 w-4" />
-                            {!isCollapsed && <span>Get Premium</span>}
-                        </Button>
+                            <Sparkles className="h-4 w-4 shrink-0" />
+                            {!isCollapsed && (
+                                <span className="text-sm font-medium">Upgrade to Premium</span>
+                            )}
+                        </div>
                     </Link>
                 </div>
             )}
 
             {/* Main Navigation */}
-            <nav className="flex-1 p-2 space-y-1">
+            <nav className="flex-1 p-2 space-y-1 border-t border-border">
                 <NavItem
                     href="/dashboard"
                     icon={FileAudio}
                     label="My Transcriptions"
                     isCollapsed={isCollapsed}
                 />
-                <NavItem
-                    href="/folders"
-                    icon={FolderOpen}
-                    label="Folders"
-                    isCollapsed={isCollapsed}
-                />
-
-                {/* New Transcription Button */}
-                <div className="pt-2">
-                    <NewTranscriptionButton isCollapsed={isCollapsed} />
-                </div>
             </nav>
 
-            {/* Bottom Navigation */}
+            {/* Bottom Navigation - Settings (combined Account + Subscription) */}
             <div className="p-2 border-t border-border">
                 <NavItem
-                    href="/dashboard/account"
-                    icon={User}
-                    label="Account"
-                    isCollapsed={isCollapsed}
-                />
-                <NavItem
-                    href="/dashboard/subscription"
-                    icon={CreditCard}
-                    label="Subscription"
+                    href="/dashboard/settings"
+                    icon={Settings}
+                    label="Settings"
                     isCollapsed={isCollapsed}
                 />
             </div>
@@ -334,24 +334,41 @@ function NavItem({ href, icon: Icon, label, isCollapsed }: NavItemProps) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// New Transcription Button
+// New Transcription Button - Prominent CTA with Gradient
 // ─────────────────────────────────────────────────────────────
 
-function NewTranscriptionButton({ isCollapsed }: { isCollapsed: boolean }) {
+interface NewTranscriptionButtonProps {
+    isCollapsed: boolean;
+    onClick?: () => void;
+}
+
+function NewTranscriptionButton({ isCollapsed, onClick }: NewTranscriptionButtonProps) {
+    const handleClick = (e: React.MouseEvent) => {
+        if (onClick) {
+            e.preventDefault();
+            onClick();
+        }
+    };
+
     return (
-        <Link href="/dashboard?action=new">
-            <Button
-                variant="outline"
-                size={isCollapsed ? "icon" : "sm"}
+        <Link href="/dashboard?action=new" onClick={handleClick}>
+            <div
                 className={cn(
-                    "w-full border-dashed",
-                    "hover:border-primary hover:bg-primary/5",
-                    isCollapsed && "h-10 w-10"
+                    "flex items-center justify-center gap-2 w-full",
+                    "px-4 py-3 rounded-xl",
+                    "bg-gradient-to-r from-primary to-secondary",
+                    "text-primary-foreground font-medium",
+                    "shadow-lg shadow-primary/25",
+                    "hover:shadow-xl hover:shadow-primary/30",
+                    "hover:scale-[1.02]",
+                    "active:scale-[0.98]",
+                    "transition-all duration-200",
+                    isCollapsed && "px-3 py-3"
                 )}
             >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-5 w-5" />
                 {!isCollapsed && <span>New Transcription</span>}
-            </Button>
+            </div>
         </Link>
     );
 }

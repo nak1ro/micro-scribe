@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { MoreHorizontal, Pencil, Trash2, FileAudio, Clock, Globe } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, FileAudio, Globe } from "lucide-react";
 import { Button } from "@/components/ui";
 import type { TranscriptionListItem, TranscriptionStatus } from "../types";
 
@@ -33,46 +33,45 @@ export function TranscriptionItem({ item, onEdit, onDelete }: TranscriptionItemP
         year: "numeric",
     });
 
-    const formattedDuration = item.duration
-        ? formatDuration(item.duration)
-        : "—";
-
     return (
         <div
             className={cn(
-                "group flex items-center gap-4 px-4 py-3",
+                "group flex items-center gap-3 px-4 py-3",
                 "border-b border-border last:border-b-0",
-                "hover:bg-accent/50 transition-colors"
+                "hover:bg-accent/50 transition-colors cursor-pointer"
             )}
         >
-            {/* Icon */}
-            <div className="shrink-0">
+            {/* Icon with Status Dot */}
+            <div className="relative shrink-0">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                     <FileAudio className="h-5 w-5 text-primary" />
                 </div>
+                {/* Status Dot */}
+                <StatusDot status={item.status} />
             </div>
 
-            {/* Name & Status */}
+            {/* Name & Metadata */}
             <div className="flex-1 min-w-0">
                 <p className="font-medium text-foreground truncate">
                     {item.fileName}
                 </p>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                     <span>{formattedDate}</span>
-                    <StatusBadge status={item.status} />
+                    {item.language && (
+                        <>
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                                <Globe className="h-3 w-3" />
+                                {item.language.toUpperCase()}
+                            </span>
+                        </>
+                    )}
                 </div>
             </div>
 
-            {/* Duration */}
-            <div className="hidden sm:flex items-center gap-1 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                <span>{formattedDuration}</span>
-            </div>
-
-            {/* Language */}
-            <div className="hidden md:flex items-center gap-1 text-sm text-muted-foreground min-w-[60px]">
-                <Globe className="h-4 w-4" />
-                <span>{item.language?.toUpperCase() || "—"}</span>
+            {/* Status Text (on larger screens) */}
+            <div className="hidden sm:block">
+                <StatusLabel status={item.status} />
             </div>
 
             {/* Actions Menu */}
@@ -81,7 +80,10 @@ export function TranscriptionItem({ item, onEdit, onDelete }: TranscriptionItemP
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => setMenuOpen(!menuOpen)}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpen(!menuOpen);
+                    }}
                 >
                     <MoreHorizontal className="h-4 w-4" />
                 </Button>
@@ -131,53 +133,63 @@ export function TranscriptionItem({ item, onEdit, onDelete }: TranscriptionItemP
 }
 
 // ─────────────────────────────────────────────────────────────
-// Status Badge
+// Status Dot - Colored indicator on the icon
 // ─────────────────────────────────────────────────────────────
 
-function StatusBadge({ status }: { status: TranscriptionStatus }) {
+function StatusDot({ status }: { status: TranscriptionStatus }) {
+    const colors: Record<TranscriptionStatus, string> = {
+        pending: "bg-muted-foreground",
+        processing: "bg-info animate-pulse",
+        completed: "bg-success",
+        failed: "bg-destructive",
+        cancelled: "bg-muted-foreground",
+    };
+
+    return (
+        <span
+            className={cn(
+                "absolute -bottom-0.5 -right-0.5",
+                "w-3 h-3 rounded-full border-2 border-card",
+                colors[status]
+            )}
+            title={status.charAt(0).toUpperCase() + status.slice(1)}
+        />
+    );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Status Label - Text label shown on larger screens
+// ─────────────────────────────────────────────────────────────
+
+function StatusLabel({ status }: { status: TranscriptionStatus }) {
     const config: Record<TranscriptionStatus, { label: string; className: string }> = {
         pending: {
             label: "Pending",
-            className: "bg-muted text-muted-foreground",
+            className: "text-muted-foreground",
         },
         processing: {
-            label: "Processing",
-            className: "bg-info/10 text-info",
+            label: "Processing...",
+            className: "text-info",
         },
         completed: {
             label: "Completed",
-            className: "bg-success/10 text-success",
+            className: "text-success",
         },
         failed: {
             label: "Failed",
-            className: "bg-destructive/10 text-destructive",
+            className: "text-destructive",
         },
         cancelled: {
             label: "Cancelled",
-            className: "bg-muted text-muted-foreground",
+            className: "text-muted-foreground",
         },
     };
 
     const { label, className } = config[status];
 
     return (
-        <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", className)}>
+        <span className={cn("text-xs font-medium", className)}>
             {label}
         </span>
     );
-}
-
-// ─────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────
-
-function formatDuration(seconds: number): string {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-
-    if (hours > 0) {
-        return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-    }
-    return `${minutes}:${secs.toString().padStart(2, "0")}`;
 }
