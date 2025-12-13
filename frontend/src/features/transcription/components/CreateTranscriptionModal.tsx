@@ -2,9 +2,11 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { X, Upload, Youtube, Mic, FolderOpen, Trash2, Loader2 } from "lucide-react";
+import { X, Upload, Youtube, Mic, FolderOpen, Trash2, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui";
 import { TranscriptionQuality } from "@/types/api/transcription";
+import { useFileUpload } from "@/hooks/useFileUpload";
+import type { UploadStatus } from "@/types/models/upload";
 
 // ─────────────────────────────────────────────────────────────
 // Types
@@ -15,7 +17,7 @@ type TabType = "file" | "youtube" | "voice";
 interface CreateTranscriptionModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (data: TranscriptionFormData) => Promise<void>;
+    onSuccess?: () => void;
 }
 
 export interface TranscriptionFormData {
@@ -62,7 +64,7 @@ const SUPPORTED_FORMATS = [".mp3", ".mp4", ".m4a", ".mov", ".aac", ".wav", ".ogg
 export function CreateTranscriptionModal({
     isOpen,
     onClose,
-    onSubmit,
+    onSuccess,
 }: CreateTranscriptionModalProps) {
     const [activeTab, setActiveTab] = React.useState<TabType>("file");
     const [file, setFile] = React.useState<File | null>(null);
@@ -70,7 +72,8 @@ export function CreateTranscriptionModal({
     const [audioBlob, setAudioBlob] = React.useState<Blob | null>(null);
     const [languageCode, setLanguageCode] = React.useState("auto");
     const [quality, setQuality] = React.useState<TranscriptionQuality>(TranscriptionQuality.Balanced);
-    const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+    const { upload, abort, reset, progress, status, error, isUploading } = useFileUpload();
 
     // Reset state when modal closes
     React.useEffect(() => {
@@ -79,8 +82,9 @@ export function CreateTranscriptionModal({
             setYoutubeUrl("");
             setAudioBlob(null);
             setActiveTab("file");
+            reset();
         }
-    }, [isOpen]);
+    }, [isOpen, reset]);
 
     const hasContent = () => {
         switch (activeTab) {
@@ -110,32 +114,61 @@ export function CreateTranscriptionModal({
     const handleSubmit = async () => {
         if (!hasContent()) return;
 
-        setIsSubmitting(true);
-        try {
-            await onSubmit({
-                type: activeTab,
-                file: file ?? undefined,
-                youtubeUrl: youtubeUrl || undefined,
-                audioBlob: audioBlob ?? undefined,
-                languageCode: languageCode === "auto" ? "" : languageCode,
+        if (activeTab === "file" && file) {
+            // Use the upload hook for file uploads
+            const job = await upload(file, {
+                languageCode: languageCode === "auto" ? undefined : languageCode,
                 quality,
             });
-            onClose();
-        } catch (err) {
-            console.error("Transcription failed:", err);
-        } finally {
-            setIsSubmitting(false);
+
+            if (job) {
+                onSuccess?.();
+                onClose();
+            }
+        } else if (activeTab === "youtube") {
+            // TODO: Implement YouTube handling
+            console.log("YouTube URL:", youtubeUrl);
+        } else if (activeTab === "voice" && audioBlob) {
+            // Voice recordings are treated as files
+            const voiceFile = new File([audioBlob], "voice-recording.webm", {
+                type: "audio/webm",
+            });
+            const job = await upload(voiceFile, {
+                languageCode: languageCode === "auto" ? undefined : languageCode,
+                quality,
+            });
+
+            if (job) {
+                onSuccess?.();
+                onClose();
+            }
         }
     };
 
+    const handleCancel = () => {
+        if (isUploading) {
+            abort();
+        } else {
+            onClose();
+        }
+    };
+
+    const handleRetry = () => {
+        reset();
+    };
+
     if (!isOpen) return null;
+
+    const showUploadProgress = activeTab === "file" && isUploading;
+    const showError = status === "error";
+    const showSuccess = status === "success";
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                onClick={onClose}
+                onClick={isUploading ? undefined : onClose}
             />
 
             {/* Modal */}
@@ -153,131 +186,267 @@ export function CreateTranscriptionModal({
                     </h2>
                     <button
                         type="button"
-                        onClick={onClose}
-                        className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent"
+                        onClick={handleCancel}
+                        disabled={isUploading && status !== "uploading"}
+                        className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent disabled:opacity-50"
                     >
                         <X className="h-5 w-5" />
                     </button>
                 </div>
 
-                {/* Tabs */}
-                <div className="flex border-b border-border">
-                    <TabButton
-                        active={activeTab === "file"}
-                        onClick={() => setActiveTab("file")}
-                        icon={Upload}
-                        label="Media File"
+                {/* Upload Progress Overlay */}
+                {showUploadProgress && (
+                    <UploadProgressOverlay
+                        status={status}
+                        progress={progress}
+                        onCancel={abort}
                     />
-                    <TabButton
-                        active={activeTab === "youtube"}
-                        onClick={() => setActiveTab("youtube")}
-                        icon={Youtube}
-                        label="YouTube Link"
-                    />
-                    <TabButton
-                        active={activeTab === "voice"}
-                        onClick={() => setActiveTab("voice")}
-                        icon={Mic}
-                        label="Voice Recording"
-                    />
-                </div>
+                )}
 
-                {/* Tab Content */}
-                <div className="p-6">
-                    {activeTab === "file" && (
-                        <FileUploadTab
-                            file={file}
-                            onFileSelect={setFile}
-                            onClear={handleClear}
-                        />
-                    )}
-                    {activeTab === "youtube" && (
-                        <YouTubeTab
-                            url={youtubeUrl}
-                            onUrlChange={setYoutubeUrl}
-                            onClear={handleClear}
-                        />
-                    )}
-                    {activeTab === "voice" && (
-                        <VoiceRecordingTab
-                            audioBlob={audioBlob}
-                            onRecordingComplete={setAudioBlob}
-                            onClear={handleClear}
-                        />
-                    )}
-
-                    {/* Options */}
-                    <div className="mt-6 pt-6 border-t border-border space-y-4">
-                        {/* Language */}
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                            <label className="text-sm font-medium text-foreground min-w-[100px]">
-                                Language
-                            </label>
-                            <select
-                                value={languageCode}
-                                onChange={(e) => setLanguageCode(e.target.value)}
-                                className={cn(
-                                    "flex-1 h-10 px-3 rounded-md",
-                                    "bg-background border border-input",
-                                    "text-sm text-foreground",
-                                    "focus:outline-none focus:ring-2 focus:ring-ring"
-                                )}
-                            >
-                                {LANGUAGES.map((lang) => (
-                                    <option key={lang.code} value={lang.code}>
-                                        {lang.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Quality */}
-                        <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
-                            <label className="text-sm font-medium text-foreground min-w-[100px] pt-2">
-                                Model Speed
-                            </label>
-                            <div className="flex-1 flex gap-2">
-                                {QUALITY_OPTIONS.map((opt) => (
-                                    <button
-                                        key={opt.value}
-                                        type="button"
-                                        onClick={() => setQuality(opt.value)}
-                                        className={cn(
-                                            "flex-1 px-3 py-2 rounded-md text-sm border transition-all",
-                                            quality === opt.value
-                                                ? "border-primary bg-primary/10 text-primary"
-                                                : "border-input bg-background text-muted-foreground hover:border-primary/50"
-                                        )}
-                                    >
-                                        <div className="font-medium">{opt.label}</div>
-                                        <div className="text-xs opacity-70">{opt.description}</div>
-                                    </button>
-                                ))}
+                {/* Error State */}
+                {showError && (
+                    <div className="p-6">
+                        <div className="flex flex-col items-center gap-4 py-8">
+                            <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
+                                <AlertCircle className="h-8 w-8 text-destructive" />
+                            </div>
+                            <div className="text-center">
+                                <p className="font-semibold text-foreground mb-1">Upload Failed</p>
+                                <p className="text-sm text-muted-foreground">{error}</p>
+                            </div>
+                            <div className="flex gap-3">
+                                <Button variant="ghost" onClick={onClose}>
+                                    Close
+                                </Button>
+                                <Button onClick={handleRetry}>
+                                    Try Again
+                                </Button>
                             </div>
                         </div>
                     </div>
+                )}
+
+                {/* Success State */}
+                {showSuccess && (
+                    <div className="p-6">
+                        <div className="flex flex-col items-center gap-4 py-8">
+                            <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
+                                <CheckCircle className="h-8 w-8 text-success" />
+                            </div>
+                            <div className="text-center">
+                                <p className="font-semibold text-foreground mb-1">Transcription Started!</p>
+                                <p className="text-sm text-muted-foreground">
+                                    Your file is being transcribed. You'll see it in your list shortly.
+                                </p>
+                            </div>
+                            <Button onClick={onClose}>
+                                Done
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Normal Form State */}
+                {!showUploadProgress && !showError && !showSuccess && (
+                    <>
+                        {/* Tabs */}
+                        <div className="flex border-b border-border">
+                            <TabButton
+                                active={activeTab === "file"}
+                                onClick={() => setActiveTab("file")}
+                                icon={Upload}
+                                label="Media File"
+                            />
+                            <TabButton
+                                active={activeTab === "youtube"}
+                                onClick={() => setActiveTab("youtube")}
+                                icon={Youtube}
+                                label="YouTube Link"
+                            />
+                            <TabButton
+                                active={activeTab === "voice"}
+                                onClick={() => setActiveTab("voice")}
+                                icon={Mic}
+                                label="Voice Recording"
+                            />
+                        </div>
+
+                        {/* Tab Content */}
+                        <div className="p-6">
+                            {activeTab === "file" && (
+                                <FileUploadTab
+                                    file={file}
+                                    onFileSelect={setFile}
+                                    onClear={handleClear}
+                                />
+                            )}
+                            {activeTab === "youtube" && (
+                                <YouTubeTab
+                                    url={youtubeUrl}
+                                    onUrlChange={setYoutubeUrl}
+                                    onClear={handleClear}
+                                />
+                            )}
+                            {activeTab === "voice" && (
+                                <VoiceRecordingTab
+                                    audioBlob={audioBlob}
+                                    onRecordingComplete={setAudioBlob}
+                                    onClear={handleClear}
+                                />
+                            )}
+
+                            {/* Options */}
+                            <div className="mt-6 pt-6 border-t border-border space-y-4">
+                                {/* Language */}
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                    <label className="text-sm font-medium text-foreground min-w-[100px]">
+                                        Language
+                                    </label>
+                                    <select
+                                        value={languageCode}
+                                        onChange={(e) => setLanguageCode(e.target.value)}
+                                        className={cn(
+                                            "flex-1 h-10 px-3 rounded-md",
+                                            "bg-background border border-input",
+                                            "text-sm text-foreground",
+                                            "focus:outline-none focus:ring-2 focus:ring-ring"
+                                        )}
+                                    >
+                                        {LANGUAGES.map((lang) => (
+                                            <option key={lang.code} value={lang.code}>
+                                                {lang.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Quality */}
+                                <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
+                                    <label className="text-sm font-medium text-foreground min-w-[100px] pt-2">
+                                        Model Speed
+                                    </label>
+                                    <div className="flex-1 flex gap-2">
+                                        {QUALITY_OPTIONS.map((opt) => (
+                                            <button
+                                                key={opt.value}
+                                                type="button"
+                                                onClick={() => setQuality(opt.value)}
+                                                className={cn(
+                                                    "flex-1 px-3 py-2 rounded-md text-sm border transition-all",
+                                                    quality === opt.value
+                                                        ? "border-primary bg-primary/10 text-primary"
+                                                        : "border-input bg-background text-muted-foreground hover:border-primary/50"
+                                                )}
+                                            >
+                                                <div className="font-medium">{opt.label}</div>
+                                                <div className="text-xs opacity-70">{opt.description}</div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex items-center justify-end gap-3 p-6 border-t border-border">
+                            <Button variant="ghost" onClick={onClose}>
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleSubmit}
+                                disabled={!hasContent()}
+                                className="min-w-[120px]"
+                            >
+                                Transcribe
+                            </Button>
+                        </div>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Upload Progress Overlay
+// ─────────────────────────────────────────────────────────────
+
+interface UploadProgressOverlayProps {
+    status: UploadStatus;
+    progress: number;
+    onCancel: () => void;
+}
+
+function UploadProgressOverlay({ status, progress, onCancel }: UploadProgressOverlayProps) {
+    const getStatusMessage = () => {
+        switch (status) {
+            case "initiating":
+                return "Preparing upload...";
+            case "uploading":
+                return `Uploading file... ${progress}%`;
+            case "completing":
+                return "Finishing upload...";
+            case "validating":
+                return "Validating file...";
+            case "creating-job":
+                return "Creating transcription...";
+            default:
+                return "Processing...";
+        }
+    };
+
+    const canCancel = status === "uploading";
+
+    return (
+        <div className="p-6">
+            <div className="flex flex-col items-center gap-6 py-8">
+                {/* Spinner or progress indicator */}
+                <div className="relative">
+                    <div className="w-20 h-20 rounded-full border-4 border-muted flex items-center justify-center">
+                        {status === "uploading" ? (
+                            <span className="text-xl font-bold text-primary">{progress}%</span>
+                        ) : (
+                            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                        )}
+                    </div>
+                    {/* Progress ring for uploading */}
+                    {status === "uploading" && (
+                        <svg
+                            className="absolute inset-0 -rotate-90"
+                            width="80"
+                            height="80"
+                            viewBox="0 0 80 80"
+                        >
+                            <circle
+                                cx="40"
+                                cy="40"
+                                r="36"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                                className="text-primary"
+                                strokeDasharray={`${2 * Math.PI * 36}`}
+                                strokeDashoffset={`${2 * Math.PI * 36 * (1 - progress / 100)}`}
+                                strokeLinecap="round"
+                            />
+                        </svg>
+                    )}
                 </div>
 
-                {/* Footer */}
-                <div className="flex items-center justify-end gap-3 p-6 border-t border-border">
-                    <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleSubmit}
-                        disabled={!hasContent() || isSubmitting}
-                        className="min-w-[120px]"
-                    >
-                        {isSubmitting ? (
-                            <>
-                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                Processing...
-                            </>
-                        ) : (
-                            "Transcribe"
-                        )}
-                    </Button>
+                {/* Status message */}
+                <div className="text-center">
+                    <p className="font-semibold text-foreground">{getStatusMessage()}</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        {canCancel ? "You can cancel the upload" : "Please don't close this window"}
+                    </p>
                 </div>
+
+                {/* Cancel button (only during upload phase) */}
+                {canCancel && (
+                    <Button variant="ghost" onClick={onCancel}>
+                        Cancel Upload
+                    </Button>
+                )}
             </div>
         </div>
     );

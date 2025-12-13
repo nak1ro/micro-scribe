@@ -1,13 +1,7 @@
-// Feature Types
-export interface TranscriptionListItem {
-    id: string;
-    fileName: string;
-    uploadDate: string;
-    status: TranscriptionStatus;
-    duration: number | null;
-    language: string | null;
-}
+// Re-export from shared types
+export type { TranscriptionListItem } from "@/types/models/transcription";
 
+// Feature-specific types
 export type TranscriptionStatus =
     | "pending"
     | "processing"

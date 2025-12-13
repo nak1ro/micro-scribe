@@ -13,10 +13,6 @@ import {
 } from '@/types/api/transcription';
 
 export const transcriptionApi = {
-    // ─────────────────────────────────────────────────────────────
-    // Media Files
-    // ─────────────────────────────────────────────────────────────
-
     listMedia: async (params?: PaginationParams): Promise<PagedResponse<MediaFileResponse>> => {
         const response = await apiClient.get<PagedResponse<MediaFileResponse>>(
             API_ENDPOINTS.MEDIA.LIST,
@@ -34,10 +30,7 @@ export const transcriptionApi = {
         await apiClient.delete(API_ENDPOINTS.MEDIA.DELETE(id));
     },
 
-    // ─────────────────────────────────────────────────────────────
     // Upload Sessions
-    // ─────────────────────────────────────────────────────────────
-
     initiateUpload: async (data: InitiateUploadRequest): Promise<UploadSessionResponse> => {
         const response = await apiClient.post<UploadSessionResponse>(
             API_ENDPOINTS.UPLOADS.SESSIONS,
@@ -65,10 +58,7 @@ export const transcriptionApi = {
         await apiClient.delete(API_ENDPOINTS.UPLOADS.ABORT(sessionId));
     },
 
-    // ─────────────────────────────────────────────────────────────
     // Transcription Jobs
-    // ─────────────────────────────────────────────────────────────
-
     createJob: async (data: CreateTranscriptionJobRequest): Promise<TranscriptionJobResponse> => {
         const response = await apiClient.post<TranscriptionJobResponse>(
             API_ENDPOINTS.TRANSCRIPTIONS.CREATE,

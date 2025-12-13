@@ -10,10 +10,6 @@ interface FloatingActionButtonProps {
     label?: string;
 }
 
-/**
- * Floating Action Button (FAB) for primary actions.
- * Appears in bottom-right corner, with gradient styling.
- */
 export function FloatingActionButton({
     onClick,
     className,
