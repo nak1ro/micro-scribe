@@ -9,7 +9,6 @@ export default function DashboardPage() {
     const { isModalOpen, openModal, closeModal } = useDashboardModal();
 
     const handleUploadSuccess = () => {
-        // Refetch is handled internally by DashboardContent via useTranscriptions
         closeModal();
     };
 

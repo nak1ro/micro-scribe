@@ -38,7 +38,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasFilter("\"ClientRequestId\" IS NOT NULL");
 
         builder.Entity<UploadSession>()
-            .Property(s => s.RowVersion)
+            .Property(s => s.xmin)
             .IsRowVersion();
 
 

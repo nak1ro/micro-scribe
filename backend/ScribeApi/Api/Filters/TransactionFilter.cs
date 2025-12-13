@@ -18,6 +18,7 @@ public class TransactionFilter : IAsyncActionFilter
     {
         var method = context.HttpContext.Request.Method;
 
+        // Skip for read-only methods
         if (HttpMethods.IsGet(method) ||
             HttpMethods.IsHead(method) ||
             HttpMethods.IsOptions(method) ||
@@ -25,6 +26,19 @@ public class TransactionFilter : IAsyncActionFilter
         {
             await next();
             return;
+        }
+        
+        // Skip if action/controller is marked with SkipTransactionAttribute
+        var actionDescriptor = context.ActionDescriptor as Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor;
+        if (actionDescriptor != null)
+        {
+            var hasSkipAttribute = actionDescriptor.MethodInfo.GetCustomAttributes(typeof(SkipTransactionAttribute), true).Any() ||
+                                   actionDescriptor.ControllerTypeInfo.GetCustomAttributes(typeof(SkipTransactionAttribute), true).Any();
+            if (hasSkipAttribute)
+            {
+                await next();
+                return;
+            }
         }
 
         // For write operations (POST, PUT, PATCH, DELETE)

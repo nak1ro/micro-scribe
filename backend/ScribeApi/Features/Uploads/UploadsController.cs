@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ScribeApi.Api.Filters;
 using ScribeApi.Features.Uploads.Contracts;
-using ScribeApi.Shared.Extensions; // For GetUserId
+using ScribeApi.Shared.Extensions;
 
 namespace ScribeApi.Features.Uploads;
 
@@ -18,6 +19,7 @@ public class UploadsController : ControllerBase
     }
 
     [HttpPost]
+    [SkipTransaction] // Uses Serializable isolation level for plan limit enforcement
     public async Task<ActionResult<UploadSessionResponse>> InitiateUpload(
         [FromBody] InitiateUploadRequest request,
         CancellationToken ct)

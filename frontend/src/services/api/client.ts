@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { setupInterceptors } from './interceptors';
+import { setupInterceptors } from '@/services';
 
 // Create a new axios instance with custom config
 export const apiClient = axios.create({

@@ -1,4 +1,5 @@
 using Amazon;
+using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.Extensions.Options;
@@ -25,7 +26,17 @@ public class S3MediaStorageService : IFileStorageService
         _logger = logger;
 
         var config = new AmazonS3Config { RegionEndpoint = RegionEndpoint.GetBySystemName(_s3Settings.Region) };
-        _s3Client = new AmazonS3Client(config);
+
+        // Use credentials from config if provided, otherwise fall back to default credential chain
+        if (!string.IsNullOrEmpty(_s3Settings.AccessKeyId) && !string.IsNullOrEmpty(_s3Settings.SecretAccessKey))
+        {
+            var credentials = new BasicAWSCredentials(_s3Settings.AccessKeyId, _s3Settings.SecretAccessKey);
+            _s3Client = new AmazonS3Client(credentials, config);
+        }
+        else
+        {
+            _s3Client = new AmazonS3Client(config);
+        }
     }
 
     public string BucketName => _s3Settings.BucketName;

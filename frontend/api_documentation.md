@@ -503,7 +503,7 @@ interface InitiateUploadRequest {
   fileName: string;           // Required, original file name
   contentType: string;        // Required, MIME type (e.g., "audio/mp3")
   sizeBytes: number;          // Required, file size in bytes
-  clientRequestId?: string;   // Optional, for idempotency
+  clientRequestId?: string;   // For idempotency
 }
 ```
 

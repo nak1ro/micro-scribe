@@ -84,9 +84,8 @@ public class UploadSession
     // Soft delete timestamp
     public DateTime? DeletedAtUtc { get; set; }
 
-    // Concurrency control token
-    [System.ComponentModel.DataAnnotations.Timestamp]
-    public byte[] RowVersion { get; set; } = null!;
+    // Concurrency control token (PostgreSQL xmin)
+    public uint xmin { get; set; }
 
     // FK to created media file
     public Guid? MediaFileId { get; set; }
