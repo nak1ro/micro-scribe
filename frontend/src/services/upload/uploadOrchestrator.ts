@@ -36,9 +36,12 @@ export async function orchestrateUpload(
     // Step 1: Initiate upload session
     onStatusChange?.("initiating");
 
+    // Use consistent content type for both signing and upload
+    const contentType = file.type || "application/octet-stream";
+
     const session = await transcriptionApi.initiateUpload({
         fileName: file.name,
-        contentType: file.type || "application/octet-stream",
+        contentType,
         sizeBytes: file.size,
         clientRequestId: crypto.randomUUID(),
     });
@@ -50,11 +53,17 @@ export async function orchestrateUpload(
 
     let parts: PartETagDto[] | null = null;
 
-    if (file.size <= config.chunkSize && session.uploadUrl) {
-        await uploadSingleFile(file, session.uploadUrl, config, signal);
+    // Backend decides single vs multipart based on its threshold (returns uploadId for multipart)
+    // Frontend follows that decision, not its own size comparison
+    if (!session.uploadId && session.uploadUrl) {
+        // Single-file upload (backend returned presigned PUT URL, no multipart ID)
+        await uploadSingleFile(file, session.uploadUrl, contentType, config, signal);
         onProgress?.(100);
-    } else {
+    } else if (session.uploadId) {
+        // Multipart upload (backend initiated multipart and returned uploadId)
         parts = await uploadChunked(file, session, config, signal, onProgress);
+    } else {
+        throw new Error("Invalid session: neither uploadUrl nor uploadId provided");
     }
 
     checkAbort(signal);
@@ -111,6 +120,7 @@ function checkAbort(signal?: AbortSignal): void {
 async function uploadSingleFile(
     file: File,
     presignedUrl: string,
+    contentType: string,
     config: UploadConfig,
     signal?: AbortSignal
 ): Promise<void> {
@@ -119,7 +129,7 @@ async function uploadSingleFile(
         {
             method: "PUT",
             body: file,
-            headers: { "Content-Type": file.type || "application/octet-stream" },
+            headers: { "Content-Type": contentType },
             signal,
         },
         config.maxRetries,
