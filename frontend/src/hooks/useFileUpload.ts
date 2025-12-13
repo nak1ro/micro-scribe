@@ -10,8 +10,9 @@ import {
     UploadConfig,
     UploadStage,
     DEFAULT_UPLOAD_CONFIG,
-} from "@/services/upload/types";
-import { UploadStatus, UploadOptions } from "@/types/models/upload";
+    UploadStatus,
+    UploadOptions,
+} from "@/types/models/upload";
 import { TranscriptionJobResponse } from "@/types/api/transcription";
 
 export interface UseFileUploadOptions {

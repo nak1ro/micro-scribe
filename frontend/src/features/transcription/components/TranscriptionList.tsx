@@ -4,7 +4,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { TranscriptionItem } from "./TranscriptionItem";
 import { TranscriptionEmptyState } from "./TranscriptionEmptyState";
-import type { TranscriptionListItem } from "../types";
+import type { TranscriptionListItem } from "@/types/models/transcription";
 
 type InputType = "file" | "youtube" | "voice";
 

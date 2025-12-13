@@ -4,7 +4,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { MoreHorizontal, Pencil, Trash2, FileAudio, Globe } from "lucide-react";
 import { Button } from "@/components/ui";
-import type { TranscriptionListItem, TranscriptionStatus } from "../types";
+import type { TranscriptionListItem, TranscriptionStatus } from "@/types/models/transcription";
 
 interface TranscriptionItemProps {
     item: TranscriptionListItem;

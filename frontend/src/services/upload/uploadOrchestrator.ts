@@ -9,7 +9,7 @@ import {
     UploadConfig,
     UploadInput,
     DEFAULT_UPLOAD_CONFIG,
-} from "./types";
+} from "@/types/models/upload";
 
 /**
  * Orchestrates the complete file upload flow:
