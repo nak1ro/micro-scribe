@@ -95,4 +95,22 @@ public class TranscriptionJobQueries : ITranscriptionJobQueries
         return await _context.Users
             .FirstOrDefaultAsync(u => u.Id == userId, ct);
     }
+
+    public async Task<(List<TranscriptionJob> Items, int TotalCount)> GetUserJobsAsync(
+        string userId, int page, int pageSize, CancellationToken ct)
+    {
+        var query = _context.TranscriptionJobs
+            .AsNoTracking()
+            .Include(j => j.MediaFile)
+            .Where(j => j.UserId == userId)
+            .OrderByDescending(j => j.CreatedAtUtc);
+
+        var totalCount = await query.CountAsync(ct);
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return (items, totalCount);
+    }
 }

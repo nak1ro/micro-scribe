@@ -19,4 +19,7 @@ public interface ITranscriptionJobQueries
     Task<TranscriptionJob?> GetJobWithSegmentsAsync(Guid jobId, CancellationToken ct);
 
     Task<ApplicationUser?> GetUserByIdAsync(string userId, CancellationToken ct);
+
+    Task<(List<TranscriptionJob> Items, int TotalCount)> GetUserJobsAsync(
+        string userId, int page, int pageSize, CancellationToken ct);
 }

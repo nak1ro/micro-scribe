@@ -1,9 +1,11 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ScribeApi.Features.Media.Contracts;
 using ScribeApi.Features.Transcriptions.Contracts;
 using ScribeApi.Features.Transcriptions.Services;
 using ScribeApi.Shared.Extensions;
+using ScribeApi.Api.Filters;
 
 namespace ScribeApi.Features.Transcriptions;
 
@@ -32,7 +34,36 @@ public class TranscriptionsController : ControllerBase
         _mapper = mapper;
     }
 
+    [HttpGet]
+    public async Task<ActionResult<PagedResponse<TranscriptionJobListItem>>> ListJobs(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var (items, totalCount) = await _queries.GetUserJobsAsync(userId, page, pageSize, ct);
+
+        var listItems = items.Select(j => new TranscriptionJobListItem(
+            j.Id,
+            j.MediaFile?.OriginalFileName ?? "Unknown",
+            j.Status,
+            j.Quality,
+            j.LanguageCode,
+            j.MediaFile?.DurationSeconds,
+            j.CreatedAtUtc,
+            j.CompletedAtUtc
+        )).ToList();
+
+        var response = new PagedResponse<TranscriptionJobListItem>(
+            listItems, page, pageSize, totalCount);
+
+        return Ok(response);
+    }
+
     [HttpPost]
+    [SkipTransaction]
     public async Task<ActionResult<TranscriptionJobResponse>> CreateJob(
         [FromBody] CreateTranscriptionJobRequest request,
         CancellationToken ct)
@@ -46,6 +77,7 @@ public class TranscriptionsController : ControllerBase
     }
 
     [HttpPost("{jobId:guid}/cancel")]
+    [SkipTransaction]
     public async Task<IActionResult> CancelJob(Guid jobId, CancellationToken ct)
     {
         var userId = User.GetUserId();

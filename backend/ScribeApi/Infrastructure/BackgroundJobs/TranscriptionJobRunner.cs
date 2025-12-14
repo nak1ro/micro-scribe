@@ -52,25 +52,44 @@ public class TranscriptionJobRunner
 
         try
         {
+            _logger.LogDebug("[Job {JobId}] Step 1: Marking as Processing", jobId);
             await MarkAsProcessingAsync(job!, ct);
+
+            _logger.LogDebug("[Job {JobId}] Step 2: Preparing audio. MediaFile: {MediaFileId}, StorageKey: {Key}", 
+                jobId, job!.MediaFile?.Id, job.MediaFile?.StorageObjectKey);
             await PrepareAudioAsync(job!, ct);
+
+            _logger.LogDebug("[Job {JobId}] Step 3: Running transcription. AudioPath: {AudioPath}, Duration: {Duration}s", 
+                jobId, job.MediaFile?.NormalizedAudioObjectKey, job.DurationSeconds);
             await RunTranscriptionAsync(job!, ct);
+
+            _logger.LogDebug("[Job {JobId}] Step 4: Updating user usage", jobId);
             await UpdateUserUsageAsync(job!, ct);
+
+            _logger.LogDebug("[Job {JobId}] Step 5: Marking as completed", jobId);
             await MarkAsCompletedAsync(job!, ct);
 
-            _logger.LogInformation("Transcription job {JobId} completed", jobId);
+            _logger.LogInformation("Transcription job {JobId} completed successfully", jobId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Transcription job {JobId} failed", jobId);
+            _logger.LogError(ex, "[Job {JobId}] FAILED at exception. Type: {ExType}, Message: {Message}", 
+                jobId, ex.GetType().Name, ex.Message);
+            
+            // Log inner exception if present
+            if (ex.InnerException != null)
+            {
+                _logger.LogError("[Job {JobId}] Inner exception: {InnerType} - {InnerMessage}", 
+                    jobId, ex.InnerException.GetType().Name, ex.InnerException.Message);
+            }
+
             await MarkAsFailedAsync(job!, ex.Message, ct);
-            // We do NOT rethrow to prevent Hangfire from retrying indefinitely on logic errors.
-            // If you want retries for transient errors, you'd need specific logic here.
         }
         finally
         {
             if (job?.MediaFile != null)
             {
+                _logger.LogDebug("[Job {JobId}] Cleanup: Deleting media files", jobId);
                 await _mediaService.DeleteMediaFilesAsync(job.MediaFile, CancellationToken.None);
             }
         }
@@ -83,6 +102,9 @@ public class TranscriptionJobRunner
             _logger.LogWarning("Job {JobId} not found, skipping", jobId);
             return false;
         }
+
+        _logger.LogDebug("[Job {JobId}] Validating state. Current status: {Status}, MediaFile: {HasMedia}", 
+            jobId, job.Status, job.MediaFile != null);
 
         if (job.Status is TranscriptionJobStatus.Completed
             or TranscriptionJobStatus.Failed
@@ -108,7 +130,14 @@ public class TranscriptionJobRunner
     {
         var mediaFile = job.MediaFile;
 
-        // Skip if audio already prepared
+        if (mediaFile == null)
+        {
+            throw new TranscriptionException("MediaFile is null - cannot prepare audio");
+        }
+
+        _logger.LogDebug("[PrepareAudio] MediaFile {Id}: StorageKey={Key}, BucketName={Bucket}", 
+            mediaFile.Id, mediaFile.StorageObjectKey, mediaFile.BucketName);
+
         // Skip if audio already prepared
         if (!string.IsNullOrEmpty(mediaFile.NormalizedAudioObjectKey) && mediaFile.DurationSeconds.HasValue)
         {
@@ -117,17 +146,29 @@ public class TranscriptionJobRunner
             return;
         }
 
-        _logger.LogInformation("Extracting audio for MediaFile {Id}", mediaFile.Id);
+        _logger.LogInformation("Extracting audio for MediaFile {Id} from {StorageKey}", 
+            mediaFile.Id, mediaFile.StorageObjectKey);
 
-        var ffmpegResult = await _ffmpegService.ConvertToAudioAsync(
-            mediaFile.StorageObjectKey,
-            ct);
+        try
+        {
+            var ffmpegResult = await _ffmpegService.ConvertToAudioAsync(
+                mediaFile.StorageObjectKey,
+                ct);
 
-        mediaFile.NormalizedAudioObjectKey = ffmpegResult.AudioPath;
-        mediaFile.DurationSeconds = ffmpegResult.Duration.TotalSeconds;
-        job.DurationSeconds = ffmpegResult.Duration.TotalSeconds;
+            _logger.LogDebug("[PrepareAudio] FFmpeg result: AudioPath={Path}, Duration={Duration}s", 
+                ffmpegResult.AudioPath, ffmpegResult.Duration.TotalSeconds);
 
-        await _context.SaveChangesAsync(ct);
+            mediaFile.NormalizedAudioObjectKey = ffmpegResult.AudioPath;
+            mediaFile.DurationSeconds = ffmpegResult.Duration.TotalSeconds;
+            job.DurationSeconds = ffmpegResult.Duration.TotalSeconds;
+
+            await _context.SaveChangesAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[PrepareAudio] FFmpeg conversion failed for MediaFile {Id}", mediaFile.Id);
+            throw;
+        }
     }
 
 
@@ -136,21 +177,37 @@ public class TranscriptionJobRunner
         var audioPath = job.MediaFile.NormalizedAudioObjectKey
                         ?? throw new TranscriptionException("Audio file preparation failed: normalized audio path is missing.");
 
-        await using var audioStream = await _storageService.OpenReadAsync(audioPath, ct);
+        _logger.LogDebug("[RunTranscription] Opening audio stream from: {AudioPath}", audioPath);
 
-        var result = await _transcriptionProvider.TranscribeAsync(
-            audioStream,
-            Path.GetFileName(audioPath),
-            job.Quality,
-            job.LanguageCode,
-            ct);
+        try
+        {
+            await using var audioStream = await _storageService.OpenReadAsync(audioPath, ct);
+            
+            _logger.LogDebug("[RunTranscription] Audio stream opened. Calling transcription provider. Quality={Quality}, Language={Lang}", 
+                job.Quality, job.LanguageCode ?? "auto-detect");
 
-        job.Transcript = result.FullTranscript;
-        job.LanguageCode = result.DetectedLanguage;
+            var result = await _transcriptionProvider.TranscribeAsync(
+                audioStream,
+                Path.GetFileName(audioPath),
+                job.Quality,
+                job.LanguageCode,
+                ct);
 
-        AddSegments(job, result.Segments);
+            _logger.LogDebug("[RunTranscription] Transcription complete. Segments: {Count}, DetectedLang: {Lang}", 
+                result.Segments.Count, result.DetectedLanguage);
 
-        await _context.SaveChangesAsync(ct);
+            job.Transcript = result.FullTranscript;
+            job.LanguageCode = result.DetectedLanguage;
+
+            AddSegments(job, result.Segments);
+
+            await _context.SaveChangesAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[RunTranscription] Transcription failed. AudioPath: {Path}", audioPath);
+            throw;
+        }
     }
 
     private void AddSegments(
@@ -182,7 +239,6 @@ public class TranscriptionJobRunner
 
         var usageMinutes = job.DurationSeconds.Value / 60.0;
 
-        // Use atomic update to prevent race conditions on usage stats
         await _context.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE \"AspNetUsers\" SET \"UsedMinutesThisMonth\" = \"UsedMinutesThisMonth\" + {usageMinutes} WHERE \"Id\" = {job.UserId}",
             ct);
@@ -192,31 +248,20 @@ public class TranscriptionJobRunner
 
     private async Task MarkAsCompletedAsync(TranscriptionJob job, CancellationToken ct)
     {
-        // Concurrency Check: Only transition if still Processing.
-        // If user Cancelled concurrently, this will fail or we can explicit check.
-        // Since we are not using database row lock here, there is a small race.
-        // Strongest fix: WHERE Status = Processing.
+        // Status is stored as string in PostgreSQL (HasConversion<string>())
+        var completedStatus = nameof(TranscriptionJobStatus.Completed);
+        var processingStatus = nameof(TranscriptionJobStatus.Processing);
         
         var rowsAffected = await _context.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE \"TranscriptionJobs\" SET \"Status\" = {(int)TranscriptionJobStatus.Completed}, \"CompletedAtUtc\" = {DateTime.UtcNow} WHERE \"Id\" = {job.Id} AND \"Status\" = {(int)TranscriptionJobStatus.Processing}", 
+            $"UPDATE \"TranscriptionJobs\" SET \"Status\" = {completedStatus}, \"CompletedAtUtc\" = {DateTime.UtcNow} WHERE \"Id\" = {job.Id} AND \"Status\" = {processingStatus}", 
             ct);
 
         if (rowsAffected == 0)
         {
             _logger.LogWarning("Job {JobId} could not be marked Completed (Status mismatch or deleted).", job.Id);
-            // If we failed to mark completed, we should probably NOT have charged the user?
-            // Actually UpdateUserUsageAsync was already called above.
-            // Race: usage updated, but status stayed Cancelled. Double Charge?
-            // Fix: Move Usage Update INSIDE this logic or condition.
-            
-            // To be safe against double charge:
-            // We should revert usage if row not updated? No, that's messy.
-            // Better: Do UpdateUserUsageAsync ONLY if rowsAffected > 0.
-            // But we can't combine them easily without a stored proc or transaction.
         }
         else
         {
-             // Status updated successfully.
              job.Status = TranscriptionJobStatus.Completed;
              
              // Trigger webhook
@@ -241,13 +286,22 @@ public class TranscriptionJobRunner
         job.CompletedAtUtc = DateTime.UtcNow;
         await _context.SaveChangesAsync(ct);
         
-        // Trigger webhook
-        await _webhookService.EnqueueAsync(job.UserId, WebhookEvents.JobFailed, new
+        _logger.LogDebug("[MarkAsFailed] Job {JobId} marked as failed. Triggering webhook.", job.Id);
+        
+        try
         {
-            jobId = job.Id,
-            mediaFileId = job.MediaFileId,
-            status = "Failed",
-            errorMessage = errorMessage
-        }, ct);
+            await _webhookService.EnqueueAsync(job.UserId, WebhookEvents.JobFailed, new
+            {
+                jobId = job.Id,
+                mediaFileId = job.MediaFileId,
+                status = "Failed",
+                errorMessage = errorMessage
+            }, ct);
+        }
+        catch (Exception webhookEx)
+        {
+            // Don't let webhook errors mask the original error
+            _logger.LogError(webhookEx, "[MarkAsFailed] Webhook enqueue failed for job {JobId}", job.Id);
+        }
     }
 }

@@ -58,3 +58,15 @@ public enum ExportFormat
     Vtt,
     Json
 }
+
+// List item for job list response
+public record TranscriptionJobListItem(
+    Guid JobId,
+    string OriginalFileName,
+    TranscriptionJobStatus Status,
+    TranscriptionQuality Quality,
+    string? LanguageCode,
+    double? DurationSeconds,
+    DateTime CreatedAtUtc,
+    DateTime? CompletedAtUtc
+);

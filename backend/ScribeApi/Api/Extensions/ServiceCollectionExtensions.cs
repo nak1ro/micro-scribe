@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using Amazon.S3;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -38,7 +39,11 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration)
     {
         // Controllers + Filters
-        services.AddControllers(options => { options.Filters.Add<TransactionFilter>(); });
+        services.AddControllers(options => { options.Filters.Add<TransactionFilter>(); })
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+            });
 
         services.AddEndpointsApiExplorer();
 

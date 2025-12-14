@@ -26,10 +26,15 @@ public class WebhookService : IWebhookService
 
     public async Task EnqueueAsync(string userId, string eventName, object payload, CancellationToken ct)
     {
-        var subscriptions = await _context.WebhookSubscriptions
+        // Fetch active subscriptions first, then filter by event in-memory
+        // EF Core can't translate Contains on List<string> stored as JSON
+        var activeSubscriptions = await _context.WebhookSubscriptions
             .Where(s => s.UserId == userId && s.IsActive)
-            .Where(s => s.Events.Contains(eventName))
             .ToListAsync(ct);
+
+        var subscriptions = activeSubscriptions
+            .Where(s => s.Events.Contains(eventName))
+            .ToList();
 
         if (subscriptions.Count == 0)
         {

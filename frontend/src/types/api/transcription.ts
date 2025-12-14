@@ -117,6 +117,18 @@ export interface TranscriptionJobResponse {
     createdAtUtc: string;
 }
 
+// List item for paginated job list response
+export interface TranscriptionJobListItem {
+    jobId: string;
+    originalFileName: string;
+    status: TranscriptionJobStatus;
+    quality: TranscriptionQuality;
+    languageCode: string | null;
+    durationSeconds: number | null;
+    createdAtUtc: string;
+    completedAtUtc: string | null;
+}
+
 export interface TranscriptionJobDetailResponse {
     jobId: string;
     mediaFileId: string;

@@ -15,6 +15,7 @@ public class OpenAiTranscriptionProvider : ITranscriptionProvider
     private readonly OpenAiSettings _settings;
     private readonly ILogger<OpenAiTranscriptionProvider> _logger;
     private const string WhisperUrl = "https://api.openai.com/v1/audio/transcriptions";
+    private const long MaxFileSizeBytes = 25 * 1024 * 1024; // OpenAI Whisper limit: 25MB
 
     public OpenAiTranscriptionProvider(
         HttpClient httpClient,
@@ -24,6 +25,9 @@ public class OpenAiTranscriptionProvider : ITranscriptionProvider
         _httpClient = httpClient;
         _settings = settings.Value;
         _logger = logger;
+        
+        // Set a longer timeout for large files
+        _httpClient.Timeout = TimeSpan.FromMinutes(10);
     }
 
     public async Task<TranscriptionResult> TranscribeAsync(
@@ -38,19 +42,41 @@ public class OpenAiTranscriptionProvider : ITranscriptionProvider
             throw new InvalidOperationException("OpenAI API Key is not configured.");
         }
 
-        _logger.LogInformation("Starting OpenAI transcription for {FileName}. Language hint: {Language}", fileName, languageHint ?? "auto");
+        // Buffer the stream into memory - S3 streams aren't seekable and chunked uploads can fail
+        _logger.LogDebug("Buffering audio stream into memory for reliable upload...");
+        using var memoryStream = new MemoryStream();
+        await audioStream.CopyToAsync(memoryStream, ct);
+        memoryStream.Position = 0;
+        
+        var fileSizeBytes = memoryStream.Length;
+        var fileSizeMB = fileSizeBytes / (1024.0 * 1024.0);
+        
+        _logger.LogInformation("Starting OpenAI transcription for {FileName}. Size: {Size:F2} MB, Language: {Language}", 
+            fileName, fileSizeMB, languageHint ?? "auto");
+
+        // Check file size limit
+        if (fileSizeBytes > MaxFileSizeBytes)
+        {
+            throw new InvalidOperationException(
+                $"Audio file is too large for OpenAI Whisper API: {fileSizeMB:F2} MB (max: 25 MB). " +
+                "Consider using a lower quality or splitting the file.");
+        }
 
         using var request = new HttpRequestMessage(HttpMethod.Post, WhisperUrl);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.ApiKey);
 
         using var content = new MultipartFormDataContent();
         
-        // Add file content
-        var streamContent = new StreamContent(audioStream);
-        // Basic MIME type inference (optional, but good practice if filename has extension)
+        // Add file content from buffered memory stream
+        var streamContent = new StreamContent(memoryStream);
+        streamContent.Headers.ContentLength = fileSizeBytes; // Set explicit content length
+        
+        // MIME type inference
         var contentType = "audio/mpeg"; 
-        if (fileName.EndsWith(".wav")) contentType = "audio/wav";
-        else if (fileName.EndsWith(".m4a")) contentType = "audio/mp4";
+        if (fileName.EndsWith(".wav", StringComparison.OrdinalIgnoreCase)) contentType = "audio/wav";
+        else if (fileName.EndsWith(".m4a", StringComparison.OrdinalIgnoreCase)) contentType = "audio/mp4";
+        else if (fileName.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase)) contentType = "audio/mpeg";
+        else if (fileName.EndsWith(".webm", StringComparison.OrdinalIgnoreCase)) contentType = "audio/webm";
         
         streamContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
         content.Add(streamContent, "file", fileName);
@@ -70,6 +96,7 @@ public class OpenAiTranscriptionProvider : ITranscriptionProvider
 
         try
         {
+            _logger.LogDebug("Sending request to OpenAI Whisper API...");
             var response = await _httpClient.SendAsync(request, ct);
             
             if (!response.IsSuccessStatusCode)
@@ -79,6 +106,7 @@ public class OpenAiTranscriptionProvider : ITranscriptionProvider
                 throw new Exception($"OpenAI Transcription failed: {response.StatusCode} - {errorContent}");
             }
 
+            _logger.LogDebug("OpenAI request successful, parsing response...");
             var jsonResponse = await response.Content.ReadAsStringAsync(ct);
             var openAiResponse = JsonSerializer.Deserialize<OpenAiDtos.OpenAiWhisperResponse>(jsonResponse, new JsonSerializerOptions
             {
@@ -90,11 +118,19 @@ public class OpenAiTranscriptionProvider : ITranscriptionProvider
                 throw new Exception("Failed to deserialize OpenAI response.");
             }
 
+            _logger.LogInformation("OpenAI transcription completed. Detected language: {Lang}, Segments: {Count}", 
+                openAiResponse.Language, openAiResponse.Segments?.Count ?? 0);
+
             return MapToResult(openAiResponse);
+        }
+        catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            _logger.LogError(ex, "OpenAI request timed out. File size: {Size:F2} MB", fileSizeMB);
+            throw new Exception($"OpenAI request timed out. The file ({fileSizeMB:F2} MB) may be too large or the connection is slow.", ex);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _logger.LogError(ex, "Error occurring during OpenAI transcription request");
+            _logger.LogError(ex, "Error during OpenAI transcription request. File: {FileName}, Size: {Size:F2} MB", fileName, fileSizeMB);
             throw;
         }
     }
@@ -105,11 +141,9 @@ public class OpenAiTranscriptionProvider : ITranscriptionProvider
             Text: s.Text,
             StartSeconds: s.Start,
             EndSeconds: s.End,
-            Speaker: null // Whisper generic doesn't support diarization out of the box easily without add-ons
+            Speaker: null
         )).ToList() ?? new List<TranscriptSegmentData>();
 
-        // Whisper doesn't natively return chapters, so we might infer them or leave empty.
-        // For now, empty list.
         var chapters = new List<TranscriptChapterData>();
 
         return new TranscriptionResult(

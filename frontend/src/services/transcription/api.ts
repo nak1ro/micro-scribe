@@ -5,6 +5,7 @@ import {
     PaginationParams,
     CreateTranscriptionJobRequest,
     TranscriptionJobResponse,
+    TranscriptionJobListItem,
     TranscriptionJobDetailResponse,
     InitiateUploadRequest,
     UploadSessionResponse,
@@ -59,6 +60,14 @@ export const transcriptionApi = {
     },
 
     // Transcription Jobs
+    listJobs: async (params?: PaginationParams): Promise<PagedResponse<TranscriptionJobListItem>> => {
+        const response = await apiClient.get<PagedResponse<TranscriptionJobListItem>>(
+            API_ENDPOINTS.TRANSCRIPTIONS.LIST,
+            { params }
+        );
+        return response.data;
+    },
+
     createJob: async (data: CreateTranscriptionJobRequest): Promise<TranscriptionJobResponse> => {
         const response = await apiClient.post<TranscriptionJobResponse>(
             API_ENDPOINTS.TRANSCRIPTIONS.CREATE,

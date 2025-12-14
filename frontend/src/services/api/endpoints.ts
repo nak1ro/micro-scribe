@@ -27,6 +27,7 @@ export const API_ENDPOINTS = {
         UPLOAD_CHUNK: (sessionId: string, chunkIndex: number) => `/uploads/sessions/${sessionId}/chunks/${chunkIndex}`,
     },
     TRANSCRIPTIONS: {
+        LIST: '/transcriptions',
         CREATE: '/transcriptions',
         GET: (jobId: string) => `/transcriptions/${jobId}`,
         CANCEL: (jobId: string) => `/transcriptions/${jobId}/cancel`,
