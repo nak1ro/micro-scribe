@@ -19,6 +19,9 @@ interface UseTranscriptionsReturn {
     hasActiveJobs: boolean;
     refetch: () => Promise<void>;
     deleteItem: (id: string) => Promise<void>;
+    addOptimisticItem: (item: TranscriptionListItem) => void;
+    updateOptimisticItem: (id: string, updates: Partial<TranscriptionListItem>) => void;
+    removeOptimisticItem: (id: string) => void;
 }
 
 // Query key factory for consistent cache management
@@ -74,14 +77,24 @@ export function useTranscriptions(
     const { page = 1, pageSize = 50 } = options;
     const queryClient = useQueryClient();
 
+    // Local state for optimistic items (uploads in progress)
+    const [optimisticItems, setOptimisticItems] = React.useState<TranscriptionListItem[]>([]);
+
     // 1. Fetch the list (initial load + manual refetch)
-    // We disable automatic polling for the list itself
     const listQuery = useQuery({
         queryKey: transcriptionsKeys.jobs(page, pageSize),
         queryFn: () => transcriptionApi.listJobs({ page, pageSize }),
     });
 
-    const initialItems = listQuery.data?.items.map(mapJobToListItem) ?? [];
+    const serverItems = listQuery.data?.items.map(mapJobToListItem) ?? [];
+
+    // Merge optimistic items with server items (optimistic at top, filter out duplicates)
+    const initialItems = React.useMemo(() => {
+        const serverIds = new Set(serverItems.map(item => item.id));
+        // Remove optimistic items that now exist on server
+        const activeOptimistic = optimisticItems.filter(item => !serverIds.has(item.id));
+        return [...activeOptimistic, ...serverItems];
+    }, [serverItems, optimisticItems]);
 
     // 2. Identify active jobs that need polling
     const activeJobs = initialItems.filter(
@@ -146,6 +159,21 @@ export function useTranscriptions(
         await deleteMutation.mutateAsync(id);
     };
 
+    // Optimistic update functions
+    const addOptimisticItem = (item: TranscriptionListItem) => {
+        setOptimisticItems(prev => [item, ...prev]);
+    };
+
+    const updateOptimisticItem = (id: string, updates: Partial<TranscriptionListItem>) => {
+        setOptimisticItems(prev =>
+            prev.map(item => item.id === id ? { ...item, ...updates } : item)
+        );
+    };
+
+    const removeOptimisticItem = (id: string) => {
+        setOptimisticItems(prev => prev.filter(item => item.id !== id));
+    };
+
     const hasActive = React.useMemo(() => hasActiveJobsFromList(items), [items]);
 
     return {
@@ -155,6 +183,9 @@ export function useTranscriptions(
         hasActiveJobs: hasActive,
         refetch,
         deleteItem,
+        addOptimisticItem,
+        updateOptimisticItem,
+        removeOptimisticItem,
     };
 }
 

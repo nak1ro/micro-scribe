@@ -18,6 +18,16 @@ interface CreateTranscriptionModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess?: () => void;
+    onOptimisticAdd?: (item: {
+        id: string;
+        fileName: string;
+        uploadDate: string;
+        status: "uploading";
+        duration: number | null;
+        language: string | null;
+    }) => void;
+    onOptimisticUpdate?: (id: string, updates: { status: "pending" | "failed" }) => void;
+    onOptimisticRemove?: (id: string) => void;
 }
 
 export interface TranscriptionFormData {
@@ -65,6 +75,9 @@ export function CreateTranscriptionModal({
     isOpen,
     onClose,
     onSuccess,
+    onOptimisticAdd,
+    onOptimisticUpdate,
+    onOptimisticRemove,
 }: CreateTranscriptionModalProps) {
     const [activeTab, setActiveTab] = React.useState<TabType>("file");
     const [file, setFile] = React.useState<File | null>(null);
@@ -114,34 +127,55 @@ export function CreateTranscriptionModal({
     const handleSubmit = async () => {
         if (!hasContent()) return;
 
-        if (activeTab === "file" && file) {
-            // Use the upload hook for file uploads
-            const job = await upload(file, {
-                languageCode: languageCode === "auto" ? undefined : languageCode,
-                quality,
+        // Helper to run upload in background with optimistic updates
+        const runBackgroundUpload = async (uploadFile: File) => {
+            // Create a temporary ID for optimistic item
+            const tempId = `temp-${Date.now()}`;
+
+            // Add optimistic item to list and close modal immediately
+            onOptimisticAdd?.({
+                id: tempId,
+                fileName: uploadFile.name,
+                uploadDate: new Date().toISOString(),
+                status: "uploading",
+                duration: null,
+                language: languageCode === "auto" ? null : languageCode,
             });
 
-            if (job) {
-                onSuccess?.();
-                onClose();
+            onClose();
+            reset();
+
+            // Run upload in background
+            try {
+                const job = await upload(uploadFile, {
+                    languageCode: languageCode === "auto" ? undefined : languageCode,
+                    quality,
+                });
+
+                if (job) {
+                    // Upload succeeded - remove optimistic item (server data will appear on refetch)
+                    onOptimisticRemove?.(tempId);
+                    onSuccess?.();
+                } else {
+                    // Upload failed - update status to failed
+                    onOptimisticUpdate?.(tempId, { status: "failed" });
+                }
+            } catch {
+                // Upload errored - update status to failed
+                onOptimisticUpdate?.(tempId, { status: "failed" });
             }
+        };
+
+        if (activeTab === "file" && file) {
+            runBackgroundUpload(file);
         } else if (activeTab === "youtube") {
             // TODO: Implement YouTube handling
             console.log("YouTube URL:", youtubeUrl);
         } else if (activeTab === "voice" && audioBlob) {
-            // Voice recordings are treated as files
             const voiceFile = new File([audioBlob], "voice-recording.webm", {
                 type: "audio/webm",
             });
-            const job = await upload(voiceFile, {
-                languageCode: languageCode === "auto" ? undefined : languageCode,
-                quality,
-            });
-
-            if (job) {
-                onSuccess?.();
-                onClose();
-            }
+            runBackgroundUpload(voiceFile);
         }
     };
 

@@ -4,35 +4,33 @@ import * as React from "react";
 import { Search, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TranscriptionList } from "@/features/transcription";
-import { useTranscriptions } from "@/hooks";
+import type { TranscriptionListItem } from "@/types/models/transcription";
 
 interface DashboardContentProps {
+    items: TranscriptionListItem[];
+    isLoading: boolean;
+    error: string | null;
     onOpenModal: () => void;
-    onUploadSuccess?: () => void;
+    onEdit: (id: string) => void;
+    onDelete: (id: string) => Promise<void>;
 }
 
-export function DashboardContent({ onOpenModal, onUploadSuccess }: DashboardContentProps) {
-    const { items, isLoading, error, refetch, deleteItem } = useTranscriptions();
+export function DashboardContent({
+    items,
+    isLoading,
+    error,
+    onOpenModal,
+    onEdit,
+    onDelete,
+}: DashboardContentProps) {
     const [searchQuery, setSearchQuery] = React.useState("");
 
-    const handleEdit = (id: string) => {
-        // TODO: Navigate to edit page or open edit modal
-        console.log("Edit transcription:", id);
-    };
-
     const handleDelete = async (id: string) => {
-        // TODO: Implement delete confirmation
-        console.log("Delete transcription:", id);
         try {
-            await deleteItem(id);
+            await onDelete(id);
         } catch (err) {
             console.error("Failed to delete:", err);
         }
-    };
-
-    const handleUploadSuccess = async () => {
-        await refetch();
-        onUploadSuccess?.();
     };
 
     // Filter items based on search query
@@ -67,13 +65,11 @@ export function DashboardContent({ onOpenModal, onUploadSuccess }: DashboardCont
                 <TranscriptionList
                     items={filteredItems}
                     isLoading={isLoading}
-                    onEdit={handleEdit}
+                    onEdit={onEdit}
                     onDelete={handleDelete}
                     onNewClick={onOpenModal}
                 />
             </div>
-
-
         </>
     );
 }

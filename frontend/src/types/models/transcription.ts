@@ -2,6 +2,7 @@
 
 // Status for transcription jobs
 export type TranscriptionStatus =
+    | "uploading"
     | "pending"
     | "processing"
     | "completed"

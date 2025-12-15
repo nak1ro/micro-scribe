@@ -38,10 +38,11 @@ export function TranscriptionList({
                 "bg-card overflow-hidden"
             )}
         >
-            {items.map((item) => (
+            {items.map((item, index) => (
                 <TranscriptionItem
                     key={item.id}
                     item={item}
+                    index={index}
                     onEdit={onEdit}
                     onDelete={onDelete}
                 />
