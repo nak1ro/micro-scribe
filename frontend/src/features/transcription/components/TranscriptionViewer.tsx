@@ -7,6 +7,7 @@ import { ArrowLeft, Clock, FileText, AlignLeft, Loader2, Copy, Check, AlertCircl
 import { Button } from "@/components/ui";
 import { useTranscriptionJob } from "@/hooks/useTranscriptions";
 import { TranscriptionJobStatus } from "@/types/api/transcription";
+import type { TranscriptSegmentDto } from "@/types/api/transcription";
 
 // ─────────────────────────────────────────────────────────────
 // Types
@@ -27,6 +28,28 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
     const { data: job, isLoading, error } = useTranscriptionJob(jobId);
     const [activeTab, setActiveTab] = React.useState<TabType>("full-text");
     const [copied, setCopied] = React.useState(false);
+    const [activeSegmentIndex, setActiveSegmentIndex] = React.useState(0);
+
+    // Refs for scrolling
+    const segmentRefs = React.useRef<Map<number, HTMLDivElement>>(new Map());
+    const fullTextSpanRefs = React.useRef<Map<number, HTMLSpanElement>>(new Map());
+    const fullTextRef = React.useRef<HTMLDivElement>(null);
+
+    const segments = job?.segments || [];
+    const totalDuration = job?.durationSeconds || (segments.length > 0 ? segments[segments.length - 1].endSeconds : 0);
+
+    // Scroll to active segment when it changes
+    React.useEffect(() => {
+        if (segments.length === 0) return;
+
+        if (activeTab === "segments") {
+            const ref = segmentRefs.current.get(activeSegmentIndex);
+            ref?.scrollIntoView({ behavior: "smooth", block: "center" });
+        } else if (activeTab === "full-text") {
+            const ref = fullTextSpanRefs.current.get(activeSegmentIndex);
+            ref?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+    }, [activeSegmentIndex, activeTab, segments.length]);
 
     const handleCopy = async () => {
         if (!job?.transcript) return;
@@ -37,6 +60,14 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
 
     const handleBack = () => {
         router.push("/dashboard");
+    };
+
+    const handleSliderChange = (index: number) => {
+        setActiveSegmentIndex(index);
+    };
+
+    const handleSegmentClick = (index: number) => {
+        setActiveSegmentIndex(index);
     };
 
     // Loading state
@@ -71,7 +102,7 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
     const isPending = job.status === TranscriptionJobStatus.Pending || job.status === TranscriptionJobStatus.Processing;
 
     return (
-        <div className="max-w-4xl mx-auto animate-fade-in">
+        <div className="max-w-4xl mx-auto animate-fade-in pb-24">
             {/* Header */}
             <div className="mb-6">
                 <button
@@ -164,14 +195,32 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
                             active={activeTab === "segments"}
                             onClick={() => setActiveTab("segments")}
                             icon={AlignLeft}
-                            label={`Segments (${job.segments?.length || 0})`}
+                            label={`Segments (${segments.length})`}
                         />
                     </div>
 
                     {/* Tab Content */}
                     {activeTab === "full-text" && (
-                        <div className="bg-card border border-border rounded-xl p-6">
-                            {job.transcript ? (
+                        <div ref={fullTextRef} className="bg-card border border-border rounded-xl p-6">
+                            {segments.length > 0 ? (
+                                <div className="text-foreground leading-relaxed whitespace-pre-wrap">
+                                    {segments.map((segment, index) => (
+                                        <span
+                                            key={segment.id}
+                                            ref={(el) => {
+                                                if (el) fullTextSpanRefs.current.set(index, el);
+                                            }}
+                                            onClick={() => handleSegmentClick(index)}
+                                            className={cn(
+                                                "transition-colors duration-200 cursor-pointer hover:bg-primary/10 rounded",
+                                                index === activeSegmentIndex && "bg-primary/20 rounded px-0.5"
+                                            )}
+                                        >
+                                            {segment.text}{" "}
+                                        </span>
+                                    ))}
+                                </div>
+                            ) : job.transcript ? (
                                 <p className="text-foreground whitespace-pre-wrap leading-relaxed">
                                     {job.transcript}
                                 </p>
@@ -183,9 +232,17 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
 
                     {activeTab === "segments" && (
                         <div className="space-y-3">
-                            {job.segments && job.segments.length > 0 ? (
-                                job.segments.map((segment) => (
-                                    <SegmentCard key={segment.id} segment={segment} />
+                            {segments.length > 0 ? (
+                                segments.map((segment, index) => (
+                                    <SegmentCard
+                                        key={segment.id}
+                                        segment={segment}
+                                        isActive={index === activeSegmentIndex}
+                                        onClick={() => handleSegmentClick(index)}
+                                        ref={(el) => {
+                                            if (el) segmentRefs.current.set(index, el);
+                                        }}
+                                    />
                                 ))
                             ) : (
                                 <div className="bg-card border border-border rounded-xl p-6 text-center">
@@ -194,8 +251,143 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
                             )}
                         </div>
                     )}
+
+                    {/* Timeline Slider - Fixed at bottom */}
+                    {segments.length > 0 && (
+                        <TimelineSlider
+                            segments={segments}
+                            totalDuration={totalDuration}
+                            activeIndex={activeSegmentIndex}
+                            onChange={handleSliderChange}
+                        />
+                    )}
                 </>
             )}
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Timeline Slider
+// ─────────────────────────────────────────────────────────────
+
+interface TimelineSliderProps {
+    segments: TranscriptSegmentDto[];
+    totalDuration: number;
+    activeIndex: number;
+    onChange: (index: number) => void;
+}
+
+function TimelineSlider({ segments, totalDuration, activeIndex, onChange }: TimelineSliderProps) {
+    const sliderRef = React.useRef<HTMLDivElement>(null);
+    const [isDragging, setIsDragging] = React.useState(false);
+
+    const getIndexFromPosition = (clientX: number) => {
+        if (!sliderRef.current || segments.length === 0) return 0;
+        const rect = sliderRef.current.getBoundingClientRect();
+        const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+        const ratio = x / rect.width;
+        const targetTime = ratio * totalDuration;
+
+        // Find the segment that contains this time
+        for (let i = 0; i < segments.length; i++) {
+            if (targetTime <= segments[i].endSeconds) {
+                return i;
+            }
+        }
+        return segments.length - 1;
+    };
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        setIsDragging(true);
+        const index = getIndexFromPosition(e.clientX);
+        onChange(index);
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!isDragging) return;
+        const index = getIndexFromPosition(e.clientX);
+        onChange(index);
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+    };
+
+    React.useEffect(() => {
+        if (isDragging) {
+            const handleGlobalMouseUp = () => setIsDragging(false);
+            window.addEventListener("mouseup", handleGlobalMouseUp);
+            return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
+        }
+    }, [isDragging]);
+
+    // Calculate thumb position
+    const activeSegment = segments[activeIndex];
+    const thumbPosition = activeSegment
+        ? ((activeSegment.startSeconds + activeSegment.endSeconds) / 2) / totalDuration * 100
+        : 0;
+
+    return (
+        <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border p-4 z-50">
+            <div className="max-w-4xl mx-auto">
+                {/* Current segment preview */}
+                <div className="text-center mb-3">
+                    <p className="text-sm text-muted-foreground">
+                        Segment {activeIndex + 1} of {segments.length}
+                    </p>
+                    <p className="text-xs text-muted-foreground/70 truncate max-w-md mx-auto">
+                        {activeSegment?.text.slice(0, 80)}...
+                    </p>
+                </div>
+
+                {/* Slider track */}
+                <div
+                    ref={sliderRef}
+                    className="relative h-2 bg-muted rounded-full cursor-pointer select-none"
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                >
+                    {/* Segment markers */}
+                    {segments.map((segment, index) => {
+                        const position = (segment.startSeconds / totalDuration) * 100;
+                        return (
+                            <div
+                                key={segment.id}
+                                className={cn(
+                                    "absolute top-0 bottom-0 w-0.5",
+                                    index === activeIndex ? "bg-primary" : "bg-border"
+                                )}
+                                style={{ left: `${position}%` }}
+                            />
+                        );
+                    })}
+
+                    {/* Progress fill */}
+                    <div
+                        className="absolute top-0 left-0 h-full bg-primary/30 rounded-full"
+                        style={{ width: `${thumbPosition}%` }}
+                    />
+
+                    {/* Thumb */}
+                    <div
+                        className={cn(
+                            "absolute top-1/2 -translate-y-1/2 -translate-x-1/2",
+                            "w-4 h-4 bg-primary rounded-full shadow-lg",
+                            "transition-transform",
+                            isDragging && "scale-125"
+                        )}
+                        style={{ left: `${thumbPosition}%` }}
+                    />
+                </div>
+
+                {/* Time indicators */}
+                <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                    <span>{formatTimestamp(activeSegment?.startSeconds || 0)}</span>
+                    <span>{formatTimestamp(totalDuration)}</span>
+                </div>
+            </div>
         </div>
     );
 }
@@ -254,45 +446,55 @@ function StatusBadge({ status }: StatusBadgeProps) {
 }
 
 interface SegmentCardProps {
-    segment: {
-        id: string;
-        text: string;
-        startSeconds: number;
-        endSeconds: number;
-        speaker: string | null;
-        isEdited: boolean;
-    };
+    segment: TranscriptSegmentDto;
+    isActive: boolean;
+    onClick: () => void;
 }
 
-function SegmentCard({ segment }: SegmentCardProps) {
-    return (
-        <div className="bg-card border border-border rounded-xl p-4 hover:border-primary/30 transition-colors">
-            <div className="flex items-start gap-4">
-                {/* Timestamp */}
-                <div className="flex-shrink-0 text-xs text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded">
-                    {formatTimestamp(segment.startSeconds)}
-                </div>
+const SegmentCard = React.forwardRef<HTMLDivElement, SegmentCardProps>(
+    ({ segment, isActive, onClick }, ref) => {
+        return (
+            <div
+                ref={ref}
+                onClick={onClick}
+                className={cn(
+                    "bg-card border rounded-xl p-4 cursor-pointer transition-all",
+                    isActive
+                        ? "border-primary bg-primary/5 shadow-md"
+                        : "border-border hover:border-primary/30"
+                )}
+            >
+                <div className="flex items-start gap-4">
+                    {/* Timestamp */}
+                    <div className={cn(
+                        "flex-shrink-0 text-xs font-mono px-2 py-1 rounded",
+                        isActive ? "bg-primary/20 text-primary" : "bg-muted/50 text-muted-foreground"
+                    )}>
+                        {formatTimestamp(segment.startSeconds)}
+                    </div>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                    {segment.speaker && (
-                        <p className="text-sm font-medium text-primary mb-1">
-                            {segment.speaker}
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                        {segment.speaker && (
+                            <p className="text-sm font-medium text-primary mb-1">
+                                {segment.speaker}
+                            </p>
+                        )}
+                        <p className="text-foreground leading-relaxed">
+                            {segment.text}
                         </p>
-                    )}
-                    <p className="text-foreground leading-relaxed">
-                        {segment.text}
-                    </p>
-                    {segment.isEdited && (
-                        <span className="text-xs text-muted-foreground italic mt-1 inline-block">
-                            (edited)
-                        </span>
-                    )}
+                        {segment.isEdited && (
+                            <span className="text-xs text-muted-foreground italic mt-1 inline-block">
+                                (edited)
+                            </span>
+                        )}
+                    </div>
                 </div>
             </div>
-        </div>
-    );
-}
+        );
+    }
+);
+SegmentCard.displayName = "SegmentCard";
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
