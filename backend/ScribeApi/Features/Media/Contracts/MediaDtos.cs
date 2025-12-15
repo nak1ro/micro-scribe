@@ -10,7 +10,8 @@ public record MediaFileDto(
     MediaFileType FileType,
     double? DurationSeconds,
     string? AudioPath,
-    DateTime CreatedAtUtc
+    DateTime CreatedAtUtc,
+    string? PresignedUrl // New field for playback/download
 );
 
 public class PagedResponse<T>

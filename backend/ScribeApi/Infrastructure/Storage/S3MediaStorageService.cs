@@ -74,6 +74,21 @@ public class S3MediaStorageService : IFileStorageService
         return Task.FromResult(new PresignedUploadResult(url, key, expiry));
     }
 
+    public Task<string> GenerateDownloadUrlAsync(string key, TimeSpan expiry, CancellationToken ct)
+    {
+        var request = new GetPreSignedUrlRequest
+        {
+            BucketName = _s3Settings.BucketName,
+            Key = key,
+            Verb = HttpVerb.GET,
+            Expires = DateTime.UtcNow.Add(expiry)
+        };
+
+        var url = _s3Client.GetPreSignedURL(request);
+
+        return Task.FromResult(url);
+    }
+
     public async Task<MultipartUploadInitResult> InitiateMultipartUploadAsync(string key, string contentType, long totalSizeBytes, CancellationToken ct)
     {
         var request = new InitiateMultipartUploadRequest

@@ -97,11 +97,12 @@ public class TranscriptionJobRunner
         finally
         {
             // Cleanup media files
-            if (job?.MediaFile != null)
-            {
-                _logger.LogDebug("[Job {JobId}] Cleanup: Deleting media files", jobId);
-                await _mediaService.DeleteMediaFilesAsync(job.MediaFile, CancellationToken.None);
-            }
+            // Cleanup media files - REMOVED to allow user playback/download
+            // if (job?.MediaFile != null)
+            // {
+            //     _logger.LogDebug("[Job {JobId}] Cleanup: Deleting media files", jobId);
+            //     await _mediaService.DeleteMediaFilesAsync(job.MediaFile, CancellationToken.None);
+            // }
 
             // Cleanup chunk files
             await CleanupChunksAsync();

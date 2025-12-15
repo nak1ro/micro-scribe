@@ -13,6 +13,9 @@ public interface IFileStorageService
     Task<PresignedUploadResult> GenerateUploadUrlAsync(string key, string contentType, long sizeBytes,
         CancellationToken ct);
 
+    // Generate a temporary GET URL for downloading/streaming
+    Task<string> GenerateDownloadUrlAsync(string key, TimeSpan expiry, CancellationToken ct);
+
     // Multipart upload operations
     Task<MultipartUploadInitResult> InitiateMultipartUploadAsync(string key, string contentType, long totalSizeBytes,
         CancellationToken ct);

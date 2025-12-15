@@ -39,6 +39,11 @@ public class LocalFileStorageService : IFileStorageService
         throw new NotSupportedException("LocalFileStorageService does not support presigned URLs. Use S3 provider for production.");
     }
 
+    public Task<string> GenerateDownloadUrlAsync(string key, TimeSpan expiry, CancellationToken ct)
+    {
+        throw new NotSupportedException("LocalFileStorageService does not support presigned URLs.");
+    }
+
     public Task<MultipartUploadInitResult> InitiateMultipartUploadAsync(string key, string contentType, long totalSizeBytes, CancellationToken ct)
     {
         throw new NotSupportedException("LocalFileStorageService does not support multipart uploads. Use S3 provider for production.");

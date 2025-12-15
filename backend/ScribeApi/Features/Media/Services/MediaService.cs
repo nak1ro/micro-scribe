@@ -35,7 +35,23 @@ public class MediaService : IMediaService
             throw new NotFoundException("Media file not found.");
         }
 
-        return _mapper.Map<MediaFileDto>(mediaFile);
+        var dto = _mapper.Map<MediaFileDto>(mediaFile);
+
+        // Generate Presigned URL
+        try 
+        {
+            if (!string.IsNullOrEmpty(mediaFile.StorageObjectKey))
+            {
+                // Expiry is 15 minutes by default for security
+                dto = dto with { PresignedUrl = await _fileStorageService.GenerateDownloadUrlAsync(mediaFile.StorageObjectKey, TimeSpan.FromMinutes(15), ct) };
+            }
+        }
+        catch (NotSupportedException) 
+        { 
+            // Local storage doesn't support this, field stays null
+        }
+
+        return dto;
     }
 
     public async Task<PagedResponse<MediaFileDto>> ListMediaFilesAsync(string userId, int page, int pageSize,
@@ -43,7 +59,30 @@ public class MediaService : IMediaService
     {
         var pagedMediaFiles = await _mediaQueries.ListAsync(userId, page, pageSize, ct);
 
-        var dtos = _mapper.Map<IEnumerable<MediaFileDto>>(pagedMediaFiles.Items);
+        var dtos = _mapper.Map<IEnumerable<MediaFileDto>>(pagedMediaFiles.Items).ToList();
+
+        // Populate URLs in parallel
+        // Note: For large lists this might be many S3 calls (usually local calculation for pre-signed URLs, so fast)
+        var tasks = dtos.Select(async dto =>
+        {
+            try
+            {
+                // Find matching entity to get key logic if not in DTO? 
+                // DTO has AudioPath mapped from NormalizedAudioObjectKey or StorageObjectKey?
+                // Let's assume we need the key. DTO usually exposes "AudioPath". 
+                // But let's check mapping. The mapped "AudioPath" might be the key.
+                // If S3, AudioPath IS the key.
+                if (!string.IsNullOrEmpty(dto.AudioPath))
+                {
+                     var url = await _fileStorageService.GenerateDownloadUrlAsync(dto.AudioPath, TimeSpan.FromMinutes(15), ct);
+                     return dto with { PresignedUrl = url };
+                }
+            }
+            catch (NotSupportedException) { }
+            return dto;
+        });
+
+        dtos = (await Task.WhenAll(tasks)).ToList();
 
         return new PagedResponse<MediaFileDto>(dtos, pagedMediaFiles.Page, pagedMediaFiles.PageSize,
             pagedMediaFiles.TotalCount);
