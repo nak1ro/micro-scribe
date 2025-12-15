@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { MoreHorizontal, Pencil, Trash2, FileAudio, Globe } from "lucide-react";
 import { Button } from "@/components/ui";
@@ -13,6 +14,7 @@ interface TranscriptionItemProps {
 }
 
 export function TranscriptionItem({ item, onEdit, onDelete }: TranscriptionItemProps) {
+    const router = useRouter();
     const [menuOpen, setMenuOpen] = React.useState(false);
     const menuRef = React.useRef<HTMLDivElement>(null);
 
@@ -33,8 +35,13 @@ export function TranscriptionItem({ item, onEdit, onDelete }: TranscriptionItemP
         year: "numeric",
     });
 
+    const handleItemClick = () => {
+        router.push(`/transcriptions/${item.id}`);
+    };
+
     return (
         <div
+            onClick={handleItemClick}
             className={cn(
                 "group flex items-center gap-3 px-4 py-3",
                 "border-b border-border last:border-b-0",

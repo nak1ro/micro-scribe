@@ -166,3 +166,12 @@ function hasActiveJobsFromList(items: TranscriptionListItem[]): boolean {
     );
 }
 
+// Hook for fetching a single transcription job's details
+export function useTranscriptionJob(jobId: string) {
+    return useQuery({
+        queryKey: ["transcriptions", "job", jobId],
+        queryFn: () => transcriptionApi.getJob(jobId),
+        enabled: !!jobId,
+    });
+}
+
