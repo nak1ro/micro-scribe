@@ -1,3 +1,4 @@
+using AutoMapper;
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -21,6 +22,7 @@ public class UploadService : IUploadService
     private readonly IPlanGuard _planGuard;
     private readonly IPlanResolver _planResolver;
     private readonly ILogger<UploadService> _logger;
+    private readonly IMapper _mapper;
 
     public UploadService(
         AppDbContext context,
@@ -29,7 +31,8 @@ public class UploadService : IUploadService
         IBackgroundJobClient backgroundJobClient,
         IPlanGuard planGuard,
         IPlanResolver planResolver,
-        ILogger<UploadService> logger)
+        ILogger<UploadService> logger,
+        IMapper mapper)
     {
         _context = context;
         _storageService = storageService;
@@ -38,6 +41,7 @@ public class UploadService : IUploadService
         _planGuard = planGuard;
         _planResolver = planResolver;
         _logger = logger;
+        _mapper = mapper;
     }
 
     public async Task<UploadSessionResponse> InitiateUploadAsync(InitiateUploadRequest request, string userId, CancellationToken ct)
@@ -57,10 +61,10 @@ public class UploadService : IUploadService
             }
 
             var uniqueId = Guid.NewGuid();
-            var storageKey = $"uploads/{userId}/{uniqueId}{Path.GetExtension(request.FileName)}";
+            var storageKey = GenerateStorageKey(userId, uniqueId, request.FileName);
 
             var (uploadUrl, uploadId, urlExpiry) = await DetermineUploadStrategyAsync(storageKey, request, ct);
-            
+
             var session = CreateSessionEntity(uniqueId, userId, request, storageKey, uploadId, urlExpiry);
 
             _context.UploadSessions.Add(session);
@@ -84,7 +88,7 @@ public class UploadService : IUploadService
         var session = await GetSessionOrThrowAsync(sessionId, userId, ct);
 
         if (IsSessionCompleted(session))
-            return MapToStatusResponse(session);
+            return _mapper.Map<UploadSessionStatusResponse>(session);
 
         ValidateSessionForCompletion(session);
 
@@ -100,13 +104,13 @@ public class UploadService : IUploadService
         {
             _logger.LogWarning("Concurrency conflict updating session {SessionId}, reloading...", sessionId);
             await _context.Entry(session).ReloadAsync(ct);
-            if (IsSessionCompleted(session)) return MapToStatusResponse(session);
+            if (IsSessionCompleted(session)) return _mapper.Map<UploadSessionStatusResponse>(session);
             throw;
         }
 
         _backgroundJobClient.Enqueue<FileValidationJob>(job => job.ValidateFileAsync(session.Id, CancellationToken.None));
 
-        return MapToStatusResponse(session);
+        return _mapper.Map<UploadSessionStatusResponse>(session);
     }
 
     public async Task<UploadSessionStatusResponse> GetSessionStatusAsync(Guid sessionId, string userId, CancellationToken ct)
@@ -118,7 +122,7 @@ public class UploadService : IUploadService
         if (session == null)
             throw new NotFoundException("Upload session not found.");
 
-        return MapToStatusResponse(session);
+        return _mapper.Map<UploadSessionStatusResponse>(session);
     }
 
     public async Task AbortSessionAsync(Guid sessionId, string userId, CancellationToken ct)
@@ -134,6 +138,11 @@ public class UploadService : IUploadService
     }
 
     // Helpers
+
+    private string GenerateStorageKey(string userId, Guid uniqueId, string fileName)
+    {
+        return $"uploads/{userId}/{uniqueId}{Path.GetExtension(fileName)}";
+    }
 
     private async Task ValidatePlanLimitsAsync(string userId, long sizeBytes, CancellationToken ct)
     {
@@ -219,8 +228,8 @@ public class UploadService : IUploadService
 
     private bool IsSessionCompleted(UploadSession session)
     {
-        return session.Status == UploadSessionStatus.Uploaded || 
-               session.Status == UploadSessionStatus.Validating || 
+        return session.Status == UploadSessionStatus.Uploaded ||
+               session.Status == UploadSessionStatus.Validating ||
                session.Status == UploadSessionStatus.Ready;
     }
 
@@ -248,7 +257,7 @@ public class UploadService : IUploadService
             await _storageService.CompleteMultipartUploadAsync(session.StorageKey, session.UploadId, internalParts, ct);
         }
 
-        return await _storageService.GetObjectInfoAsync(session.StorageKey, ct) 
+        return await _storageService.GetObjectInfoAsync(session.StorageKey, ct)
                ?? throw new NotFoundException("Uploaded file could not be verified in storage.");
     }
 
@@ -263,13 +272,20 @@ public class UploadService : IUploadService
 
     private async Task CleanupStorageAsync(UploadSession session, CancellationToken ct)
     {
-        if (IsSessionCompleted(session))
+        try
         {
-            try { await _storageService.DeleteAsync(session.StorageKey, ct); } catch {}
+            if (IsSessionCompleted(session))
+            {
+                await _storageService.DeleteAsync(session.StorageKey, ct);
+            }
+            else if (session.Status == UploadSessionStatus.Created && session.UploadId != null)
+            {
+                await _storageService.AbortMultipartUploadAsync(session.StorageKey, session.UploadId, ct);
+            }
         }
-        else if (session.Status == UploadSessionStatus.Created && session.UploadId != null)
+        catch (Exception ex)
         {
-            await _storageService.AbortMultipartUploadAsync(session.StorageKey, session.UploadId, ct);
+            _logger.LogError(ex, "Failed to cleanup storage for session {SessionId} (Key: {StorageKey})", session.Id, session.StorageKey);
         }
     }
 
@@ -284,18 +300,6 @@ public class UploadService : IUploadService
             uploadId != null ? _storageSettings.PartSizeBytes : s.SizeBytes,
             s.ExpiresAtUtc,
             s.CorrelationId
-        );
-    }
-
-    private static UploadSessionStatusResponse MapToStatusResponse(UploadSession s)
-    {
-        return new UploadSessionStatusResponse(
-            s.Id,
-            s.Status.ToString(),
-            s.ErrorMessage,
-            s.CreatedAtUtc,
-            s.UploadedAtUtc,
-            s.ValidatedAtUtc
         );
     }
 }
