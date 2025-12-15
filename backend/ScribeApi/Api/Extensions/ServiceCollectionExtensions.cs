@@ -137,9 +137,13 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient<OpenAiTranscriptionProvider>();
         services.AddScoped<ITranscriptionProvider, OpenAiTranscriptionProvider>();
         services.AddScoped<IFfmpegMediaService, FfmpegMediaService>();
+        services.AddScoped<ChunkedTranscriptionService>();
         services.AddScoped<TranscriptionJobRunner>();
         services.AddScoped<FileValidationJob>();
         services.AddScoped<IUploadService, UploadService>();
+        
+        // Transcription settings
+        services.Configure<TranscriptionSettings>(configuration.GetSection("Transcription"));
 
         // Hangfire
         services.AddHangfireServices(configuration);

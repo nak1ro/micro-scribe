@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using ScribeApi.Core.Configuration;
 using ScribeApi.Core.Exceptions;
 using ScribeApi.Core.Interfaces;
 using ScribeApi.Features.Transcriptions.Contracts;
@@ -6,7 +8,7 @@ using ScribeApi.Features.Media.Contracts;
 using ScribeApi.Features.Webhooks.Contracts;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
-using ScribeApi.Infrastructure.Storage;
+using ScribeApi.Infrastructure.Transcription;
 
 namespace ScribeApi.Infrastructure.BackgroundJobs;
 
@@ -16,28 +18,37 @@ public class TranscriptionJobRunner
     private readonly ITranscriptionJobQueries _queries;
     private readonly IFfmpegMediaService _ffmpegService;
     private readonly ITranscriptionProvider _transcriptionProvider;
+    private readonly ChunkedTranscriptionService _chunkedTranscriptionService;
     private readonly IFileStorageService _storageService;
     private readonly IMediaService _mediaService;
     private readonly IWebhookService _webhookService;
+    private readonly TranscriptionSettings _settings;
     private readonly ILogger<TranscriptionJobRunner> _logger;
+
+    // Track chunk paths for cleanup
+    private List<AudioChunk>? _currentChunks;
 
     public TranscriptionJobRunner(
         AppDbContext context,
         ITranscriptionJobQueries queries,
         IFfmpegMediaService ffmpegService,
         ITranscriptionProvider transcriptionProvider,
+        ChunkedTranscriptionService chunkedTranscriptionService,
         IFileStorageService storageService,
         IMediaService mediaService,
         IWebhookService webhookService,
+        IOptions<TranscriptionSettings> settings,
         ILogger<TranscriptionJobRunner> logger)
     {
         _context = context;
         _queries = queries;
         _ffmpegService = ffmpegService;
         _transcriptionProvider = transcriptionProvider;
+        _chunkedTranscriptionService = chunkedTranscriptionService;
         _storageService = storageService;
         _mediaService = mediaService;
         _webhookService = webhookService;
+        _settings = settings.Value;
         _logger = logger;
     }
 
@@ -57,11 +68,11 @@ public class TranscriptionJobRunner
 
             _logger.LogDebug("[Job {JobId}] Step 2: Preparing audio. MediaFile: {MediaFileId}, StorageKey: {Key}", 
                 jobId, job!.MediaFile?.Id, job.MediaFile?.StorageObjectKey);
-            await PrepareAudioAsync(job!, ct);
+            var chunkResult = await PrepareAudioChunksAsync(job!, ct);
 
-            _logger.LogDebug("[Job {JobId}] Step 3: Running transcription. AudioPath: {AudioPath}, Duration: {Duration}s", 
-                jobId, job.MediaFile?.NormalizedAudioObjectKey, job.DurationSeconds);
-            await RunTranscriptionAsync(job!, ct);
+            _logger.LogDebug("[Job {JobId}] Step 3: Running transcription. Chunks: {Count}, Duration: {Duration}s", 
+                jobId, chunkResult.Chunks.Count, chunkResult.TotalDuration.TotalSeconds);
+            await RunTranscriptionAsync(job!, chunkResult, ct);
 
             _logger.LogDebug("[Job {JobId}] Step 4: Updating user usage", jobId);
             await UpdateUserUsageAsync(job!, ct);
@@ -76,7 +87,6 @@ public class TranscriptionJobRunner
             _logger.LogError(ex, "[Job {JobId}] FAILED at exception. Type: {ExType}, Message: {Message}", 
                 jobId, ex.GetType().Name, ex.Message);
             
-            // Log inner exception if present
             if (ex.InnerException != null)
             {
                 _logger.LogError("[Job {JobId}] Inner exception: {InnerType} - {InnerMessage}", 
@@ -87,11 +97,15 @@ public class TranscriptionJobRunner
         }
         finally
         {
+            // Cleanup media files
             if (job?.MediaFile != null)
             {
                 _logger.LogDebug("[Job {JobId}] Cleanup: Deleting media files", jobId);
                 await _mediaService.DeleteMediaFilesAsync(job.MediaFile, CancellationToken.None);
             }
+
+            // Cleanup chunk files
+            await CleanupChunksAsync();
         }
     }
 
@@ -126,43 +140,40 @@ public class TranscriptionJobRunner
         await _context.SaveChangesAsync(ct);
     }
 
-    private async Task PrepareAudioAsync(TranscriptionJob job, CancellationToken ct)
+    private async Task<AudioChunkResult> PrepareAudioChunksAsync(TranscriptionJob job, CancellationToken ct)
     {
-        var mediaFile = job.MediaFile;
-
-        if (mediaFile == null)
-        {
-            throw new TranscriptionException("MediaFile is null - cannot prepare audio");
-        }
+        var mediaFile = job.MediaFile ?? throw new TranscriptionException("MediaFile is null - cannot prepare audio");
 
         _logger.LogDebug("[PrepareAudio] MediaFile {Id}: StorageKey={Key}, BucketName={Bucket}", 
             mediaFile.Id, mediaFile.StorageObjectKey, mediaFile.BucketName);
 
-        // Skip if audio already prepared
-        if (!string.IsNullOrEmpty(mediaFile.NormalizedAudioObjectKey) && mediaFile.DurationSeconds.HasValue)
-        {
-            _logger.LogDebug("Audio already prepared for MediaFile {Id}, skipping extraction", mediaFile.Id);
-            job.DurationSeconds = mediaFile.DurationSeconds;
-            return;
-        }
-
-        _logger.LogInformation("Extracting audio for MediaFile {Id} from {StorageKey}", 
-            mediaFile.Id, mediaFile.StorageObjectKey);
-
         try
         {
-            var ffmpegResult = await _ffmpegService.ConvertToAudioAsync(
+            // Use chunking for long audio files
+            var chunkResult = await _ffmpegService.ConvertAndChunkAudioAsync(
                 mediaFile.StorageObjectKey,
+                _settings.ChunkDuration,
+                _settings.ChunkThreshold,
                 ct);
 
-            _logger.LogDebug("[PrepareAudio] FFmpeg result: AudioPath={Path}, Duration={Duration}s", 
-                ffmpegResult.AudioPath, ffmpegResult.Duration.TotalSeconds);
+            _logger.LogDebug("[PrepareAudio] FFmpeg result: Chunks={Count}, Duration={Duration}s", 
+                chunkResult.Chunks.Count, chunkResult.TotalDuration.TotalSeconds);
 
-            mediaFile.NormalizedAudioObjectKey = ffmpegResult.AudioPath;
-            mediaFile.DurationSeconds = ffmpegResult.Duration.TotalSeconds;
-            job.DurationSeconds = ffmpegResult.Duration.TotalSeconds;
+            // Store first chunk path as the normalized audio (for backward compatibility)
+            if (chunkResult.Chunks.Count > 0)
+            {
+                mediaFile.NormalizedAudioObjectKey = chunkResult.Chunks[0].StoragePath;
+            }
+            
+            mediaFile.DurationSeconds = chunkResult.TotalDuration.TotalSeconds;
+            job.DurationSeconds = chunkResult.TotalDuration.TotalSeconds;
+
+            // Track chunks for cleanup
+            _currentChunks = chunkResult.Chunks;
 
             await _context.SaveChangesAsync(ct);
+            
+            return chunkResult;
         }
         catch (Exception ex)
         {
@@ -171,27 +182,36 @@ public class TranscriptionJobRunner
         }
     }
 
-
-    private async Task RunTranscriptionAsync(TranscriptionJob job, CancellationToken ct)
+    private async Task RunTranscriptionAsync(TranscriptionJob job, AudioChunkResult chunkResult, CancellationToken ct)
     {
-        var audioPath = job.MediaFile.NormalizedAudioObjectKey
-                        ?? throw new TranscriptionException("Audio file preparation failed: normalized audio path is missing.");
-
-        _logger.LogDebug("[RunTranscription] Opening audio stream from: {AudioPath}", audioPath);
+        _logger.LogDebug("[RunTranscription] Processing {Count} chunks", chunkResult.Chunks.Count);
 
         try
         {
-            await using var audioStream = await _storageService.OpenReadAsync(audioPath, ct);
-            
-            _logger.LogDebug("[RunTranscription] Audio stream opened. Calling transcription provider. Quality={Quality}, Language={Lang}", 
-                job.Quality, job.LanguageCode ?? "auto-detect");
+            TranscriptionResult result;
 
-            var result = await _transcriptionProvider.TranscribeAsync(
-                audioStream,
-                Path.GetFileName(audioPath),
-                job.Quality,
-                job.LanguageCode,
-                ct);
+            if (chunkResult.Chunks.Count == 1)
+            {
+                // Single chunk - use direct transcription
+                var chunk = chunkResult.Chunks[0];
+                await using var audioStream = await _storageService.OpenReadAsync(chunk.StoragePath, ct);
+                
+                result = await _transcriptionProvider.TranscribeAsync(
+                    audioStream,
+                    Path.GetFileName(chunk.StoragePath),
+                    job.Quality,
+                    job.LanguageCode,
+                    ct);
+            }
+            else
+            {
+                // Multiple chunks - use chunked transcription service
+                result = await _chunkedTranscriptionService.TranscribeChunkedAsync(
+                    chunkResult.Chunks,
+                    job.Quality,
+                    job.LanguageCode,
+                    ct);
+            }
 
             _logger.LogDebug("[RunTranscription] Transcription complete. Segments: {Count}, DetectedLang: {Lang}", 
                 result.Segments.Count, result.DetectedLanguage);
@@ -205,14 +225,12 @@ public class TranscriptionJobRunner
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[RunTranscription] Transcription failed. AudioPath: {Path}", audioPath);
+            _logger.LogError(ex, "[RunTranscription] Transcription failed");
             throw;
         }
     }
 
-    private void AddSegments(
-        TranscriptionJob job,
-        List<TranscriptSegmentData> segments)
+    private void AddSegments(TranscriptionJob job, List<TranscriptSegmentData> segments)
     {
         var order = 0;
         foreach (var segmentData in segments)
@@ -248,12 +266,8 @@ public class TranscriptionJobRunner
 
     private async Task MarkAsCompletedAsync(TranscriptionJob job, CancellationToken ct)
     {
-        // Status is stored as string in PostgreSQL (HasConversion<string>())
-        var completedStatus = nameof(TranscriptionJobStatus.Completed);
-        var processingStatus = nameof(TranscriptionJobStatus.Processing);
-        
         var rowsAffected = await _context.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE \"TranscriptionJobs\" SET \"Status\" = {completedStatus}, \"CompletedAtUtc\" = {DateTime.UtcNow} WHERE \"Id\" = {job.Id} AND \"Status\" = {processingStatus}", 
+            $"UPDATE \"TranscriptionJobs\" SET \"Status\" = {(int)TranscriptionJobStatus.Completed}, \"CompletedAtUtc\" = {DateTime.UtcNow} WHERE \"Id\" = {job.Id} AND \"Status\" = {(int)TranscriptionJobStatus.Processing}", 
             ct);
 
         if (rowsAffected == 0)
@@ -262,46 +276,53 @@ public class TranscriptionJobRunner
         }
         else
         {
-             job.Status = TranscriptionJobStatus.Completed;
+            job.Status = TranscriptionJobStatus.Completed;
              
-             // Trigger webhook
-             await _webhookService.EnqueueAsync(job.UserId, WebhookEvents.JobCompleted, new
-             {
-                 jobId = job.Id,
-                 mediaFileId = job.MediaFileId,
-                 status = "Completed",
-                 durationSeconds = job.DurationSeconds,
-                 languageCode = job.LanguageCode
-             }, ct);
+            await _webhookService.EnqueueAsync(job.UserId, WebhookEvents.JobCompleted, new
+            {
+                jobId = job.Id,
+                mediaFileId = job.MediaFileId,
+                status = "Completed",
+                durationSeconds = job.DurationSeconds,
+                languageCode = job.LanguageCode
+            }, ct);
         }
     }
 
-    private async Task MarkAsFailedAsync(
-        TranscriptionJob job,
-        string errorMessage,
-        CancellationToken ct)
+    private async Task MarkAsFailedAsync(TranscriptionJob job, string errorMessage, CancellationToken ct)
     {
         job.Status = TranscriptionJobStatus.Failed;
         job.ErrorMessage = errorMessage;
         job.CompletedAtUtc = DateTime.UtcNow;
         await _context.SaveChangesAsync(ct);
         
-        _logger.LogDebug("[MarkAsFailed] Job {JobId} marked as failed. Triggering webhook.", job.Id);
-        
-        try
+        await _webhookService.EnqueueAsync(job.UserId, WebhookEvents.JobFailed, new
         {
-            await _webhookService.EnqueueAsync(job.UserId, WebhookEvents.JobFailed, new
+            jobId = job.Id,
+            mediaFileId = job.MediaFileId,
+            status = "Failed",
+            errorMessage
+        }, ct);
+    }
+
+    private async Task CleanupChunksAsync()
+    {
+        if (_currentChunks == null || _currentChunks.Count <= 1) return;
+
+        _logger.LogDebug("Cleaning up {Count} audio chunks", _currentChunks.Count);
+
+        foreach (var chunk in _currentChunks)
+        {
+            try
             {
-                jobId = job.Id,
-                mediaFileId = job.MediaFileId,
-                status = "Failed",
-                errorMessage = errorMessage
-            }, ct);
+                await _storageService.DeleteAsync(chunk.StoragePath, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Failed to delete chunk {Path}: {Error}", chunk.StoragePath, ex.Message);
+            }
         }
-        catch (Exception webhookEx)
-        {
-            // Don't let webhook errors mask the original error
-            _logger.LogError(webhookEx, "[MarkAsFailed] Webhook enqueue failed for job {JobId}", job.Id);
-        }
+
+        _currentChunks = null;
     }
 }

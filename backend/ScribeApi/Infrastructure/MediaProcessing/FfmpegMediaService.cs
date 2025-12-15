@@ -78,6 +78,120 @@ public partial class FfmpegMediaService : IFfmpegMediaService
         }
     }
 
+    public async Task<AudioChunkResult> ConvertAndChunkAudioAsync(
+        string inputPath,
+        TimeSpan chunkDuration,
+        TimeSpan chunkThreshold,
+        CancellationToken ct)
+    {
+        var (tempInputPath, needsInputCleanup) = await PrepareInputFileAsync(inputPath, ct);
+        var tempChunkDir = Path.Combine(Path.GetTempPath(), $"chunks_{Guid.NewGuid():N}");
+        
+        try
+        {
+            // Get duration first to decide if chunking is needed
+            var duration = await GetDurationFromFileAsync(tempInputPath, ct);
+            
+            _logger.LogInformation("Audio duration: {Duration}s, Threshold: {Threshold}s", 
+                duration.TotalSeconds, chunkThreshold.TotalSeconds);
+
+            // If under threshold, use single-file conversion
+            if (duration <= chunkThreshold)
+            {
+                var singleResult = await ConvertToAudioAsync(inputPath, ct);
+                return new AudioChunkResult(
+                    [new AudioChunk(singleResult.AudioPath, TimeSpan.Zero)],
+                    singleResult.Duration);
+            }
+
+            // Create temp directory for chunks
+            Directory.CreateDirectory(tempChunkDir);
+            
+            var chunks = await SplitAndUploadChunksAsync(
+                tempInputPath, 
+                tempChunkDir, 
+                chunkDuration, 
+                duration,
+                inputPath,
+                ct);
+
+            _logger.LogInformation("Split audio into {Count} chunks", chunks.Count);
+            
+            return new AudioChunkResult(chunks, duration);
+        }
+        finally
+        {
+            if (needsInputCleanup) CleanupTempFile(tempInputPath);
+            CleanupTempDirectory(tempChunkDir);
+        }
+    }
+
+    private async Task<List<AudioChunk>> SplitAndUploadChunksAsync(
+        string inputPath,
+        string outputDir,
+        TimeSpan chunkDuration,
+        TimeSpan totalDuration,
+        string originalStorageKey,
+        CancellationToken ct)
+    {
+        var outputPattern = Path.Combine(outputDir, "chunk_%03d.mp3");
+        
+        // FFmpeg segment muxer splits audio into chunks
+        var args = $"-y -i \"{inputPath}\" -vn -ar 16000 -ac 1 -c:a libmp3lame -b:a 64k " +
+                   $"-f segment -segment_time {(int)chunkDuration.TotalSeconds} \"{outputPattern}\"";
+
+        _logger.LogInformation("Splitting audio into {Duration}s chunks", chunkDuration.TotalSeconds);
+        
+        await RunFfmpegCommandAsync(args, enforceSuccess: true, ct);
+
+        // Find all generated chunk files and upload them
+        var chunkFiles = Directory.GetFiles(outputDir, "chunk_*.mp3")
+            .OrderBy(f => f)
+            .ToList();
+
+        var chunks = new List<AudioChunk>();
+        var baseName = Path.GetFileNameWithoutExtension(originalStorageKey);
+
+        for (var i = 0; i < chunkFiles.Count; i++)
+        {
+            var chunkFile = chunkFiles[i];
+            var startOffset = TimeSpan.FromSeconds(i * chunkDuration.TotalSeconds);
+            
+            // Upload chunk to storage
+            var chunkFileName = $"{baseName}_chunk_{i:D3}.mp3";
+            await using var chunkStream = new FileStream(chunkFile, FileMode.Open, FileAccess.Read);
+            var storagePath = await _storage.SaveAsync(chunkStream, chunkFileName, "audio/mpeg", ct);
+            
+            chunks.Add(new AudioChunk(storagePath, startOffset));
+            
+            _logger.LogDebug("Uploaded chunk {Index}: {Path}, Offset: {Offset}s", 
+                i, storagePath, startOffset.TotalSeconds);
+        }
+
+        return chunks;
+    }
+
+    private async Task<TimeSpan> GetDurationFromFileAsync(string localPath, CancellationToken ct)
+    {
+        var args = $"-i \"{localPath}\" -hide_banner";
+        var result = await RunFfmpegCommandAsync(args, enforceSuccess: false, ct);
+        return ParseDurationFromOutput(result.StdErr + Environment.NewLine + result.StdOut);
+    }
+
+    private void CleanupTempDirectory(string? dirPath)
+    {
+        if (string.IsNullOrEmpty(dirPath) || !Directory.Exists(dirPath)) return;
+
+        try
+        {
+            Directory.Delete(dirPath, recursive: true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Failed to cleanup temp directory: {Path}. Error: {Error}", dirPath, ex.Message);
+        }
+    }
+
     private async Task<(string Path, bool NeedsCleanup)> PrepareInputFileAsync(string inputPath, CancellationToken ct)
     {
         // If it's a storage path (cloud), we need download. Check if file exists locally.
@@ -113,9 +227,10 @@ public partial class FfmpegMediaService : IFfmpegMediaService
 
     private static string GenerateTempOutputPath()
     {
+        // Use MP3 instead of WAV - much smaller file size for Whisper API
         return Path.Combine(
             Path.GetTempPath(), 
-            $"output_{Guid.NewGuid():N}.wav");
+            $"output_{Guid.NewGuid():N}.mp3");
     }
 
     private async Task<TimeSpan> ExtractAudioAsync(
@@ -123,13 +238,16 @@ public partial class FfmpegMediaService : IFfmpegMediaService
         string outputPath, 
         CancellationToken ct)
     {
+        // Optimized for Whisper API (max 25MB):
         // -vn: disable video
-        // -ar 16000: set audio sample rate to 16kHz
-        // -ac 1: set audio channels to 1 (mono)
-        // -c:a pcm_s16le: set audio codec to PCM signed 16-bit little-endian
-        var args = $"-y -i \"{inputPath}\" -vn -ar 16000 -ac 1 -c:a pcm_s16le \"{outputPath}\"";
+        // -ar 16000: 16kHz sample rate (speech doesn't need 44.1kHz)
+        // -ac 1: mono (stereo not needed for transcription)
+        // -c:a libmp3lame: MP3 codec (much smaller than WAV)
+        // -b:a 64k: 64kbps bitrate (good enough for speech)
+        // -q:a 4: VBR quality (0-9, 4 is good balance)
+        var args = $"-y -i \"{inputPath}\" -vn -ar 16000 -ac 1 -c:a libmp3lame -b:a 64k \"{outputPath}\"";
 
-        _logger.LogInformation("Running ffmpeg extraction");
+        _logger.LogInformation("Running ffmpeg extraction to MP3 (16kHz, mono, 64kbps)");
 
         var result = await RunFfmpegCommandAsync(args, enforceSuccess: true, ct);
 
@@ -236,7 +354,7 @@ public partial class FfmpegMediaService : IFfmpegMediaService
         string originalPath, 
         CancellationToken ct)
     {
-        var audioFileName = $"{Path.GetFileNameWithoutExtension(originalPath)}_audio.wav";
+        var audioFileName = $"{Path.GetFileNameWithoutExtension(originalPath)}_audio.mp3";
 
         _logger.LogDebug("Uploading audio to storage: {FileName}", audioFileName);
 
@@ -251,7 +369,7 @@ public partial class FfmpegMediaService : IFfmpegMediaService
         return await _storage.SaveAsync(
             audioStream, 
             audioFileName, 
-            "audio/wav", 
+            "audio/mpeg", 
             ct);
     }
 
