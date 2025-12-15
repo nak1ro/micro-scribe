@@ -1,6 +1,7 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import * as React from "react";
+import { useQuery, useMutation, useQueryClient, useQueries } from "@tanstack/react-query";
 import { transcriptionApi } from "@/services/transcription/api";
 import { TranscriptionJobStatus } from "@/types/api/transcription";
 import type { TranscriptionJobListItem } from "@/types/api/transcription";
@@ -73,22 +74,61 @@ export function useTranscriptions(
     const { page = 1, pageSize = 50 } = options;
     const queryClient = useQueryClient();
 
-    // Fetch transcription jobs with TanStack Query
-    const query = useQuery({
+    // 1. Fetch the list (initial load + manual refetch)
+    // We disable automatic polling for the list itself
+    const listQuery = useQuery({
         queryKey: transcriptionsKeys.jobs(page, pageSize),
         queryFn: () => transcriptionApi.listJobs({ page, pageSize }),
-        // Enable polling when there are active jobs
-        refetchInterval: (query) => {
-            const data = query.state.data;
-            if (data && hasActiveJobs(data.items)) {
-                return POLLING_INTERVAL_MS;
-            }
-            return false;
-        },
     });
 
-    // Map jobs to list items
-    const items = query.data?.items.map(mapJobToListItem) ?? [];
+    const initialItems = listQuery.data?.items.map(mapJobToListItem) ?? [];
+
+    // 2. Identify active jobs that need polling
+    const activeJobs = initialItems.filter(
+        (job) => job.status === "pending" || job.status === "processing"
+    );
+
+    // 3. Setup individual polling for active jobs
+    // using useQueries to handle dynamic number of hooks
+    const jobQueries = useQueries({ // @ts-ignore - useQueries typings can be tricky with dynamic arrays
+        queries: activeJobs.map((job) => ({
+            queryKey: ["transcriptions", "job", job.id],
+            queryFn: () => transcriptionApi.getJob(job.id),
+            refetchInterval: (query: any) => {
+                const data = query.state.data;
+                // Stop polling if completed/failed/cancelled
+                if (data && (
+                    data.status === TranscriptionJobStatus.Completed ||
+                    data.status === TranscriptionJobStatus.Failed ||
+                    data.status === TranscriptionJobStatus.Cancelled
+                )) {
+                    return false;
+                }
+                return POLLING_INTERVAL_MS;
+            },
+        })),
+    });
+
+    // 4. Merge polling results into the list
+    const items = React.useMemo(() => {
+        if (!initialItems.length) return [];
+
+        return initialItems.map((item) => {
+            // Find if there's an active poll for this item
+            const pollResult = jobQueries.find((q) => q.data?.jobId === item.id);
+
+            if (pollResult?.data) {
+                // Merge the latest status from polling
+                return {
+                    ...item,
+                    status: mapJobStatus(pollResult.data.status),
+                    duration: pollResult.data.durationSeconds,
+                    // We could also update other fields if needed
+                };
+            }
+            return item;
+        });
+    }, [initialItems, jobQueries]);
 
     // Delete mutation (cancels the job)
     const deleteMutation = useMutation({
@@ -99,19 +139,30 @@ export function useTranscriptions(
     });
 
     const refetch = async () => {
-        await query.refetch();
+        await listQuery.refetch();
     };
 
     const deleteItem = async (id: string) => {
         await deleteMutation.mutateAsync(id);
     };
 
+    const hasActive = React.useMemo(() => hasActiveJobsFromList(items), [items]);
+
     return {
         items,
-        isLoading: query.isLoading,
-        error: query.error?.message ?? null,
-        hasActiveJobs: query.data ? hasActiveJobs(query.data.items) : false,
+        isLoading: listQuery.isLoading,
+        error: listQuery.error?.message ?? null,
+        hasActiveJobs: hasActive,
         refetch,
         deleteItem,
     };
 }
+
+// Check if any job is currently active (pending or processing) from the internal list items
+function hasActiveJobsFromList(items: TranscriptionListItem[]): boolean {
+    return items.some(
+        (job) => job.status === "pending" ||
+            job.status === "processing"
+    );
+}
+
