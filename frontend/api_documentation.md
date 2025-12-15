@@ -803,6 +803,33 @@ interface UpdateSegmentRequest {
 
 ---
 
+## Usage
+
+### Get Current Usage & Limits
+Retrieves the current user's usage statistics and their plan limits.
+
+**Endpoint:** `GET /api/usage/me`
+**Auth:** Required
+
+**Response:**
+```json
+{
+  "planType": "Free",
+  "usage": {
+    "usedMinutesThisMonth": 12.5,
+    "jobsCleanedToday": 2,
+    "activeJobs": 1
+  },
+  "limits": {
+    "dailyTranscriptionLimit": 5,
+    "maxMinutesPerFile": 30,
+    "maxFileSizeBytes": 104857600,
+    "maxConcurrentJobs": 1,
+    "transcriptionJobPriority": false
+  }
+}
+```
+
 ## Webhooks
 
 Subscribe to receive HTTP callbacks when transcription jobs complete, fail, or are cancelled.
@@ -1114,3 +1141,4 @@ interface ValidationProblemDetails {
 | `PATCH` | `/api/webhooks/{id}` | ✅ | Update webhook subscription |
 | `DELETE` | `/api/webhooks/{id}` | ✅ | Delete webhook subscription |
 | `GET` | `/api/webhooks/{id}/deliveries` | ✅ | Get webhook deliveries |
+| `GET` | `/api/usage/me` | ✅ | Get usage & limits |

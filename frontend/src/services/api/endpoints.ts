@@ -35,4 +35,7 @@ export const API_ENDPOINTS = {
         UPDATE_SEGMENT: (jobId: string, segmentId: string) => `/transcriptions/${jobId}/segments/${segmentId}`,
         REVERT_SEGMENT: (jobId: string, segmentId: string) => `/transcriptions/${jobId}/segments/${segmentId}/revert`,
     },
+    USAGE: {
+        ME: '/usage/me',
+    },
 } as const;
