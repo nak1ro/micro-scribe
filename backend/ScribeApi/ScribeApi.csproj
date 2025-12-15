@@ -37,7 +37,8 @@
     <Folder Include="Api\Filters\" />
     <Folder Include="Core\Domain\Billing\" />
     <Folder Include="Features\Billing\" />
-    <Folder Include="Features\Usage\" />
+    <Folder Include="Features\Usage\Contracts\" />
+    <Folder Include="Features\Usage\Services\" />
     <Folder Include="Infrastructure\Integrations\Stripe\" />
   </ItemGroup>
 
