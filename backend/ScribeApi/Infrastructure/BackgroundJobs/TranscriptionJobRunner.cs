@@ -267,7 +267,7 @@ public class TranscriptionJobRunner
     private async Task MarkAsCompletedAsync(TranscriptionJob job, CancellationToken ct)
     {
         var rowsAffected = await _context.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE \"TranscriptionJobs\" SET \"Status\" = {(int)TranscriptionJobStatus.Completed}, \"CompletedAtUtc\" = {DateTime.UtcNow} WHERE \"Id\" = {job.Id} AND \"Status\" = {(int)TranscriptionJobStatus.Processing}", 
+            $"UPDATE \"TranscriptionJobs\" SET \"Status\" = {TranscriptionJobStatus.Completed.ToString()}, \"CompletedAtUtc\" = {DateTime.UtcNow} WHERE \"Id\" = {job.Id} AND \"Status\" = {TranscriptionJobStatus.Processing.ToString()}", 
             ct);
 
         if (rowsAffected == 0)
