@@ -90,11 +90,11 @@ export type UploadSessionStatus =
 // ─────────────────────────────────────────────────────────────
 
 export enum TranscriptionJobStatus {
-    Pending = 0,
-    Processing = 1,
-    Completed = 2,
-    Failed = 3,
-    Cancelled = 4,
+    Pending = "Pending",
+    Processing = "Processing",
+    Completed = "Completed",
+    Failed = "Failed",
+    Cancelled = "Cancelled",
 }
 
 export enum TranscriptionQuality {

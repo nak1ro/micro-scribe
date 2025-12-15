@@ -8,18 +8,14 @@ import { DashboardContent, useDashboardModal } from "@/features/dashboard";
 export default function DashboardPage() {
     const { isModalOpen, openModal, closeModal } = useDashboardModal();
 
-    const handleUploadSuccess = () => {
-        closeModal();
-    };
-
     return (
         <DashboardLayout onNewTranscription={openModal}>
-            <DashboardContent onOpenModal={openModal} />
+            <DashboardContent onOpenModal={openModal} onUploadSuccess={closeModal} />
 
             <CreateTranscriptionModal
                 isOpen={isModalOpen}
                 onClose={closeModal}
-                onSuccess={handleUploadSuccess}
+                onSuccess={() => { }}
             />
         </DashboardLayout>
     );

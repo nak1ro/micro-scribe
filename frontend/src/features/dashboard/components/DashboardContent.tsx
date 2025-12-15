@@ -8,9 +8,10 @@ import { useTranscriptions } from "@/hooks";
 
 interface DashboardContentProps {
     onOpenModal: () => void;
+    onUploadSuccess?: () => void;
 }
 
-export function DashboardContent({ onOpenModal }: DashboardContentProps) {
+export function DashboardContent({ onOpenModal, onUploadSuccess }: DashboardContentProps) {
     const { items, isLoading, error, refetch, deleteItem } = useTranscriptions();
     const [searchQuery, setSearchQuery] = React.useState("");
 
@@ -29,8 +30,9 @@ export function DashboardContent({ onOpenModal }: DashboardContentProps) {
         }
     };
 
-    const handleUploadSuccess = () => {
-        refetch();
+    const handleUploadSuccess = async () => {
+        await refetch();
+        onUploadSuccess?.();
     };
 
     // Filter items based on search query
@@ -71,8 +73,7 @@ export function DashboardContent({ onOpenModal }: DashboardContentProps) {
                 />
             </div>
 
-            {/* Create Transcription Modal - controlled by parent */}
-            <CreateTranscriptionModalWrapper onSuccess={handleUploadSuccess} />
+
         </>
     );
 }
@@ -127,16 +128,6 @@ function SearchFilterBar({ searchQuery, onSearchChange }: SearchFilterBarProps) 
             </button>
         </div>
     );
-}
-
-// Wrapper to expose modal control - allows parent to manage open state
-interface CreateTranscriptionModalWrapperProps {
-    onSuccess: () => void;
-}
-
-function CreateTranscriptionModalWrapper({ onSuccess }: CreateTranscriptionModalWrapperProps) {
-    // This component is used internally by DashboardPage which manages isOpen state
-    return null;
 }
 
 // Export the hook for modal state management

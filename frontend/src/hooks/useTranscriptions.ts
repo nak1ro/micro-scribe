@@ -78,8 +78,9 @@ export function useTranscriptions(
         queryKey: transcriptionsKeys.jobs(page, pageSize),
         queryFn: () => transcriptionApi.listJobs({ page, pageSize }),
         // Enable polling when there are active jobs
-        refetchInterval: (data) => {
-            if (data.state.data && hasActiveJobs(data.state.data.items)) {
+        refetchInterval: (query) => {
+            const data = query.state.data;
+            if (data && hasActiveJobs(data.items)) {
                 return POLLING_INTERVAL_MS;
             }
             return false;

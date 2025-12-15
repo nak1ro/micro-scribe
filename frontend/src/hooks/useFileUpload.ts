@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     orchestrateUpload,
     abortUploadSession,
@@ -39,6 +39,7 @@ export interface UseFileUploadReturn {
  * Delegates orchestration to the upload service layer.
  */
 export function useFileUpload(options: UseFileUploadOptions = {}): UseFileUploadReturn {
+    const queryClient = useQueryClient();
     const [progress, setProgress] = React.useState(0);
     const [status, setStatus] = React.useState<UploadStatus>("idle");
 
@@ -78,6 +79,8 @@ export function useFileUpload(options: UseFileUploadOptions = {}): UseFileUpload
         },
         onSuccess: () => {
             setStatus("success");
+            // Invalidate transcriptions query to trigger refetch and enable polling
+            queryClient.invalidateQueries({ queryKey: ["transcriptions"] });
         },
         onError: (err) => {
             if (abortControllerRef.current?.signal.aborted) {
