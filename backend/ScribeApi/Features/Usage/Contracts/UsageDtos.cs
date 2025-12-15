@@ -1,4 +1,5 @@
 using ScribeApi.Core.Domain.Plans;
+using ScribeApi.Infrastructure.Persistence.Entities;
 
 namespace ScribeApi.Features.Usage.Contracts;
 

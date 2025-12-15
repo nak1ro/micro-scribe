@@ -23,6 +23,8 @@ using ScribeApi.Features.Transcriptions.Services;
 using ScribeApi.Features.Uploads.Contracts;
 using ScribeApi.Features.Webhooks.Contracts;
 using ScribeApi.Features.Webhooks.Services;
+using ScribeApi.Features.Usage.Services;
+using ScribeApi.Features.Usage.Contracts;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
 using ScribeApi.Infrastructure.Storage;
@@ -137,6 +139,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITranscriptEditService, TranscriptEditService>();
         services.AddScoped<IUploadService, UploadService>();
         services.AddScoped<IWebhookService, WebhookService>();
+        services.AddScoped<IUsageService, UsageService>();
         services.AddScoped<WebhookDeliveryJob>();
         services.AddHttpClient<WebhookDeliveryJob>();
         services.Configure<OpenAiSettings>(configuration.GetSection("OpenAi"));

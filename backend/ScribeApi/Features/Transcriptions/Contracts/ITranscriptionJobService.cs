@@ -1,11 +1,12 @@
-namespace ScribeApi.Features.Transcriptions.Contracts;
-
-public interface ITranscriptionJobService
+namespace ScribeApi.Features.Transcriptions.Contracts
 {
-    Task<TranscriptionJobResponse> StartJobAsync(
-        string userId,
-        CreateTranscriptionJobRequest request,
-        CancellationToken ct);
+    public interface ITranscriptionJobService
+    {
+        Task<TranscriptionJobResponse> StartJobAsync(
+            string userId,
+            CreateTranscriptionJobRequest request,
+            CancellationToken ct);
 
-    Task CancelJobAsync(Guid jobId, string userId, CancellationToken ct);
+        Task CancelJobAsync(Guid jobId, string userId, CancellationToken ct);
+    }
 }

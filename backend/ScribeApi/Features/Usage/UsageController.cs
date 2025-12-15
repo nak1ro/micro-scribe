@@ -1,8 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ScribeApi.Core.Domain.Plans;
-using ScribeApi.Core.Exceptions;
-using ScribeApi.Features.Transcriptions.Contracts;
 using ScribeApi.Features.Usage.Contracts;
 using ScribeApi.Shared.Extensions;
 
@@ -13,13 +10,11 @@ namespace ScribeApi.Features.Usage;
 [Authorize]
 public class UsageController : ControllerBase
 {
-    private readonly ITranscriptionJobQueries _queries;
-    private readonly IPlanResolver _planResolver;
+    private readonly IUsageService _service;
 
-    public UsageController(ITranscriptionJobQueries queries, IPlanResolver planResolver)
+    public UsageController(IUsageService service)
     {
-        _queries = queries;
-        _planResolver = planResolver;
+        _service = service;
     }
 
     [HttpGet("me")]
@@ -28,28 +23,9 @@ public class UsageController : ControllerBase
         var userId = User.GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        var user = await _queries.GetUserByIdAsync(userId, ct);
-        if (user == null) return NotFound();
+        var result = await _service.GetUsageAsync(userId, ct);
+        if (result == null) return NotFound();
 
-        var plan = _planResolver.GetPlanDefinition(user.Plan);
-
-        var dailyJobs = await _queries.CountDailyJobsAsync(userId, DateTime.UtcNow, ct);
-        var activeJobs = await _queries.CountActiveJobsAsync(userId, ct);
-
-        var stats = new UsageStats(
-            user.UsedMinutesThisMonth,
-            dailyJobs,
-            activeJobs
-        );
-
-        var limits = new PlanLimits(
-            plan.DailyTranscriptionLimit,
-            plan.MaxMinutesPerFile,
-            plan.MaxFileSizeBytes,
-            plan.MaxConcurrentJobs,
-            plan.TranscriptionJobPriority
-        );
-
-        return Ok(new UsageResponse(user.Plan, stats, limits));
+        return Ok(result);
     }
 }

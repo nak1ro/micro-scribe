@@ -1,10 +1,9 @@
-using ScribeApi.Features.Transcriptions.Contracts;
-
-namespace ScribeApi.Features.Transcriptions.Services;
-
-public record ExportResult(byte[] Content, string ContentType, string FileName);
-
-public interface ITranscriptExportService
+namespace ScribeApi.Features.Transcriptions.Contracts
 {
-    Task<ExportResult> ExportAsync(Guid jobId, string userId, ExportFormat format, CancellationToken ct);
+    public record ExportResult(byte[] Content, string ContentType, string FileName);
+
+    public interface ITranscriptExportService
+    {
+        Task<ExportResult> ExportAsync(Guid jobId, string userId, ExportFormat format, CancellationToken ct);
+    }
 }

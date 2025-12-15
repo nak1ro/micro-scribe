@@ -16,14 +16,10 @@ import {
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/context/SidebarContext";
 import { Button } from "@/components/ui";
+import { useUsage } from "@/hooks/useUsage";
+import { PlanType } from "@/types/api/usage";
 
 interface SidebarProps {
-    /** User's subscription status */
-    isPremium?: boolean;
-    /** Transcriptions used today (for free users) */
-    transcriptionsUsed?: number;
-    /** Max transcriptions per day (for free users) */
-    transcriptionsLimit?: number;
     /** Callback when New Transcription is clicked */
     onNewTranscription?: () => void;
 }
@@ -31,14 +27,14 @@ interface SidebarProps {
 const SIDEBAR_WIDTH = 240;
 const SIDEBAR_COLLAPSED_WIDTH = 64;
 
-export function Sidebar({
-    isPremium = false,
-    transcriptionsUsed = 0,
-    transcriptionsLimit = 10,
-    onNewTranscription,
-}: SidebarProps) {
+export function Sidebar({ onNewTranscription }: SidebarProps) {
     const { isCollapsed, isMobileOpen, toggleCollapse, closeMobile } =
         useSidebar();
+    const { data: usage } = useUsage();
+
+    const isPremium = usage?.planType === PlanType.Pro;
+    const transcriptionsUsed = usage?.usage.jobsCleanedToday ?? 0;
+    const transcriptionsLimit = usage?.limits.dailyTranscriptionLimit ?? 5;
 
     const sidebarContent = (
         <>
