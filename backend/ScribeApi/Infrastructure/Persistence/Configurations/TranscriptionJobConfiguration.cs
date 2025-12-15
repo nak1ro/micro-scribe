@@ -29,6 +29,9 @@ public class TranscriptionJobConfiguration : IEntityTypeConfiguration<Transcript
         builder.Property(x => x.CreatedAtUtc)
             .HasDefaultValueSql("NOW()");
 
+        builder.Property(x => x.Segments)
+            .HasColumnType("jsonb");
+
         builder.HasOne(x => x.User)
             .WithMany(u => u.TranscriptionJobs)
             .HasForeignKey(x => x.UserId)

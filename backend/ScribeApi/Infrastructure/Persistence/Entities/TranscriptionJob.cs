@@ -63,6 +63,6 @@ public class TranscriptionJob
     // Nav
     public required ApplicationUser User { get; set; }
     public required MediaFile MediaFile { get; set; }
-    public ICollection<TranscriptSegment> Segments { get; set; } = new List<TranscriptSegment>();
+    public List<TranscriptSegment> Segments { get; set; } = new();
     public ICollection<TranscriptChapter> Chapters { get; set; } = new List<TranscriptChapter>();
 }

@@ -14,7 +14,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<MediaFile> MediaFiles => Set<MediaFile>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<TranscriptionJob> TranscriptionJobs => Set<TranscriptionJob>();
-    public DbSet<TranscriptSegment> TranscriptSegments => Set<TranscriptSegment>();
+    // TranscriptSegments is now part of TranscriptionJob (JSONB)
     public DbSet<TranscriptChapter> TranscriptChapters => Set<TranscriptChapter>();
     public DbSet<UploadSession> UploadSessions => Set<UploadSession>();
     public DbSet<WebhookSubscription> WebhookSubscriptions => Set<WebhookSubscription>();

@@ -2,11 +2,8 @@ namespace ScribeApi.Infrastructure.Persistence.Entities;
 
 public class TranscriptSegment
 {
-    // Unique identifier
-    public Guid Id { get; set; }
-
-    // FK to parent transcription job
-    public Guid TranscriptionJobId { get; set; }
+    // Unique identifier (useful for UI/Editing)
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     // Segment text content
     public required string Text { get; set; }
@@ -16,9 +13,6 @@ public class TranscriptSegment
 
     // End time in seconds from audio beginning
     public double EndSeconds { get; set; }
-
-    // Order of segment in transcript
-    public int Order { get; set; }
 
     // Speaker label for diarization support
     public string? Speaker { get; set; }
@@ -31,7 +25,4 @@ public class TranscriptSegment
 
     // Timestamp of last edit
     public DateTime? LastEditedAtUtc { get; set; }
-
-    // Nav
-    public required TranscriptionJob TranscriptionJob { get; set; }
 }

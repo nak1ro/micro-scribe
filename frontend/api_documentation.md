@@ -503,7 +503,7 @@ interface InitiateUploadRequest {
   fileName: string;           // Required, original file name
   contentType: string;        // Required, MIME type (e.g., "audio/mp3")
   sizeBytes: number;          // Required, file size in bytes
-  clientRequestId?: string;   // For idempotency
+  clientRequestId?: string;   // Optional, for idempotency
 }
 ```
 
@@ -728,7 +728,6 @@ interface TranscriptSegmentDto {
   startSeconds: number;
   endSeconds: number;
   speaker: string | null;
-  order: number;
   isEdited: boolean;
   originalText: string | null;
 }

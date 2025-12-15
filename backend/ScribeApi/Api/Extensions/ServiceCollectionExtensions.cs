@@ -1,4 +1,5 @@
 using System.Text;
+using Npgsql;
 using System.Text.Json.Serialization;
 using Amazon.S3;
 using FluentValidation;
@@ -67,8 +68,14 @@ public static class ServiceCollectionExtensions
 
         // DbContext
         var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+        dataSourceBuilder.EnableDynamicJson();
+        var dataSource = dataSourceBuilder.Build();
+
+        services.AddSingleton(dataSource);
+
         services.AddDbContext<AppDbContext>(options =>
-            options.UseNpgsql(connectionString));
+            options.UseNpgsql(dataSource));
 
         // Identity
         // Identity

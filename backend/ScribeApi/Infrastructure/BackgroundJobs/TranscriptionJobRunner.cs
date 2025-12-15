@@ -232,23 +232,17 @@ public class TranscriptionJobRunner
 
     private void AddSegments(TranscriptionJob job, List<TranscriptSegmentData> segments)
     {
-        var order = 0;
-        foreach (var segmentData in segments)
+        job.Segments = segments.Select(segmentData => new TranscriptSegment
         {
-            var segment = new TranscriptSegment
-            {
-                Id = Guid.NewGuid(),
-                TranscriptionJobId = job.Id,
-                TranscriptionJob = job,
-                Text = segmentData.Text,
-                StartSeconds = segmentData.StartSeconds,
-                EndSeconds = segmentData.EndSeconds,
-                Speaker = segmentData.Speaker,
-                Order = order++
-            };
-
-            _context.TranscriptSegments.Add(segment);
-        }
+            Id = Guid.NewGuid(),
+            // No TranscriptionJobId needed for JSONB
+            Text = segmentData.Text,
+            StartSeconds = segmentData.StartSeconds,
+            EndSeconds = segmentData.EndSeconds,
+            Speaker = segmentData.Speaker,
+            // Order is implicit in list, but we can keep it if needed. 
+            // For JSONB, list index is order.
+        }).ToList();
     }
 
     private async Task UpdateUserUsageAsync(TranscriptionJob job, CancellationToken ct)

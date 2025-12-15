@@ -20,7 +20,7 @@ public class TranscriptExportService : ITranscriptExportService
     public async Task<ExportResult> ExportAsync(Guid jobId, string userId, ExportFormat format, CancellationToken ct)
     {
         var job = await _context.TranscriptionJobs
-            .Include(j => j.Segments.OrderBy(s => s.Order))
+            // Segments loaded automatically as JSONB
             .Include(j => j.MediaFile)
             .FirstOrDefaultAsync(j => j.Id == jobId && j.UserId == userId, ct);
 

@@ -42,7 +42,6 @@ public record TranscriptSegmentDto(
     double StartSeconds,
     double EndSeconds,
     string? Speaker,
-    int Order,
     bool IsEdited,
     string? OriginalText
 );

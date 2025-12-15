@@ -84,7 +84,6 @@ public class TranscriptionJobQueries : ITranscriptionJobQueries
     {
         return await _context.TranscriptionJobs
             .Include(j => j.MediaFile)
-            .Include(j => j.Segments.OrderBy(s => s.Order))
             .FirstOrDefaultAsync(j => j.Id == jobId, ct);
     }
 

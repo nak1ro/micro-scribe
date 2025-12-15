@@ -728,7 +728,6 @@ interface TranscriptSegmentDto {
   startSeconds: number;
   endSeconds: number;
   speaker: string | null;
-  order: number;
   isEdited: boolean;
   originalText: string | null;
 }
