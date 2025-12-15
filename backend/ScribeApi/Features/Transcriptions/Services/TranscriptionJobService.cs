@@ -202,12 +202,19 @@ public class TranscriptionJobService : ITranscriptionJobService
 
             if (job == null) throw new NotFoundException($"Transcription job {jobId} not found.");
 
-            if (job.Status is TranscriptionJobStatus.Completed or TranscriptionJobStatus.Failed
-                or TranscriptionJobStatus.Cancelled)
+            // RACE CHECK: If Runner completed it, we must NOT cancel and must NOT charge (Runner already did)
+            if (job.Status == TranscriptionJobStatus.Completed)
+            {
+                _logger.LogInformation("Job {JobId} is already Completed. Aborting cancellation.", jobId);
+                return;
+            }
+
+            if (job.Status is TranscriptionJobStatus.Failed or TranscriptionJobStatus.Cancelled)
             {
                 return;
             }
 
+            // Charge for work done if we are cancelling mid-processing
             if (job.MediaFile.DurationSeconds.HasValue)
             {
                 var usageMinutes = job.MediaFile.DurationSeconds.Value / 60.0;

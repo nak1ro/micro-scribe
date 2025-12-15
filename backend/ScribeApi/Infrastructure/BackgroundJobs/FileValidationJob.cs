@@ -30,14 +30,20 @@ public class FileValidationJob
             return;
         }
 
-        if (session.Status != UploadSessionStatus.Uploaded)
+        // Atomic State Transition: Uploaded -> Validating
+        // Prevents multiple jobs from validating the same file
+        var rowsAffected = await _context.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE \"UploadSessions\" SET \"Status\" = {(int)UploadSessionStatus.Validating} WHERE \"Id\" = {sessionId} AND \"Status\" = {(int)UploadSessionStatus.Uploaded}", 
+            ct);
+
+        if (rowsAffected == 0)
         {
-            // Already processed or not ready (or aborted)
+            _logger.LogWarning("FileValidationJob: Session {SessionId} not in Uploaded state (or already validating).", sessionId);
             return;
         }
 
-        session.Status = UploadSessionStatus.Validating;
-        await _context.SaveChangesAsync(ct);
+        // Reload to get fresh data now that we own the lock
+        await _context.Entry(session).ReloadAsync(ct);
 
         try
         {

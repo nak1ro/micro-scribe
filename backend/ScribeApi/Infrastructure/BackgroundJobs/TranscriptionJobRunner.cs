@@ -74,11 +74,9 @@ public class TranscriptionJobRunner
                 jobId, chunkResult.Chunks.Count, chunkResult.TotalDuration.TotalSeconds);
             await RunTranscriptionAsync(job!, chunkResult, ct);
 
-            _logger.LogDebug("[Job {JobId}] Step 4: Updating user usage", jobId);
-            await UpdateUserUsageAsync(job!, ct);
-
-            _logger.LogDebug("[Job {JobId}] Step 5: Marking as completed", jobId);
-            await MarkAsCompletedAsync(job!, ct);
+            // Step 4 & 5 Combined: Atomic Completion & Usage Update
+            _logger.LogDebug("[Job {JobId}] Step 4: Atomic Completion & Billing", jobId);
+            await CompleteJobAtomicAsync(jobId, job!.UserId, job!.DurationSeconds, job!.LanguageCode, ct);
 
             _logger.LogInformation("Transcription job {JobId} completed successfully", jobId);
         }
@@ -94,6 +92,7 @@ public class TranscriptionJobRunner
             }
 
             await MarkAsFailedAsync(job!, ex.Message, ct);
+            throw; // Rethrow to allow Hangfire to retry (if appropriate) or move to DLQ
         }
         finally
         {
@@ -245,46 +244,72 @@ public class TranscriptionJobRunner
         }).ToList();
     }
 
-    private async Task UpdateUserUsageAsync(TranscriptionJob job, CancellationToken ct)
+    private async Task CompleteJobAtomicAsync(Guid jobId, string userId, double? durationSeconds, string? languageCode, CancellationToken ct)
     {
-        if (!job.DurationSeconds.HasValue) return;
-
-        var usageMinutes = job.DurationSeconds.Value / 60.0;
-
-        await _context.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE \"AspNetUsers\" SET \"UsedMinutesThisMonth\" = \"UsedMinutesThisMonth\" + {usageMinutes} WHERE \"Id\" = {job.UserId}",
-            ct);
-
-        _logger.LogInformation("Updated usage for user {UserId}: +{Minutes:F2} min", job.UserId, usageMinutes);
-    }
-
-    private async Task MarkAsCompletedAsync(TranscriptionJob job, CancellationToken ct)
-    {
-        var rowsAffected = await _context.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE \"TranscriptionJobs\" SET \"Status\" = {TranscriptionJobStatus.Completed.ToString()}, \"CompletedAtUtc\" = {DateTime.UtcNow} WHERE \"Id\" = {job.Id} AND \"Status\" = {TranscriptionJobStatus.Processing.ToString()}", 
-            ct);
-
-        if (rowsAffected == 0)
+        // Use Serializable transaction to prevent race with Cancellation
+        await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+        try
         {
-            _logger.LogWarning("Job {JobId} could not be marked Completed (Status mismatch or deleted).", job.Id);
-        }
-        else
-        {
-            job.Status = TranscriptionJobStatus.Completed;
-             
-            await _webhookService.EnqueueAsync(job.UserId, WebhookEvents.JobCompleted, new
+            // Lock and refresh job status
+            var job = await _context.TranscriptionJobs
+                .FirstOrDefaultAsync(j => j.Id == jobId, ct);
+
+            if (job == null) throw new TranscriptionException($"Job {jobId} disappeared during completion.");
+
+            // RACE CHECK: If Controller cancelled it, we MUST NOT charge and MUST NOT overwrite status
+            if (job.Status == TranscriptionJobStatus.Cancelled)
             {
-                jobId = job.Id,
-                mediaFileId = job.MediaFileId,
+                _logger.LogInformation("Job {JobId} was cancelled by user. Aborting completion logic.", jobId);
+                return; // Exit successfully, let the cancellation stand
+            }
+
+            // Update Status to Completed
+            job.Status = TranscriptionJobStatus.Completed;
+            job.CompletedAtUtc = DateTime.UtcNow;
+
+            // Update Usage (Billing)
+            if (durationSeconds.HasValue)
+            {
+                var usageMinutes = durationSeconds.Value / 60.0;
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                    $"UPDATE \"AspNetUsers\" SET \"UsedMinutesThisMonth\" = \"UsedMinutesThisMonth\" + {usageMinutes} WHERE \"Id\" = {userId}",
+                    ct);
+                _logger.LogInformation("Updated usage for user {UserId}: +{Minutes:F2} min", userId, usageMinutes);
+            }
+
+            await _context.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+
+            // Webhook (outside transaction)
+            await _webhookService.EnqueueAsync(userId, WebhookEvents.JobCompleted, new
+            {
+                jobId,
                 status = "Completed",
-                durationSeconds = job.DurationSeconds,
-                languageCode = job.LanguageCode
+                durationSeconds,
+                languageCode
             }, ct);
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
         }
     }
 
     private async Task MarkAsFailedAsync(TranscriptionJob job, string errorMessage, CancellationToken ct)
     {
+        // Refresh job to check for cancellation
+        var currentStatus = await _context.TranscriptionJobs
+            .Where(j => j.Id == job.Id)
+            .Select(j => j.Status)
+            .FirstOrDefaultAsync(ct);
+
+        if (currentStatus == TranscriptionJobStatus.Cancelled)
+        {
+             _logger.LogInformation("Job {JobId} is cancelled. Skipping failure marking.", job.Id);
+             return;
+        }
+
         job.Status = TranscriptionJobStatus.Failed;
         job.ErrorMessage = errorMessage;
         job.CompletedAtUtc = DateTime.UtcNow;
