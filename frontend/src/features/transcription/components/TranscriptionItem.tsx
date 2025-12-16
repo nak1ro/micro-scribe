@@ -81,11 +81,16 @@ export function TranscriptionItem({
                 />
             </div>
 
-            {/* Name */}
+            {/* Name + Preview */}
             <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">
                     {item.fileName}
                 </p>
+                {item.preview && (
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                        {item.preview}
+                    </p>
+                )}
             </div>
 
             {/* Uploaded */}

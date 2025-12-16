@@ -60,6 +60,7 @@ function mapJobToListItem(job: TranscriptionJobListItem): TranscriptionListItem 
         status: mapJobStatus(job.status),
         duration: job.durationSeconds,
         language: job.languageCode,
+        preview: job.transcriptPreview,
     };
 }
 

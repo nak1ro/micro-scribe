@@ -148,6 +148,11 @@ public class FolderService : IFolderService
                 DurationSeconds = ftj.TranscriptionJob.MediaFile != null 
                     ? ftj.TranscriptionJob.MediaFile.DurationSeconds 
                     : null,
+                TranscriptPreview = ftj.TranscriptionJob.Transcript != null 
+                    ? (ftj.TranscriptionJob.Transcript.Length > 150 
+                        ? ftj.TranscriptionJob.Transcript.Substring(0, 150) + "..." 
+                        : ftj.TranscriptionJob.Transcript)
+                    : null,
                 CreatedAtUtc = ftj.TranscriptionJob.CreatedAtUtc,
                 CompletedAtUtc = ftj.TranscriptionJob.CompletedAtUtc
             })

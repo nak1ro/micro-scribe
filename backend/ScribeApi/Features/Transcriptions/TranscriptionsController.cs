@@ -57,6 +57,9 @@ public class TranscriptionsController : ControllerBase
             Quality = j.Quality,
             LanguageCode = j.LanguageCode,
             DurationSeconds = j.MediaFile?.DurationSeconds,
+            TranscriptPreview = !string.IsNullOrEmpty(j.Transcript) 
+                ? (j.Transcript.Length > 150 ? j.Transcript.Substring(0, 150) + "..." : j.Transcript)
+                : null,
             CreatedAtUtc = j.CreatedAtUtc,
             CompletedAtUtc = j.CompletedAtUtc
         }).ToList();

@@ -17,6 +17,7 @@ export interface TranscriptionListItem {
     status: TranscriptionStatus;
     duration: number | null;
     language: string | null;
+    preview: string | null;
 }
 
 // Filter options for transcription list

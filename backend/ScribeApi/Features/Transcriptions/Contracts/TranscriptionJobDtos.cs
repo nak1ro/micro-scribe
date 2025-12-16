@@ -71,6 +71,7 @@ namespace ScribeApi.Features.Transcriptions.Contracts
         public TranscriptionQuality Quality { get; init; }
         public string? LanguageCode { get; init; }
         public double? DurationSeconds { get; init; }
+        public string? TranscriptPreview { get; init; }
         public DateTime CreatedAtUtc { get; init; }
         public DateTime? CompletedAtUtc { get; init; }
     }

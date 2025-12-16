@@ -76,12 +76,12 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
                 {isPremium && !isCollapsed && <PremiumBadge />}
             </div>
 
-            <div className="px-2 py-1 mt-10">
+            <div className="px-2 mt-10 mb-10">
                 <NewTranscriptionButton isCollapsed={isCollapsed} onClick={onNewTranscription} />
             </div>
 
             {/* Navigation */}
-            <div className="mt-2">
+            <div>
                 <SidebarSection>
                     <SidebarNavItem
                         href="/dashboard"
@@ -505,9 +505,9 @@ function FolderListItem({ name, color, itemCount, onClick }: FolderListItemProps
                 "transition-colors duration-150"
             )}
         >
-            <div
-                className="w-3 h-3 rounded shrink-0"
-                style={{ backgroundColor: colors.border }}
+            <Folder
+                className="h-4 w-4 shrink-0"
+                style={{ color: colors.border }}
             />
             <span className="truncate flex-1 text-left">{name}</span>
             <span className="text-xs text-muted-foreground/70 tabular-nums">{itemCount}</span>

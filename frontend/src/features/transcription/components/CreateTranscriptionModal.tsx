@@ -25,6 +25,7 @@ interface CreateTranscriptionModalProps {
         status: "uploading";
         duration: number | null;
         language: string | null;
+        preview: string | null;
     }) => void;
     onOptimisticUpdate?: (id: string, updates: { status: "pending" | "failed" }) => void;
     onOptimisticRemove?: (id: string) => void;
@@ -140,6 +141,7 @@ export function CreateTranscriptionModal({
                 status: "uploading",
                 duration: null,
                 language: languageCode === "auto" ? null : languageCode,
+                preview: null,
             });
 
             onClose();

@@ -125,6 +125,7 @@ export interface TranscriptionJobListItem {
     quality: TranscriptionQuality;
     languageCode: string | null;
     durationSeconds: number | null;
+    transcriptPreview: string | null;
     createdAtUtc: string;
     completedAtUtc: string | null;
 }
