@@ -90,11 +90,6 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
                         isCollapsed={isCollapsed}
                     />
                 </SidebarSection>
-
-                {/* Folders */}
-                <SidebarSection>
-                    <FolderSection isCollapsed={isCollapsed} />
-                </SidebarSection>
             </div>
 
             {/* Spacer */}

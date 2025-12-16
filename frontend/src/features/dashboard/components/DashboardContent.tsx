@@ -6,6 +6,7 @@ import { Search, Filter, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TranscriptionList } from "@/features/transcription";
 import { StatsCards } from "./StatsCards";
+import { FolderPills } from "./FolderPills";
 import { useAddToFolder } from "@/hooks";
 import type { TranscriptionListItem } from "@/types/models/transcription";
 
@@ -90,6 +91,9 @@ export function DashboardContent({
                     searchQuery={searchQuery}
                     onSearchChange={setSearchQuery}
                 />
+
+                {/* Folder Pills - Only on main dashboard */}
+                {!folderName && <FolderPills />}
 
                 {/* Error Message */}
                 {error && (
