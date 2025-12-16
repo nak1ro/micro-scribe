@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { Play, Pause } from "lucide-react";
+import { Button } from "@/components/ui";
 import type { TranscriptSegmentDto } from "@/types/api/transcription";
 import { formatTimestamp } from "./utils";
 
@@ -10,9 +12,11 @@ interface TimelineSliderProps {
     totalDuration: number;
     activeIndex: number;
     onChange: (index: number) => void;
+    isPlaying?: boolean;
+    onPlayPause?: () => void;
 }
 
-export function TimelineSlider({ segments, totalDuration, activeIndex, onChange }: TimelineSliderProps) {
+export function TimelineSlider({ segments, totalDuration, activeIndex, onChange, isPlaying, onPlayPause }: TimelineSliderProps) {
     const sliderRef = React.useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = React.useState(false);
 
@@ -66,53 +70,74 @@ export function TimelineSlider({ segments, totalDuration, activeIndex, onChange 
         <div className="sticky bottom-0 mt-6 z-50">
             <div className="bg-card/95 backdrop-blur-sm border border-border rounded-xl p-4 shadow-lg">
                 {/* Current segment preview */}
-                <p className="text-xs text-muted-foreground/70 truncate max-w-md mx-auto">
+                <p className="text-xs text-muted-foreground/70 truncate text-center">
                     {activeSegment?.text.slice(0, 80)}...
                 </p>
 
-                {/* Slider track */}
-                <div
-                    ref={sliderRef}
-                    className="mt-3 relative h-2 bg-muted rounded-full cursor-pointer select-none"
-                    onMouseDown={handleMouseDown}
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                >
-                    {/* Segment markers */}
-                    {segments.map((segment, index) => {
-                        const position = (segment.startSeconds / totalDuration) * 100;
-                        return (
-                            <div
-                                key={segment.id}
-                                className={cn(
-                                    "absolute top-0 bottom-0 w-0.5",
-                                    index === activeIndex ? "bg-primary" : "bg-border"
-                                )}
-                                style={{ left: `${position}%` }}
-                            />
-                        );
-                    })}
+                {/* Slider row: Play button + track */}
+                <div className="flex items-center gap-3 mt-3">
+                    {onPlayPause && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0"
+                            onClick={onPlayPause}
+                        >
+                            {isPlaying ? (
+                                <Pause className="h-4 w-4" />
+                            ) : (
+                                <Play className="h-4 w-4" />
+                            )}
+                        </Button>
+                    )}
 
-                    {/* Progress fill */}
+                    {/* Slider track */}
                     <div
-                        className="absolute top-0 left-0 h-full bg-primary/30 rounded-full"
-                        style={{ width: `${thumbPosition}%` }}
-                    />
+                        ref={sliderRef}
+                        className="flex-1 relative h-2 bg-muted rounded-full cursor-pointer select-none"
+                        onMouseDown={handleMouseDown}
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={handleMouseUp}
+                    >
+                        {/* Segment markers */}
+                        {segments.map((segment, index) => {
+                            const position = (segment.startSeconds / totalDuration) * 100;
+                            return (
+                                <div
+                                    key={segment.id}
+                                    className={cn(
+                                        "absolute top-0 bottom-0 w-0.5",
+                                        index === activeIndex ? "bg-primary" : "bg-border"
+                                    )}
+                                    style={{ left: `${position}%` }}
+                                />
+                            );
+                        })}
 
-                    {/* Thumb */}
-                    <div
-                        className={cn(
-                            "absolute top-1/2 -translate-y-1/2 -translate-x-1/2",
-                            "w-4 h-4 bg-primary rounded-full shadow-lg",
-                            "transition-transform",
-                            isDragging && "scale-125"
-                        )}
-                        style={{ left: `${thumbPosition}%` }}
-                    />
+                        {/* Progress fill */}
+                        <div
+                            className="absolute top-0 left-0 h-full bg-primary/30 rounded-full"
+                            style={{ width: `${thumbPosition}%` }}
+                        />
+
+                        {/* Thumb */}
+                        <div
+                            className={cn(
+                                "absolute top-1/2 -translate-y-1/2 -translate-x-1/2",
+                                "w-4 h-4 bg-primary rounded-full shadow-lg",
+                                "transition-transform",
+                                isDragging && "scale-125"
+                            )}
+                            style={{ left: `${thumbPosition}%` }}
+                        />
+                    </div>
                 </div>
 
-                {/* Time indicators */}
-                <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                {/* Time indicators - aligned under track (with left margin for button space) */}
+                <div className={cn(
+                    "flex justify-between mt-1 text-xs text-muted-foreground",
+                    onPlayPause && "ml-11"
+                )}>
                     <span>{formatTimestamp(activeSegment?.startSeconds || 0)}</span>
                     <span>{formatTimestamp(totalDuration)}</span>
                 </div>

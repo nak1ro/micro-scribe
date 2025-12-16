@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, Clock, Loader2, Copy, Check, AlertCircle, Play, Pause, Download } from "lucide-react";
+import { ArrowLeft, Clock, Loader2, Copy, Check, AlertCircle, Download } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useTranscriptionJob } from "@/hooks/useTranscriptions";
 import { TranscriptionJobStatus } from "@/types/api/transcription";
@@ -184,30 +184,16 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        {/* Audio Controls */}
+                        {/* Download button */}
                         {isCompleted && job.presignedUrl && (
-                            <>
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={handlePlayPause}
-                                    title={isPlaying ? "Pause" : "Play"}
-                                >
-                                    {isPlaying ? (
-                                        <Pause className="h-4 w-4" />
-                                    ) : (
-                                        <Play className="h-4 w-4" />
-                                    )}
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={handleDownload}
-                                    title="Download audio"
-                                >
-                                    <Download className="h-4 w-4" />
-                                </Button>
-                            </>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={handleDownload}
+                                title="Download audio"
+                            >
+                                <Download className="h-4 w-4" />
+                            </Button>
                         )}
 
                         {/* Timecodes Toggle */}
@@ -326,6 +312,8 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
                             totalDuration={totalDuration}
                             activeIndex={activeSegmentIndex}
                             onChange={handleSliderChange}
+                            isPlaying={isPlaying}
+                            onPlayPause={job.presignedUrl ? handlePlayPause : undefined}
                         />
                     )}
                 </>
