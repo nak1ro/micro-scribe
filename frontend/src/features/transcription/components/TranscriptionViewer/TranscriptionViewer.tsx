@@ -29,6 +29,7 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
     // Refs for scrolling and audio
     const segmentRefs = React.useRef<Map<number, HTMLSpanElement>>(new Map());
     const audioRef = React.useRef<HTMLAudioElement>(null);
+    const isSeekingRef = React.useRef(false);
 
     const segments = job?.segments || [];
     const totalDuration = job?.durationSeconds || (segments.length > 0 ? segments[segments.length - 1].endSeconds : 0);
@@ -39,6 +40,20 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
         const ref = segmentRefs.current.get(activeSegmentIndex);
         ref?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, [activeSegmentIndex, segments.length]);
+
+    // Find segment index for a given time
+    const findSegmentIndexAtTime = React.useCallback((time: number): number => {
+        for (let i = 0; i < segments.length; i++) {
+            if (time >= segments[i].startSeconds && time <= segments[i].endSeconds) {
+                return i;
+            }
+        }
+        // If past all segments, return last; if before, return first
+        if (segments.length > 0 && time > segments[segments.length - 1].endSeconds) {
+            return segments.length - 1;
+        }
+        return 0;
+    }, [segments]);
 
     const handleCopy = async () => {
         if (!job?.transcript) return;
@@ -51,12 +66,39 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
         router.push("/dashboard");
     };
 
+    // Handle slider change - seek audio to segment start
     const handleSliderChange = (index: number) => {
         setActiveSegmentIndex(index);
+        if (audioRef.current && segments[index]) {
+            isSeekingRef.current = true;
+            audioRef.current.currentTime = segments[index].startSeconds;
+        }
     };
 
+    // Handle segment click - seek audio to segment start
     const handleSegmentClick = (index: number) => {
         setActiveSegmentIndex(index);
+        if (audioRef.current && segments[index]) {
+            isSeekingRef.current = true;
+            audioRef.current.currentTime = segments[index].startSeconds;
+        }
+    };
+
+    // Handle audio time update - sync timeline with playback
+    const handleTimeUpdate = () => {
+        if (!audioRef.current || segments.length === 0) return;
+        // Skip if we're in the middle of a manual seek
+        if (isSeekingRef.current) return;
+        const currentTime = audioRef.current.currentTime;
+        const newIndex = findSegmentIndexAtTime(currentTime);
+        if (newIndex !== activeSegmentIndex) {
+            setActiveSegmentIndex(newIndex);
+        }
+    };
+
+    // Re-enable time tracking after seek completes
+    const handleSeeked = () => {
+        isSeekingRef.current = false;
     };
 
     const handlePlayPause = () => {
@@ -111,7 +153,7 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
     const isPending = job.status === TranscriptionJobStatus.Pending || job.status === TranscriptionJobStatus.Processing;
 
     return (
-        <div className="max-w-4xl mx-auto animate-fade-in pb-24">
+        <div className="max-w-4xl mx-auto animate-fade-in pb-6">
             {/* Header */}
             <div className="mb-6">
                 <button
@@ -202,6 +244,8 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
                         <audio
                             ref={audioRef}
                             src={job.presignedUrl}
+                            onTimeUpdate={handleTimeUpdate}
+                            onSeeked={handleSeeked}
                             onEnded={() => setIsPlaying(false)}
                             onPause={() => setIsPlaying(false)}
                             onPlay={() => setIsPlaying(true)}
@@ -253,8 +297,8 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
                                         onClick={() => handleSegmentClick(index)}
                                         className={cn(
                                             "cursor-pointer transition-colors duration-200 rounded px-0.5",
-                                            "hover:bg-primary/5",
-                                            index === activeSegmentIndex && "bg-primary/10"
+                                            "hover:bg-highlight-hover",
+                                            index === activeSegmentIndex && "bg-highlight"
                                         )}
                                     >
                                         {showTimecodes && (

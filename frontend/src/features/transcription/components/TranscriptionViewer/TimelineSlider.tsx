@@ -63,22 +63,17 @@ export function TimelineSlider({ segments, totalDuration, activeIndex, onChange 
         : 0;
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border p-4 z-50">
-            <div className="max-w-4xl mx-auto">
+        <div className="sticky bottom-0 mt-6 z-50">
+            <div className="bg-card/95 backdrop-blur-sm border border-border rounded-xl p-4 shadow-lg">
                 {/* Current segment preview */}
-                <div className="text-center mb-3">
-                    <p className="text-sm text-muted-foreground">
-                        Segment {activeIndex + 1} of {segments.length}
-                    </p>
-                    <p className="text-xs text-muted-foreground/70 truncate max-w-md mx-auto">
-                        {activeSegment?.text.slice(0, 80)}...
-                    </p>
-                </div>
+                <p className="text-xs text-muted-foreground/70 truncate max-w-md mx-auto">
+                    {activeSegment?.text.slice(0, 80)}...
+                </p>
 
                 {/* Slider track */}
                 <div
                     ref={sliderRef}
-                    className="relative h-2 bg-muted rounded-full cursor-pointer select-none"
+                    className="mt-3 relative h-2 bg-muted rounded-full cursor-pointer select-none"
                     onMouseDown={handleMouseDown}
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
