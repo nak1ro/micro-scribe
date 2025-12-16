@@ -124,34 +124,36 @@ public class FolderService : IFolderService
     {
         await GetFolderOrThrowAsync(folderId, userId, ct);
 
-        var query = _context.FolderTranscriptionJobs
+        // Count query - simple without Include
+        var totalCount = await _context.FolderTranscriptionJobs
+            .Where(ftj => ftj.FolderId == folderId && ftj.TranscriptionJob.UserId == userId)
+            .CountAsync(ct);
+
+        // Items query - with Include for related data
+        var folderItems = await _context.FolderTranscriptionJobs
             .AsNoTracking()
-            .Where(ftj => ftj.FolderId == folderId)
-            .Select(ftj => ftj.TranscriptionJob)
-            .Where(j => j.UserId == userId);
-
-        var totalCount = await query.CountAsync(ct);
-
-        var jobs = await query
-            .Include(j => j.MediaFile)
-            .OrderByDescending(j => j.CreatedAtUtc)
+            .Where(ftj => ftj.FolderId == folderId && ftj.TranscriptionJob.UserId == userId)
+            .OrderByDescending(ftj => ftj.TranscriptionJob.CreatedAtUtc)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
+            .Select(ftj => new TranscriptionJobListItem
+            {
+                JobId = ftj.TranscriptionJob.Id,
+                OriginalFileName = ftj.TranscriptionJob.MediaFile != null 
+                    ? ftj.TranscriptionJob.MediaFile.OriginalFileName 
+                    : "Unknown",
+                Status = ftj.TranscriptionJob.Status,
+                Quality = ftj.TranscriptionJob.Quality,
+                LanguageCode = ftj.TranscriptionJob.LanguageCode,
+                DurationSeconds = ftj.TranscriptionJob.MediaFile != null 
+                    ? ftj.TranscriptionJob.MediaFile.DurationSeconds 
+                    : null,
+                CreatedAtUtc = ftj.TranscriptionJob.CreatedAtUtc,
+                CompletedAtUtc = ftj.TranscriptionJob.CompletedAtUtc
+            })
             .ToListAsync(ct);
 
-        var items = jobs.Select(j => new TranscriptionJobListItem
-        {
-            JobId = j.Id,
-            OriginalFileName = j.MediaFile?.OriginalFileName ?? "Unknown",
-            Status = j.Status,
-            Quality = j.Quality,
-            LanguageCode = j.LanguageCode,
-            DurationSeconds = j.MediaFile?.DurationSeconds,
-            CreatedAtUtc = j.CreatedAtUtc,
-            CompletedAtUtc = j.CompletedAtUtc
-        }).ToList();
-
-        return new PagedResponse<TranscriptionJobListItem>(items, page, pageSize, totalCount);
+        return new PagedResponse<TranscriptionJobListItem>(folderItems, page, pageSize, totalCount);
     }
 
     // Helper to get folder with ownership check

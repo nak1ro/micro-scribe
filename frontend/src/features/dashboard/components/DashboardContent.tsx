@@ -1,9 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { Search, Filter } from "lucide-react";
+import Link from "next/link";
+import { Search, Filter, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TranscriptionList } from "@/features/transcription";
+import { useAddToFolder } from "@/hooks";
 import type { TranscriptionListItem } from "@/types/models/transcription";
 
 interface DashboardContentProps {
@@ -14,6 +16,7 @@ interface DashboardContentProps {
     onDownload?: (id: string) => void;
     onDelete: (id: string) => Promise<void>;
     onShare?: (id: string) => void;
+    folderName?: string;
 }
 
 export function DashboardContent({
@@ -24,7 +27,9 @@ export function DashboardContent({
     onDownload,
     onDelete,
     onShare,
+    folderName,
 }: DashboardContentProps) {
+    const addToFolderMutation = useAddToFolder();
     const [searchQuery, setSearchQuery] = React.useState("");
 
     const handleDelete = async (id: string) => {
@@ -32,6 +37,32 @@ export function DashboardContent({
             await onDelete(id);
         } catch (err) {
             console.error("Failed to delete:", err);
+        }
+    };
+
+    const handleBulkDelete = async (ids: string[]) => {
+        for (const id of ids) {
+            try {
+                await onDelete(id);
+            } catch (err) {
+                console.error("Failed to delete:", id, err);
+            }
+        }
+    };
+
+    const handleBulkDownload = (ids: string[]) => {
+        ids.forEach((id) => onDownload?.(id));
+    };
+
+    const handleBulkShare = (ids: string[]) => {
+        ids.forEach((id) => onShare?.(id));
+    };
+
+    const handleMoveToFolder = async (folderId: string, ids: string[]) => {
+        try {
+            await addToFolderMutation.mutateAsync({ folderId, jobIds: ids });
+        } catch (err) {
+            console.error("Failed to move to folder:", err);
         }
     };
 
@@ -48,7 +79,7 @@ export function DashboardContent({
         <>
             <div className="space-y-6">
                 {/* Page Header */}
-                <DashboardHeader />
+                <DashboardHeader folderName={folderName} />
 
                 {/* Search & Filter Bar */}
                 <SearchFilterBar
@@ -71,13 +102,38 @@ export function DashboardContent({
                     onDelete={handleDelete}
                     onShare={onShare}
                     onNewClick={onOpenModal}
+                    onBulkDelete={handleBulkDelete}
+                    onBulkDownload={onDownload ? handleBulkDownload : undefined}
+                    onBulkShare={onShare ? handleBulkShare : undefined}
+                    onMoveToFolder={handleMoveToFolder}
                 />
             </div>
         </>
     );
 }
 
-function DashboardHeader() {
+interface DashboardHeaderProps {
+    folderName?: string;
+}
+
+function DashboardHeader({ folderName }: DashboardHeaderProps) {
+    if (folderName) {
+        return (
+            <div>
+                <Link
+                    href="/dashboard"
+                    className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-2 transition-colors"
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to all transcriptions
+                </Link>
+                <h1 className="text-2xl font-bold text-foreground">
+                    {folderName}
+                </h1>
+            </div>
+        );
+    }
+
     return (
         <div>
             <h1 className="text-2xl font-bold text-foreground">

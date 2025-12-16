@@ -21,6 +21,8 @@ interface TranscriptionListProps {
     onNewClick?: (type?: InputType) => void;
     onBulkDelete?: (ids: string[]) => void;
     onBulkDownload?: (ids: string[]) => void;
+    onBulkShare?: (ids: string[]) => void;
+    onMoveToFolder?: (folderId: string, ids: string[]) => void;
 }
 
 export function TranscriptionList({
@@ -32,6 +34,8 @@ export function TranscriptionList({
     onNewClick,
     onBulkDelete,
     onBulkDownload,
+    onBulkShare,
+    onMoveToFolder,
 }: TranscriptionListProps) {
     // Selection state
     const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
@@ -99,6 +103,19 @@ export function TranscriptionList({
     const handleBulkDownload = () => {
         if (onBulkDownload) {
             onBulkDownload(Array.from(selectedIds));
+        }
+    };
+
+    const handleBulkShare = () => {
+        if (onBulkShare) {
+            onBulkShare(Array.from(selectedIds));
+        }
+    };
+
+    const handleMoveToFolder = (folderId: string) => {
+        if (onMoveToFolder) {
+            onMoveToFolder(folderId, Array.from(selectedIds));
+            clearSelection();
         }
     };
 
@@ -195,6 +212,8 @@ export function TranscriptionList({
                     onClear={clearSelection}
                     onDelete={onBulkDelete ? handleBulkDelete : undefined}
                     onDownload={onBulkDownload ? handleBulkDownload : undefined}
+                    onShare={onBulkShare ? handleBulkShare : undefined}
+                    onMoveToFolder={onMoveToFolder ? handleMoveToFolder : undefined}
                 />
             )}
         </>
