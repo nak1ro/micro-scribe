@@ -11,8 +11,9 @@ interface DashboardContentProps {
     isLoading: boolean;
     error: string | null;
     onOpenModal: () => void;
-    onEdit: (id: string) => void;
+    onDownload?: (id: string) => void;
     onDelete: (id: string) => Promise<void>;
+    onShare?: (id: string) => void;
 }
 
 export function DashboardContent({
@@ -20,8 +21,9 @@ export function DashboardContent({
     isLoading,
     error,
     onOpenModal,
-    onEdit,
+    onDownload,
     onDelete,
+    onShare,
 }: DashboardContentProps) {
     const [searchQuery, setSearchQuery] = React.useState("");
 
@@ -65,8 +67,9 @@ export function DashboardContent({
                 <TranscriptionList
                     items={filteredItems}
                     isLoading={isLoading}
-                    onEdit={onEdit}
+                    onDownload={onDownload}
                     onDelete={handleDelete}
+                    onShare={onShare}
                     onNewClick={onOpenModal}
                 />
             </div>

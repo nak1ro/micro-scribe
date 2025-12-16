@@ -11,16 +11,18 @@ type InputType = "file" | "youtube" | "voice";
 interface TranscriptionListProps {
     items: TranscriptionListItem[];
     isLoading?: boolean;
-    onEdit?: (id: string) => void;
+    onDownload?: (id: string) => void;
     onDelete?: (id: string) => void;
+    onShare?: (id: string) => void;
     onNewClick?: (type?: InputType) => void;
 }
 
 export function TranscriptionList({
     items,
     isLoading = false,
-    onEdit,
+    onDownload,
     onDelete,
+    onShare,
     onNewClick,
 }: TranscriptionListProps) {
     if (isLoading) {
@@ -43,8 +45,9 @@ export function TranscriptionList({
                     key={item.id}
                     item={item}
                     index={index}
-                    onEdit={onEdit}
+                    onDownload={onDownload}
                     onDelete={onDelete}
+                    onShare={onShare}
                 />
             ))}
         </div>

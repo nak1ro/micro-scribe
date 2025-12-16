@@ -30,8 +30,9 @@ export default function DashboardPage() {
                 isLoading={isLoading}
                 error={error}
                 onOpenModal={openModal}
-                onEdit={(id) => console.log("Edit:", id)}
+                onDownload={(id) => console.log("Download:", id)}
                 onDelete={deleteItem}
+                onShare={(id) => console.log("Share:", id)}
             />
 
             <CreateTranscriptionModal
