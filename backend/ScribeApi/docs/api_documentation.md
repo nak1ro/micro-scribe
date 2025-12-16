@@ -721,6 +721,7 @@ interface TranscriptionJobDetailResponse {
   createdAtUtc: string;
   startedAtUtc: string | null;
   completedAtUtc: string | null;
+  presignedUrl: string | null;
 }
 
 interface TranscriptSegmentDto {

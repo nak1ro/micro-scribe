@@ -8,6 +8,7 @@ public class MediaMappingProfile : Profile
     public MediaMappingProfile()
     {
         CreateMap<MediaFile, MediaFileDto>()
-            .ForCtorParam("AudioPath", opt => opt.MapFrom(src => src.NormalizedAudioObjectKey));
+            .ForMember(dest => dest.AudioPath, opt => opt.MapFrom(src => src.NormalizedAudioObjectKey))
+            .ForMember(dest => dest.PresignedUrl, opt => opt.MapFrom(_ => (string?)null));
     }
 }

@@ -6,6 +6,7 @@ using ScribeApi.Features.Transcriptions.Contracts;
 using ScribeApi.Features.Transcriptions.Services;
 using ScribeApi.Shared.Extensions;
 using ScribeApi.Api.Filters;
+using ScribeApi.Core.Interfaces;
 
 namespace ScribeApi.Features.Transcriptions;
 
@@ -18,6 +19,7 @@ public class TranscriptionsController : ControllerBase
     private readonly ITranscriptionJobQueries _queries;
     private readonly ITranscriptExportService _exportService;
     private readonly ITranscriptEditService _editService;
+    private readonly IFileStorageService _storageService;
     private readonly IMapper _mapper;
 
     public TranscriptionsController(
@@ -25,12 +27,14 @@ public class TranscriptionsController : ControllerBase
         ITranscriptionJobQueries queries,
         ITranscriptExportService exportService,
         ITranscriptEditService editService,
+        IFileStorageService storageService,
         IMapper mapper)
     {
         _jobService = jobService;
         _queries = queries;
         _exportService = exportService;
         _editService = editService;
+        _storageService = storageService;
         _mapper = mapper;
     }
 
@@ -45,16 +49,17 @@ public class TranscriptionsController : ControllerBase
 
         var (items, totalCount) = await _queries.GetUserJobsAsync(userId, page, pageSize, ct);
 
-        var listItems = items.Select(j => new TranscriptionJobListItem(
-            j.Id,
-            j.MediaFile?.OriginalFileName ?? "Unknown",
-            j.Status,
-            j.Quality,
-            j.LanguageCode,
-            j.MediaFile?.DurationSeconds,
-            j.CreatedAtUtc,
-            j.CompletedAtUtc
-        )).ToList();
+        var listItems = items.Select(j => new TranscriptionJobListItem
+        {
+            JobId = j.Id,
+            OriginalFileName = j.MediaFile?.OriginalFileName ?? "Unknown",
+            Status = j.Status,
+            Quality = j.Quality,
+            LanguageCode = j.LanguageCode,
+            DurationSeconds = j.MediaFile?.DurationSeconds,
+            CreatedAtUtc = j.CreatedAtUtc,
+            CompletedAtUtc = j.CompletedAtUtc
+        }).ToList();
 
         var response = new PagedResponse<TranscriptionJobListItem>(
             listItems, page, pageSize, totalCount);
@@ -99,7 +104,27 @@ public class TranscriptionsController : ControllerBase
         if (job == null || job.UserId != userId)
             return NotFound();
 
-        return Ok(_mapper.Map<TranscriptionJobDetailResponse>(job));
+        var response = _mapper.Map<TranscriptionJobDetailResponse>(job);
+
+        // Generate Presigned URL if MediaFile exists
+        if (job.MediaFile != null && !string.IsNullOrEmpty(job.MediaFile.StorageObjectKey))
+        {
+            try 
+            {
+                var url = await _storageService.GenerateDownloadUrlAsync(
+                    job.MediaFile.StorageObjectKey, 
+                    TimeSpan.FromMinutes(15), 
+                    ct);
+                
+                response.PresignedUrl = url;
+            }
+            catch (NotSupportedException) 
+            { 
+               // Ignore for local storage
+            }
+        }
+
+        return Ok(response);
     }
 
     [HttpGet("{jobId:guid}/export")]

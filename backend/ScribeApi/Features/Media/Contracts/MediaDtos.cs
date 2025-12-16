@@ -2,17 +2,18 @@ using ScribeApi.Infrastructure.Persistence.Entities;
 
 namespace ScribeApi.Features.Media.Contracts;
 
-public record MediaFileDto(
-    Guid Id,
-    string OriginalFileName,
-    long SizeBytes,
-    string ContentType,
-    MediaFileType FileType,
-    double? DurationSeconds,
-    string? AudioPath,
-    DateTime CreatedAtUtc,
-    string? PresignedUrl // New field for playback/download
-);
+public class MediaFileDto
+{
+    public Guid Id { get; init; }
+    public string OriginalFileName { get; init; } = string.Empty;
+    public long SizeBytes { get; init; }
+    public string ContentType { get; init; } = string.Empty;
+    public MediaFileType FileType { get; init; }
+    public double? DurationSeconds { get; init; }
+    public string? AudioPath { get; init; }
+    public DateTime CreatedAtUtc { get; init; }
+    public string? PresignedUrl { get; set; }
+}
 
 public class PagedResponse<T>
 {

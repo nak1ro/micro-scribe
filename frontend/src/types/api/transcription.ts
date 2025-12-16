@@ -140,6 +140,7 @@ export interface TranscriptionJobDetailResponse {
     errorMessage: string | null;
     durationSeconds: number | null;
     segments: TranscriptSegmentDto[];
+    presignedUrl: string | null;
     createdAtUtc: string;
     startedAtUtc: string | null;
     completedAtUtc: string | null;

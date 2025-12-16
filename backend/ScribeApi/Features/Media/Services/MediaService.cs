@@ -43,7 +43,7 @@ public class MediaService : IMediaService
             if (!string.IsNullOrEmpty(mediaFile.StorageObjectKey))
             {
                 // Expiry is 15 minutes by default for security
-                dto = dto with { PresignedUrl = await _fileStorageService.GenerateDownloadUrlAsync(mediaFile.StorageObjectKey, TimeSpan.FromMinutes(15), ct) };
+                dto.PresignedUrl = await _fileStorageService.GenerateDownloadUrlAsync(mediaFile.StorageObjectKey, TimeSpan.FromMinutes(15), ct);
             }
         }
         catch (NotSupportedException) 
@@ -75,7 +75,7 @@ public class MediaService : IMediaService
                 if (!string.IsNullOrEmpty(dto.AudioPath))
                 {
                      var url = await _fileStorageService.GenerateDownloadUrlAsync(dto.AudioPath, TimeSpan.FromMinutes(15), ct);
-                     return dto with { PresignedUrl = url };
+                     dto.PresignedUrl = url;
                 }
             }
             catch (NotSupportedException) { }

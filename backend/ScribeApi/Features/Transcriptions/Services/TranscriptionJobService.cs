@@ -60,7 +60,13 @@ public class TranscriptionJobService : ITranscriptionJobService
             // Enqueue after commit to ensure job exists for worker
             EnqueueBackgroundJob(job.Id, await GetUserPlanAsync(userId, ct));
 
-            return new TranscriptionJobResponse(job.Id, job.MediaFileId, job.Status, job.CreatedAtUtc);
+            return new TranscriptionJobResponse
+            {
+                JobId = job.Id,
+                MediaFileId = job.MediaFileId,
+                Status = job.Status,
+                CreatedAtUtc = job.CreatedAtUtc
+            };
         }
         catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("unique") == true)
         {

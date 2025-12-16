@@ -10,46 +10,50 @@ namespace ScribeApi.Features.Transcriptions.Contracts
         string? LanguageCode = null
     );
 
-// Response after job creation
-    public record TranscriptionJobResponse(
-        Guid JobId,
-        Guid MediaFileId,
-        TranscriptionJobStatus Status,
-        DateTime CreatedAtUtc
-    );
+    // Response after job creation
+    public class TranscriptionJobResponse
+    {
+        public Guid JobId { get; init; }
+        public Guid MediaFileId { get; init; }
+        public TranscriptionJobStatus Status { get; init; }
+        public DateTime CreatedAtUtc { get; init; }
+    }
 
-// Detailed job response (for GET endpoints)
-    public record TranscriptionJobDetailResponse(
-        Guid JobId,
-        Guid MediaFileId,
-        string OriginalFileName,
-        TranscriptionJobStatus Status,
-        TranscriptionQuality Quality,
-        string? LanguageCode,
-        string? Transcript,
-        string? ErrorMessage,
-        double? DurationSeconds,
-        List<TranscriptSegmentDto> Segments,
-        DateTime CreatedAtUtc,
-        DateTime? StartedAtUtc,
-        DateTime? CompletedAtUtc
-    );
+    // Detailed job response (for GET endpoints)
+    public class TranscriptionJobDetailResponse
+    {
+        public Guid JobId { get; init; }
+        public Guid MediaFileId { get; init; }
+        public string OriginalFileName { get; init; } = string.Empty;
+        public TranscriptionJobStatus Status { get; init; }
+        public TranscriptionQuality Quality { get; init; }
+        public string? LanguageCode { get; init; }
+        public string? Transcript { get; init; }
+        public string? ErrorMessage { get; init; }
+        public double? DurationSeconds { get; init; }
+        public List<TranscriptSegmentDto> Segments { get; init; } = new();
+        public DateTime CreatedAtUtc { get; init; }
+        public DateTime? StartedAtUtc { get; init; }
+        public DateTime? CompletedAtUtc { get; init; }
+        public string? PresignedUrl { get; set; }
+    }
 
-// Segment DTO with timestamps
-    public record TranscriptSegmentDto(
-        Guid Id,
-        string Text,
-        double StartSeconds,
-        double EndSeconds,
-        string? Speaker,
-        bool IsEdited,
-        string? OriginalText
-    );
+    // Segment DTO with timestamps
+    public class TranscriptSegmentDto
+    {
+        public Guid Id { get; init; }
+        public string Text { get; init; } = string.Empty;
+        public double StartSeconds { get; init; }
+        public double EndSeconds { get; init; }
+        public string? Speaker { get; init; }
+        public bool IsEdited { get; init; }
+        public string? OriginalText { get; init; }
+    }
 
-// Request to update a segment
+    // Request to update a segment
     public record UpdateSegmentRequest(string Text);
 
-// Export format enum
+    // Export format enum
     public enum ExportFormat
     {
         Txt,
@@ -58,15 +62,16 @@ namespace ScribeApi.Features.Transcriptions.Contracts
         Json
     }
 
-// List item for job list response
-    public record TranscriptionJobListItem(
-        Guid JobId,
-        string OriginalFileName,
-        TranscriptionJobStatus Status,
-        TranscriptionQuality Quality,
-        string? LanguageCode,
-        double? DurationSeconds,
-        DateTime CreatedAtUtc,
-        DateTime? CompletedAtUtc
-    );
+    // List item for job list response
+    public class TranscriptionJobListItem
+    {
+        public Guid JobId { get; init; }
+        public string OriginalFileName { get; init; } = string.Empty;
+        public TranscriptionJobStatus Status { get; init; }
+        public TranscriptionQuality Quality { get; init; }
+        public string? LanguageCode { get; init; }
+        public double? DurationSeconds { get; init; }
+        public DateTime CreatedAtUtc { get; init; }
+        public DateTime? CompletedAtUtc { get; init; }
+    }
 }

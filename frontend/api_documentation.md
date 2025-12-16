@@ -431,6 +431,7 @@ interface MediaFileResponse {
   fileType: MediaFileType;            // 0 = Audio, 1 = Video
   durationSeconds: number | null;
   normalizedAudioObjectKey: string | null;
+  presignedUrl: string | null;        // URL for playback/download (expires in 15 min)
   createdAtUtc: string;
 }
 

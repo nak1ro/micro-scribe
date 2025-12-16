@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, Clock, Loader2, Copy, Check, AlertCircle } from "lucide-react";
+import { ArrowLeft, Clock, Loader2, Copy, Check, AlertCircle, Play, Pause, Download } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useTranscriptionJob } from "@/hooks/useTranscriptions";
 import { TranscriptionJobStatus } from "@/types/api/transcription";
@@ -27,9 +27,11 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
     const [copied, setCopied] = React.useState(false);
     const [showTimecodes, setShowTimecodes] = React.useState(true);
     const [activeSegmentIndex, setActiveSegmentIndex] = React.useState(0);
+    const [isPlaying, setIsPlaying] = React.useState(false);
 
-    // Refs for scrolling
+    // Refs for scrolling and audio
     const segmentRefs = React.useRef<Map<number, HTMLSpanElement>>(new Map());
+    const audioRef = React.useRef<HTMLAudioElement>(null);
 
     const segments = job?.segments || [];
     const totalDuration = job?.durationSeconds || (segments.length > 0 ? segments[segments.length - 1].endSeconds : 0);
@@ -58,6 +60,26 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
 
     const handleSegmentClick = (index: number) => {
         setActiveSegmentIndex(index);
+    };
+
+    const handlePlayPause = () => {
+        if (!audioRef.current) return;
+        if (isPlaying) {
+            audioRef.current.pause();
+        } else {
+            audioRef.current.play();
+        }
+        setIsPlaying(!isPlaying);
+    };
+
+    const handleDownload = () => {
+        if (!job?.presignedUrl) return;
+        const link = document.createElement("a");
+        link.href = job.presignedUrl;
+        link.download = job.originalFileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     // Loading state
@@ -123,6 +145,32 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {/* Audio Controls */}
+                        {isCompleted && job.presignedUrl && (
+                            <>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={handlePlayPause}
+                                    title={isPlaying ? "Pause" : "Play"}
+                                >
+                                    {isPlaying ? (
+                                        <Pause className="h-4 w-4" />
+                                    ) : (
+                                        <Play className="h-4 w-4" />
+                                    )}
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={handleDownload}
+                                    title="Download audio"
+                                >
+                                    <Download className="h-4 w-4" />
+                                </Button>
+                            </>
+                        )}
+
                         {/* Timecodes Toggle */}
                         {isCompleted && segments.length > 0 && (
                             <TimecodeToggle
@@ -151,6 +199,18 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
                             </Button>
                         )}
                     </div>
+
+                    {/* Hidden audio element */}
+                    {job.presignedUrl && (
+                        <audio
+                            ref={audioRef}
+                            src={job.presignedUrl}
+                            onEnded={() => setIsPlaying(false)}
+                            onPause={() => setIsPlaying(false)}
+                            onPlay={() => setIsPlaying(true)}
+                            className="hidden"
+                        />
+                    )}
                 </div>
             </div>
 
