@@ -6,6 +6,7 @@ import { TranscriptionCard } from "./TranscriptionCard";
 import { TranscriptionEmptyState } from "./TranscriptionEmptyState";
 import { BulkActionBar } from "./BulkActionBar";
 import type { TranscriptionListItem } from "@/types/models/transcription";
+import {TranscriptionItem} from "@/features/transcription";
 
 type InputType = "file" | "youtube" | "voice";
 type SortField = "fileName" | "uploadDate" | "duration";
@@ -152,6 +153,22 @@ export function TranscriptionList({
                     />
                 ))}
             </div>
+
+            {/* Alternative: List View with TranscriptionItem */}
+            {/*<div className="border border-border rounded-xl bg-card overflow-hidden shadow-sm">*/}
+            {/*    {sortedItems.map((item, index) => (*/}
+            {/*        <TranscriptionItem*/}
+            {/*            key={item.id}*/}
+            {/*            item={item}*/}
+            {/*            index={index}*/}
+            {/*            isSelected={selectedIds.has(item.id)}*/}
+            {/*            onSelect={toggleSelect}*/}
+            {/*            onDownload={onDownload}*/}
+            {/*            onDelete={onDelete}*/}
+            {/*            onShare={onShare}*/}
+            {/*        />*/}
+            {/*    ))}*/}
+            {/*</div>*/}
         </>
     );
 }
