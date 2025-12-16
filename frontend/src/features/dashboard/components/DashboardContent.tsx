@@ -2,13 +2,15 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, Filter, ArrowLeft } from "lucide-react";
+import { Search, Filter, ArrowLeft, ArrowUpDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TranscriptionList } from "@/features/transcription";
 import { StatsCards } from "./StatsCards";
 import { FolderPills } from "./FolderPills";
 import { useAddToFolder } from "@/hooks";
 import type { TranscriptionListItem } from "@/types/models/transcription";
+
+type SortOption = "timeAdded" | "name" | "duration";
 
 interface DashboardContentProps {
     items: TranscriptionListItem[];
@@ -33,6 +35,7 @@ export function DashboardContent({
 }: DashboardContentProps) {
     const addToFolderMutation = useAddToFolder();
     const [searchQuery, setSearchQuery] = React.useState("");
+    const [sortBy, setSortBy] = React.useState<SortOption>("timeAdded");
 
     const handleDelete = async (id: string) => {
         try {
@@ -68,14 +71,31 @@ export function DashboardContent({
         }
     };
 
-    // Filter items based on search query
-    const filteredItems = React.useMemo(() => {
-        if (!searchQuery.trim()) return items;
-        const query = searchQuery.toLowerCase();
-        return items.filter((item) =>
-            item.fileName.toLowerCase().includes(query)
-        );
-    }, [items, searchQuery]);
+    // Filter and sort items
+    const filteredAndSortedItems = React.useMemo(() => {
+        let result = items;
+
+        // Filter by search
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter((item) =>
+                item.fileName.toLowerCase().includes(query)
+            );
+        }
+
+        // Sort
+        return [...result].sort((a, b) => {
+            switch (sortBy) {
+                case "name":
+                    return a.fileName.localeCompare(b.fileName);
+                case "duration":
+                    return (b.duration ?? 0) - (a.duration ?? 0);
+                case "timeAdded":
+                default:
+                    return new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime();
+            }
+        });
+    }, [items, searchQuery, sortBy]);
 
     return (
         <>
@@ -86,10 +106,12 @@ export function DashboardContent({
                 {/* Stats Cards - Only on main dashboard */}
                 {!folderName && <StatsCards items={items} isLoading={isLoading} />}
 
-                {/* Search & Filter Bar */}
+                {/* Search & Sort Bar */}
                 <SearchFilterBar
                     searchQuery={searchQuery}
                     onSearchChange={setSearchQuery}
+                    sortBy={sortBy}
+                    onSortChange={setSortBy}
                 />
 
                 {/* Folder Pills - Only on main dashboard */}
@@ -104,7 +126,7 @@ export function DashboardContent({
 
                 {/* Transcriptions List */}
                 <TranscriptionList
-                    items={filteredItems}
+                    items={filteredAndSortedItems}
                     isLoading={isLoading}
                     onDownload={onDownload}
                     onDelete={handleDelete}
@@ -157,9 +179,31 @@ function DashboardHeader({ folderName }: DashboardHeaderProps) {
 interface SearchFilterBarProps {
     searchQuery: string;
     onSearchChange: (value: string) => void;
+    sortBy: SortOption;
+    onSortChange: (value: SortOption) => void;
 }
 
-function SearchFilterBar({ searchQuery, onSearchChange }: SearchFilterBarProps) {
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+    { value: "timeAdded", label: "Time Added" },
+    { value: "name", label: "Name" },
+    { value: "duration", label: "Duration" },
+];
+
+function SearchFilterBar({ searchQuery, onSearchChange, sortBy, onSortChange }: SearchFilterBarProps) {
+    const [sortOpen, setSortOpen] = React.useState(false);
+    const sortRef = React.useRef<HTMLDivElement>(null);
+
+    // Close dropdown on outside click
+    React.useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
+                setSortOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
     return (
         <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
@@ -178,18 +222,51 @@ function SearchFilterBar({ searchQuery, onSearchChange }: SearchFilterBarProps) 
                     )}
                 />
             </div>
-            <button
-                type="button"
-                className={cn(
-                    "flex items-center gap-2 px-4 h-10 rounded-lg",
-                    "bg-card border border-border shadow-sm",
-                    "text-muted-foreground hover:text-foreground",
-                    "transition-colors"
+
+            {/* Sort Dropdown */}
+            <div className="relative" ref={sortRef}>
+                <button
+                    type="button"
+                    onClick={() => setSortOpen(!sortOpen)}
+                    className={cn(
+                        "flex items-center gap-2 px-4 h-10 rounded-lg",
+                        "bg-card border border-border shadow-sm",
+                        "text-muted-foreground hover:text-foreground",
+                        "transition-colors"
+                    )}
+                >
+                    <ArrowUpDown className="h-4 w-4" />
+                    <span className="hidden sm:inline">
+                        {SORT_OPTIONS.find(o => o.value === sortBy)?.label}
+                    </span>
+                </button>
+
+                {sortOpen && (
+                    <div className={cn(
+                        "absolute right-0 top-full mt-1 z-50",
+                        "w-40 py-1 rounded-lg",
+                        "bg-card border border-border shadow-lg"
+                    )}>
+                        {SORT_OPTIONS.map((option) => (
+                            <button
+                                key={option.value}
+                                onClick={() => {
+                                    onSortChange(option.value);
+                                    setSortOpen(false);
+                                }}
+                                className={cn(
+                                    "flex items-center justify-between w-full px-3 py-2 text-sm",
+                                    "hover:bg-accent transition-colors",
+                                    sortBy === option.value ? "text-primary" : "text-foreground"
+                                )}
+                            >
+                                {option.label}
+                                {sortBy === option.value && <Check className="h-4 w-4" />}
+                            </button>
+                        ))}
+                    </div>
                 )}
-            >
-                <Filter className="h-4 w-4" />
-                <span className="hidden sm:inline">Filter</span>
-            </button>
+            </div>
         </div>
     );
 }

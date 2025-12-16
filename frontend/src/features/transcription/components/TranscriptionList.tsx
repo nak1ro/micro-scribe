@@ -1,9 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { TranscriptionItem } from "./TranscriptionItem";
+import { TranscriptionCard } from "./TranscriptionCard";
 import { TranscriptionEmptyState } from "./TranscriptionEmptyState";
 import { BulkActionBar } from "./BulkActionBar";
 import type { TranscriptionListItem } from "@/types/models/transcription";
@@ -67,26 +66,20 @@ export function TranscriptionList({
 
     const clearSelection = () => setSelectedIds(new Set());
 
-    // Sort handler
-    const handleSort = (field: SortField) => {
-        if (sortField === field) {
-            setSortDirection(prev => prev === "asc" ? "desc" : "asc");
-        } else {
-            setSortField(field);
-            setSortDirection("desc");
-        }
-    };
-
     // Sort items
     const sortedItems = React.useMemo(() => {
         return [...items].sort((a, b) => {
             let comparison = 0;
-            if (sortField === "fileName") {
-                comparison = a.fileName.localeCompare(b.fileName);
-            } else if (sortField === "uploadDate") {
-                comparison = new Date(a.uploadDate).getTime() - new Date(b.uploadDate).getTime();
-            } else if (sortField === "duration") {
-                comparison = (a.duration ?? 0) - (b.duration ?? 0);
+            switch (sortField) {
+                case "fileName":
+                    comparison = a.fileName.localeCompare(b.fileName);
+                    break;
+                case "uploadDate":
+                    comparison = new Date(a.uploadDate).getTime() - new Date(b.uploadDate).getTime();
+                    break;
+                case "duration":
+                    comparison = (a.duration ?? 0) - (b.duration ?? 0);
+                    break;
             }
             return sortDirection === "asc" ? comparison : -comparison;
         });
@@ -94,33 +87,33 @@ export function TranscriptionList({
 
     // Bulk action handlers
     const handleBulkDelete = () => {
-        if (onBulkDelete) {
-            onBulkDelete(Array.from(selectedIds));
+        if (selectedIds.size > 0) {
+            onBulkDelete?.(Array.from(selectedIds));
             clearSelection();
         }
     };
 
     const handleBulkDownload = () => {
-        if (onBulkDownload) {
-            onBulkDownload(Array.from(selectedIds));
+        if (selectedIds.size > 0) {
+            onBulkDownload?.(Array.from(selectedIds));
         }
     };
 
     const handleBulkShare = () => {
-        if (onBulkShare) {
-            onBulkShare(Array.from(selectedIds));
+        if (selectedIds.size > 0) {
+            onBulkShare?.(Array.from(selectedIds));
         }
     };
 
     const handleMoveToFolder = (folderId: string) => {
-        if (onMoveToFolder) {
-            onMoveToFolder(folderId, Array.from(selectedIds));
+        if (selectedIds.size > 0) {
+            onMoveToFolder?.(folderId, Array.from(selectedIds));
             clearSelection();
         }
     };
 
     if (isLoading) {
-        return <TranscriptionListSkeleton />;
+        return <CardGridSkeleton />;
     }
 
     if (items.length === 0) {
@@ -128,75 +121,29 @@ export function TranscriptionList({
     }
 
     const isAllSelected = selectedIds.size === items.length && items.length > 0;
-    const isPartiallySelected = selectedIds.size > 0 && selectedIds.size < items.length;
 
     return (
         <>
-            <div className={cn(
-                "border border-border rounded-xl",
-                "bg-card overflow-hidden",
-                "shadow-sm"
-            )}>
-                {/* Table Header */}
-                <div className={cn(
-                    "grid items-center gap-3 px-3 py-2",
-                    "bg-muted/40 border-b border-border",
-                    "text-xs font-medium text-muted-foreground uppercase tracking-wide",
-                    "grid-cols-[32px_1fr_140px_80px_90px_36px]"
-                )}>
-                    {/* Checkbox */}
-                    <div className="flex items-center justify-center">
-                        <input
-                            type="checkbox"
-                            checked={isAllSelected}
-                            ref={el => {
-                                if (el) el.indeterminate = isPartiallySelected;
-                            }}
-                            onChange={selectAll}
-                            className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
-                        />
-                    </div>
-
-                    {/* Name */}
-                    <SortableHeader
-                        label="Name"
-                        field="fileName"
-                        currentField={sortField}
-                        direction={sortDirection}
-                        onSort={handleSort}
+            {/* Selection toolbar */}
+            {selectedIds.size > 0 && (
+                <div className="mb-4">
+                    <BulkActionBar
+                        selectedCount={selectedIds.size}
+                        onClear={clearSelection}
+                        onDelete={onBulkDelete ? handleBulkDelete : undefined}
+                        onDownload={onBulkDownload ? handleBulkDownload : undefined}
+                        onShare={onBulkShare ? handleBulkShare : undefined}
+                        onMoveToFolder={onMoveToFolder ? handleMoveToFolder : undefined}
                     />
-
-                    {/* Uploaded */}
-                    <SortableHeader
-                        label="Uploaded"
-                        field="uploadDate"
-                        currentField={sortField}
-                        direction={sortDirection}
-                        onSort={handleSort}
-                    />
-
-                    {/* Duration */}
-                    <SortableHeader
-                        label="Duration"
-                        field="duration"
-                        currentField={sortField}
-                        direction={sortDirection}
-                        onSort={handleSort}
-                    />
-
-                    {/* Status */}
-                    <div>Status</div>
-
-                    {/* Actions placeholder */}
-                    <div />
                 </div>
+            )}
 
-                {/* Items */}
-                {sortedItems.map((item, index) => (
-                    <TranscriptionItem
+            {/* Card Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {sortedItems.map((item) => (
+                    <TranscriptionCard
                         key={item.id}
                         item={item}
-                        index={index}
                         isSelected={selectedIds.has(item.id)}
                         onSelect={toggleSelect}
                         onDownload={onDownload}
@@ -205,77 +152,38 @@ export function TranscriptionList({
                     />
                 ))}
             </div>
-
-            {/* Bulk Action Bar */}
-            {selectedIds.size > 0 && (
-                <BulkActionBar
-                    selectedCount={selectedIds.size}
-                    onClear={clearSelection}
-                    onDelete={onBulkDelete ? handleBulkDelete : undefined}
-                    onDownload={onBulkDownload ? handleBulkDownload : undefined}
-                    onShare={onBulkShare ? handleBulkShare : undefined}
-                    onMoveToFolder={onMoveToFolder ? handleMoveToFolder : undefined}
-                />
-            )}
         </>
     );
 }
 
-// Sortable Header Component
-interface SortableHeaderProps {
-    label: string;
-    field: SortField;
-    currentField: SortField;
-    direction: SortDirection;
-    onSort: (field: SortField) => void;
-}
-
-function SortableHeader({ label, field, currentField, direction, onSort }: SortableHeaderProps) {
-    const isActive = currentField === field;
-
+// Loading Skeleton for Card Grid
+function CardGridSkeleton() {
     return (
-        <button
-            onClick={() => onSort(field)}
-            className="flex items-center gap-1 hover:text-foreground transition-colors"
-        >
-            {label}
-            {isActive ? (
-                direction === "asc" ? (
-                    <ArrowUp className="h-3.5 w-3.5" />
-                ) : (
-                    <ArrowDown className="h-3.5 w-3.5" />
-                )
-            ) : (
-                <ChevronsUpDown className="h-3.5 w-3.5 opacity-50" />
-            )}
-        </button>
-    );
-}
-
-// Loading Skeleton
-function TranscriptionListSkeleton() {
-    return (
-        <div className="border border-border rounded-xl bg-card overflow-hidden">
-            {/* Header skeleton */}
-            <div className="grid items-center gap-4 px-4 py-3 bg-muted/50 border-b border-border grid-cols-[40px_1fr_160px_100px_100px_40px]">
-                <div className="h-4 w-4 bg-muted rounded animate-pulse" />
-                <div className="h-4 bg-muted rounded w-16 animate-pulse" />
-                <div className="h-4 bg-muted rounded w-20 animate-pulse" />
-                <div className="h-4 bg-muted rounded w-16 animate-pulse" />
-                <div className="h-4 bg-muted rounded w-14 animate-pulse" />
-                <div />
-            </div>
-            {Array.from({ length: 5 }).map((_, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {[...Array(8)].map((_, i) => (
                 <div
                     key={i}
-                    className="grid items-center gap-4 px-4 py-4 border-b border-border last:border-b-0 grid-cols-[40px_1fr_160px_100px_100px_40px]"
+                    className="flex flex-col p-4 rounded-xl bg-card border border-border animate-pulse"
                 >
-                    <div className="h-4 w-4 bg-muted rounded animate-pulse" />
-                    <div className="h-4 bg-muted rounded w-1/2 animate-pulse" />
-                    <div className="h-4 bg-muted rounded w-24 animate-pulse" />
-                    <div className="h-4 bg-muted rounded w-12 animate-pulse" />
-                    <div className="h-6 bg-muted rounded-full w-20 animate-pulse" />
-                    <div className="h-8 w-8 rounded bg-muted animate-pulse" />
+                    {/* Icon + Title skeleton */}
+                    <div className="flex items-start gap-3 mb-3">
+                        <div className="w-9 h-9 rounded-lg bg-muted" />
+                        <div className="flex-1">
+                            <div className="h-4 bg-muted rounded w-3/4" />
+                        </div>
+                    </div>
+
+                    {/* Preview skeleton */}
+                    <div className="space-y-2 mb-4">
+                        <div className="h-3 bg-muted rounded w-full" />
+                        <div className="h-3 bg-muted rounded w-2/3" />
+                    </div>
+
+                    {/* Footer skeleton */}
+                    <div className="flex items-center justify-between pt-3 border-t border-border/50">
+                        <div className="h-5 bg-muted rounded-full w-20" />
+                        <div className="h-3 bg-muted rounded w-16" />
+                    </div>
                 </div>
             ))}
         </div>
