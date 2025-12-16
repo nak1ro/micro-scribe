@@ -61,12 +61,13 @@ export function TranscriptionItem({
         <div
             onClick={handleItemClick}
             className={cn(
-                "group grid items-center gap-4 px-4 py-4",
-                "border-b border-border last:border-b-0",
-                "hover:bg-accent/50 transition-colors cursor-pointer",
-                "grid-cols-[40px_1fr_160px_100px_100px_40px]",
-                isEven ? "bg-card" : "bg-muted/30",
-                isSelected && "bg-primary/5"
+                "group grid items-center gap-3 px-3 py-2.5",
+                "border-b border-border/30 last:border-b-0",
+                "transition-all duration-150 cursor-pointer",
+                "grid-cols-[32px_1fr_140px_80px_90px_36px]",
+                isEven ? "bg-transparent" : "bg-muted/20",
+                "hover:bg-accent/50 hover:shadow-sm",
+                isSelected && "bg-primary/10 border-l-2 border-l-primary"
             )}
         >
             {/* Checkbox */}
@@ -76,24 +77,24 @@ export function TranscriptionItem({
                     checked={isSelected}
                     onChange={handleCheckboxChange}
                     onClick={(e) => e.stopPropagation()}
-                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                    className="h-3.5 w-3.5 rounded border-border text-primary focus:ring-primary cursor-pointer"
                 />
             </div>
 
             {/* Name */}
             <div className="min-w-0">
-                <p className="font-medium text-foreground truncate">
+                <p className="text-sm font-medium text-foreground truncate">
                     {item.fileName}
                 </p>
             </div>
 
             {/* Uploaded */}
-            <div className="text-sm text-muted-foreground">
+            <div className="text-xs text-muted-foreground">
                 {formattedDate}
             </div>
 
             {/* Duration */}
-            <div className="text-sm text-muted-foreground">
+            <div className="text-xs text-muted-foreground">
                 {item.duration ? formatDuration(item.duration) : "—"}
             </div>
 
@@ -201,11 +202,17 @@ function ActionMenu({ item, onDownload, onShare, onDelete }: ActionMenuProps) {
             <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7"
+                className={cn(
+                    "h-7 w-7",
+                    "opacity-0 group-hover:opacity-100 transition-opacity",
+                    "hover:bg-accent",
+                    isOpen && "opacity-100 bg-accent"
+                )}
                 onClick={(e) => {
                     e.stopPropagation();
                     setIsOpen(!isOpen);
                 }}
+                title="Actions"
             >
                 <MoreHorizontal className="h-4 w-4" />
             </Button>

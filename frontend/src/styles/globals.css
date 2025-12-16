@@ -46,6 +46,8 @@
 
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-subtle-pulse: subtle-pulse 3s ease-in-out infinite;
+  --animate-glow: glow 2s ease-in-out infinite;
 
   @keyframes accordion-down {
     from {
@@ -64,6 +66,54 @@
 
     to {
       height: 0;
+    }
+  }
+
+  @keyframes subtle-pulse {
+
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    50% {
+      opacity: 0.97;
+      transform: scale(1.005);
+    }
+  }
+
+  @keyframes glow {
+
+    0%,
+    100% {
+      box-shadow: 0 0 20px 0 rgba(124, 58, 237, 0.3);
+    }
+
+    50% {
+      box-shadow: 0 0 30px 5px rgba(124, 58, 237, 0.4);
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%) rotate(45deg);
+    }
+
+    100% {
+      transform: translateX(200%) rotate(45deg);
+    }
+  }
+
+  @keyframes status-pulse {
+
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.6;
     }
   }
 }

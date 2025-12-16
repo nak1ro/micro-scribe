@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Search, Filter, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TranscriptionList } from "@/features/transcription";
+import { StatsCards } from "./StatsCards";
 import { useAddToFolder } from "@/hooks";
 import type { TranscriptionListItem } from "@/types/models/transcription";
 
@@ -80,6 +81,9 @@ export function DashboardContent({
             <div className="space-y-6">
                 {/* Page Header */}
                 <DashboardHeader folderName={folderName} />
+
+                {/* Stats Cards - Only on main dashboard */}
+                {!folderName && <StatsCards items={items} isLoading={isLoading} />}
 
                 {/* Search & Filter Bar */}
                 <SearchFilterBar
@@ -163,9 +167,10 @@ function SearchFilterBar({ searchQuery, onSearchChange }: SearchFilterBarProps) 
                     onChange={(e) => onSearchChange(e.target.value)}
                     className={cn(
                         "w-full h-10 pl-10 pr-4 rounded-lg",
-                        "bg-background border border-input",
+                        "bg-card border border-border shadow-sm",
                         "text-foreground placeholder:text-muted-foreground",
-                        "focus:outline-none focus:ring-2 focus:ring-ring"
+                        "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary",
+                        "transition-shadow"
                     )}
                 />
             </div>
@@ -173,7 +178,7 @@ function SearchFilterBar({ searchQuery, onSearchChange }: SearchFilterBarProps) 
                 type="button"
                 className={cn(
                     "flex items-center gap-2 px-4 h-10 rounded-lg",
-                    "bg-background border border-input",
+                    "bg-card border border-border shadow-sm",
                     "text-muted-foreground hover:text-foreground",
                     "transition-colors"
                 )}

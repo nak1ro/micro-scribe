@@ -134,14 +134,15 @@ export function TranscriptionList({
         <>
             <div className={cn(
                 "border border-border rounded-xl",
-                "bg-card overflow-hidden"
+                "bg-card overflow-hidden",
+                "shadow-sm"
             )}>
                 {/* Table Header */}
                 <div className={cn(
-                    "grid items-center gap-4 px-4 py-3",
-                    "bg-muted/50 border-b border-border",
-                    "text-sm font-medium text-muted-foreground",
-                    "grid-cols-[40px_1fr_160px_100px_100px_40px]"
+                    "grid items-center gap-3 px-3 py-2",
+                    "bg-muted/40 border-b border-border",
+                    "text-xs font-medium text-muted-foreground uppercase tracking-wide",
+                    "grid-cols-[32px_1fr_140px_80px_90px_36px]"
                 )}>
                     {/* Checkbox */}
                     <div className="flex items-center justify-center">
