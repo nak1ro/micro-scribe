@@ -14,9 +14,11 @@ This document provides comprehensive API documentation for the ScribeApi backend
 2. [Media Files](#media-files)
 3. [Uploads](#uploads)
 4. [Transcriptions](#transcriptions)
-5. [Webhooks](#webhooks)
-6. [Common Types & Enums](#common-types--enums)
-7. [Error Handling](#error-handling)
+5. [Folders](#folders)
+6. [Webhooks](#webhooks)
+7. [Usage](#usage)
+8. [Common Types & Enums](#common-types--enums)
+9. [Error Handling](#error-handling)
 
 ---
 
@@ -832,6 +834,189 @@ Retrieves the current user's usage statistics and their plan limits.
 }
 ```
 
+---
+
+## Folders
+
+Organize transcriptions into colored folders. A transcription can belong to multiple folders (many-to-many).
+
+### Endpoint: List Folders
+
+**Description:** Returns all folders for the authenticated user.
+
+**Method:** `GET`  
+**URL:** `/api/folders`  
+**Authorization:** Required (Authenticated)
+
+#### Response
+
+**Success (200 OK)**
+```typescript
+interface FolderDto {
+  id: string;
+  name: string;
+  color: FolderColor;
+  itemCount: number;
+  createdAtUtc: string;
+}
+
+type ListFoldersResponse = FolderDto[];
+```
+
+---
+
+### Endpoint: Get Folder
+
+**Description:** Returns details of a specific folder.
+
+**Method:** `GET`  
+**URL:** `/api/folders/{id}`  
+**Authorization:** Required (Authenticated)
+
+#### Response
+
+**Success (200 OK)** - Returns `FolderDto`
+
+---
+
+### Endpoint: Create Folder
+
+**Description:** Creates a new folder.
+
+**Method:** `POST`  
+**URL:** `/api/folders`  
+**Authorization:** Required (Authenticated)
+
+#### Request Body
+```typescript
+interface CreateFolderRequest {
+  name: string;          // Required, max 100 chars
+  color?: FolderColor;   // Optional, default: Blue
+}
+```
+
+**Example Request:**
+```json
+{
+  "name": "Work Meetings",
+  "color": "Green"
+}
+```
+
+#### Response
+
+**Success (201 Created)** - Returns `FolderDto`
+
+---
+
+### Endpoint: Update Folder
+
+**Description:** Updates folder name and/or color.
+
+**Method:** `PUT`  
+**URL:** `/api/folders/{id}`  
+**Authorization:** Required (Authenticated)
+
+#### Request Body
+```typescript
+interface UpdateFolderRequest {
+  name: string;       // Required, max 100 chars
+  color: FolderColor; // Required
+}
+```
+
+#### Response
+
+**Success (200 OK)** - Returns updated `FolderDto`
+
+---
+
+### Endpoint: Delete Folder
+
+**Description:** Deletes a folder. Transcriptions are unlinked but not deleted.
+
+**Method:** `DELETE`  
+**URL:** `/api/folders/{id}`  
+**Authorization:** Required (Authenticated)
+
+#### Response
+
+**Success (204 No Content)**
+
+---
+
+### Endpoint: Add Items to Folder
+
+**Description:** Adds transcription jobs to a folder.
+
+**Method:** `POST`  
+**URL:** `/api/folders/{id}/items`  
+**Authorization:** Required (Authenticated)
+
+#### Request Body
+```typescript
+interface UpdateFolderItemsRequest {
+  transcriptionJobIds: string[];  // Required, at least 1
+}
+```
+
+**Example Request:**
+```json
+{
+  "transcriptionJobIds": [
+    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+  ]
+}
+```
+
+#### Response
+
+**Success (204 No Content)**
+
+---
+
+### Endpoint: Remove Items from Folder
+
+**Description:** Removes transcription jobs from a folder.
+
+**Method:** `DELETE`  
+**URL:** `/api/folders/{id}/items`  
+**Authorization:** Required (Authenticated)
+
+#### Request Body
+```typescript
+interface UpdateFolderItemsRequest {
+  transcriptionJobIds: string[];  // Required, at least 1
+}
+```
+
+#### Response
+
+**Success (204 No Content)**
+
+---
+
+### Endpoint: List Folder Items
+
+**Description:** Returns paginated list of transcriptions in a folder.
+
+**Method:** `GET`  
+**URL:** `/api/folders/{id}/items`  
+**Authorization:** Required (Authenticated)
+
+#### Query Parameters
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| page | number | No | 1 | Page number |
+| pageSize | number | No | 20 | Items per page |
+
+#### Response
+
+**Success (200 OK)** - Returns `PagedResponse<TranscriptionJobListItem>`
+
+---
+
 ## Webhooks
 
 Subscribe to receive HTTP callbacks when transcription jobs complete, fail, or are cancelled.
@@ -1076,6 +1261,15 @@ enum PlanType {
   Free = 0,
   Pro = 1
 }
+
+enum FolderColor {
+  Blue = 0,
+  Green = 1,
+  Purple = 2,
+  Orange = 3,
+  Red = 4,
+  Gray = 5
+}
 ```
 
 ---
@@ -1144,3 +1338,11 @@ interface ValidationProblemDetails {
 | `DELETE` | `/api/webhooks/{id}` | ✅ | Delete webhook subscription |
 | `GET` | `/api/webhooks/{id}/deliveries` | ✅ | Get webhook deliveries |
 | `GET` | `/api/usage/me` | ✅ | Get usage & limits |
+| `GET` | `/api/folders` | ✅ | List folders |
+| `GET` | `/api/folders/{id}` | ✅ | Get folder |
+| `POST` | `/api/folders` | ✅ | Create folder |
+| `PUT` | `/api/folders/{id}` | ✅ | Update folder |
+| `DELETE` | `/api/folders/{id}` | ✅ | Delete folder |
+| `POST` | `/api/folders/{id}/items` | ✅ | Add items to folder |
+| `DELETE` | `/api/folders/{id}/items` | ✅ | Remove items from folder |
+| `GET` | `/api/folders/{id}/items` | ✅ | List folder items |
