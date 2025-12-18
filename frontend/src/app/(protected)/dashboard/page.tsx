@@ -38,7 +38,7 @@ function DashboardPageContent() {
             status: item.status.toLowerCase() as TranscriptionListItem["status"],
             duration: item.durationSeconds,
             language: item.languageCode,
-            preview: null,
+            preview: item.transcriptPreview,
         }));
     }, [folderItemsData]);
 
