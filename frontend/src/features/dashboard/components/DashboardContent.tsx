@@ -206,7 +206,7 @@ function SearchFilterBar({ searchQuery, onSearchChange, sortBy, onSortChange }: 
 
     return (
         <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
+            <div className="relative w-full sm:w-80">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                     type="text"
@@ -216,7 +216,7 @@ function SearchFilterBar({ searchQuery, onSearchChange, sortBy, onSortChange }: 
                     className={cn(
                         "w-full h-10 pl-10 pr-4 rounded-lg",
                         "bg-card border border-border shadow-sm",
-                        "text-foreground placeholder:text-muted-foreground",
+                        "text-sm text-foreground placeholder:text-muted-foreground",
                         "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary",
                         "transition-shadow"
                     )}
