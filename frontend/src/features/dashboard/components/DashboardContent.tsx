@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, Filter, ArrowLeft, ArrowUpDown, Check } from "lucide-react";
+import { Search, ArrowLeft, ArrowUpDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TranscriptionList } from "@/features/transcription";
 import { StatsCards } from "./StatsCards";
@@ -103,9 +103,6 @@ export function DashboardContent({
                 {/* Page Header */}
                 <DashboardHeader folderName={folderName} />
 
-                {/* Stats Cards - Only on main dashboard */}
-                {!folderName && <StatsCards items={items} isLoading={isLoading} />}
-
                 {/* Search & Sort Bar */}
                 <SearchFilterBar
                     searchQuery={searchQuery}
@@ -115,7 +112,8 @@ export function DashboardContent({
                 />
 
                 {/* Folder Pills - Only on main dashboard */}
-                {!folderName && <FolderPills />}
+                {/* Folder Pills - Always visible for tab-like navigation */}
+                <FolderPills />
 
                 {/* Error Message */}
                 {error && (
@@ -147,23 +145,6 @@ interface DashboardHeaderProps {
 }
 
 function DashboardHeader({ folderName }: DashboardHeaderProps) {
-    if (folderName) {
-        return (
-            <div>
-                <Link
-                    href="/dashboard"
-                    className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-2 transition-colors"
-                >
-                    <ArrowLeft className="h-4 w-4" />
-                    Back to all transcriptions
-                </Link>
-                <h1 className="text-2xl font-bold text-foreground">
-                    {folderName}
-                </h1>
-            </div>
-        );
-    }
-
     return (
         <div>
             <h1 className="text-2xl font-bold text-foreground">
@@ -213,6 +194,7 @@ function SearchFilterBar({ searchQuery, onSearchChange, sortBy, onSortChange }: 
                     placeholder="Search transcriptions..."
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
+                    aria-label="Search transcriptions"
                     className={cn(
                         "w-full h-10 pl-10 pr-4 rounded-lg",
                         "bg-card border border-border shadow-sm",

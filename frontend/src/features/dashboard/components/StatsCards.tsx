@@ -94,7 +94,7 @@ function StatCard({ icon: Icon, value, label, color, iconSpin }: StatCardProps) 
             className={cn(
                 "relative p-4 rounded-xl overflow-hidden",
                 "bg-card border border-border",
-                "shadow-sm hover:shadow-lg hover:translate-y-[-2px]",
+                "shadow-sm hover:shadow-lg hover:border-primary/30",
                 "transition-all duration-200"
             )}
         >

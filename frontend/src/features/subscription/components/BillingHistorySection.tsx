@@ -57,16 +57,16 @@ export function BillingHistorySection({ history }: BillingHistorySectionProps) {
                     <table className="w-full">
                         <thead>
                             <tr className="border-b border-border bg-muted/30">
-                                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                     Date
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                     Amount
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                     Status
                                 </th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                     Invoice
                                 </th>
                             </tr>
@@ -98,6 +98,7 @@ export function BillingHistorySection({ history }: BillingHistorySectionProps) {
                                             <button
                                                 onClick={() => console.log("Download invoice:", item.id)}
                                                 className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
+                                                aria-label={`Download invoice for ${formatDate(item.date)}`}
                                             >
                                                 <Download className="h-4 w-4" />
                                                 <span>Download</span>

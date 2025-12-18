@@ -78,6 +78,7 @@ export function TranscriptionItem({
                     onChange={handleCheckboxChange}
                     onClick={(e) => e.stopPropagation()}
                     className="h-3.5 w-3.5 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                    aria-label={`Select ${item.fileName}`}
                 />
             </div>
 
@@ -227,7 +228,9 @@ function ActionMenu({ item, onDownload, onShare, onDelete }: ActionMenuProps) {
                     "absolute right-0 top-full mt-1 z-50",
                     "min-w-[140px] bg-card border border-border rounded-lg shadow-lg",
                     "py-1"
-                )}>
+                )}
+                    role="menu"
+                >
                     {item.status === "completed" && onDownload && (
                         <button
                             onClick={(e) => {
@@ -236,6 +239,7 @@ function ActionMenu({ item, onDownload, onShare, onDelete }: ActionMenuProps) {
                                 setIsOpen(false);
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors"
+                            role="menuitem"
                         >
                             <Download className="h-4 w-4" />
                             Download
@@ -249,6 +253,7 @@ function ActionMenu({ item, onDownload, onShare, onDelete }: ActionMenuProps) {
                                 setIsOpen(false);
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors"
+                            role="menuitem"
                         >
                             <Share2 className="h-4 w-4" />
                             Share
@@ -262,6 +267,7 @@ function ActionMenu({ item, onDownload, onShare, onDelete }: ActionMenuProps) {
                                 setIsOpen(false);
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                            role="menuitem"
                         >
                             <Trash2 className="h-4 w-4" />
                             Delete

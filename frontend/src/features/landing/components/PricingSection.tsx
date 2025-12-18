@@ -136,7 +136,7 @@ export function PricingSection() {
                                                         <Icon
                                                             className={cn(
                                                                 "h-5 w-5",
-                                                                isPro ? "text-primary" : "text-primary"
+                                                                "text-primary"
                                                             )}
                                                         />
                                                     </div>

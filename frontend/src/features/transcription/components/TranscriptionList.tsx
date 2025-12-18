@@ -6,7 +6,7 @@ import { TranscriptionCard } from "./TranscriptionCard";
 import { TranscriptionEmptyState } from "./TranscriptionEmptyState";
 import { BulkActionBar } from "./BulkActionBar";
 import type { TranscriptionListItem } from "@/types/models/transcription";
-import {TranscriptionItem} from "@/features/transcription";
+import { TranscriptionItem } from "@/features/transcription";
 
 type InputType = "file" | "youtube" | "voice";
 type SortField = "fileName" | "uploadDate" | "duration";
@@ -55,14 +55,6 @@ export function TranscriptionList({
             }
             return next;
         });
-    };
-
-    const selectAll = () => {
-        if (selectedIds.size === items.length) {
-            setSelectedIds(new Set());
-        } else {
-            setSelectedIds(new Set(items.map(item => item.id)));
-        }
     };
 
     const clearSelection = () => setSelectedIds(new Set());
@@ -120,8 +112,6 @@ export function TranscriptionList({
     if (items.length === 0) {
         return <TranscriptionEmptyState onNewClick={onNewClick} />;
     }
-
-    const isAllSelected = selectedIds.size === items.length && items.length > 0;
 
     return (
         <>

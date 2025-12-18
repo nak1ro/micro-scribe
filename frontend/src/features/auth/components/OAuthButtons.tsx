@@ -103,6 +103,7 @@ export function OAuthButtons({ mode, onProviderClick }: OAuthButtonsProps) {
                         type="button"
                         variant="outline"
                         className={oauthButtonStyles}
+                        aria-label={`${actionText} with ${provider.name}`}
                         onClick={() => {
                             // TODO: Implement OAuth flow
                             console.log(`${provider.name} OAuth clicked`);

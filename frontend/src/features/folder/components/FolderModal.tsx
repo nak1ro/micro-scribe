@@ -68,11 +68,21 @@ export function FolderModal({ isOpen, onClose, folder }: FolderModalProps) {
             <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
             {/* Modal */}
-            <div className="relative bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-xl">
+            <div
+                className={cn(
+                    "relative w-full max-w-md mx-4",
+                    "bg-card border border-border rounded-xl shadow-2xl",
+                    "animate-scale-in"
+                )}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="modal-title"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-semibold">
-                        {isEditing ? "Edit Folder" : "Create Folder"}
+                <div className="flex items-center justify-between p-6 border-b border-border">
+                    <h2 id="modal-title" className="text-lg font-semibold text-foreground">
+                        {folder ? "Edit Folder" : "New Folder"}
                     </h2>
                     <button
                         onClick={onClose}

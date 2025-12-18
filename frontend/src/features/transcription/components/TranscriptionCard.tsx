@@ -4,9 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import {
     FileAudio,
-    MoreHorizontal,
     Download,
-    Share2,
     Trash2,
     Loader2,
     Clock4,
@@ -102,6 +100,7 @@ export function TranscriptionCard({
                                 onDownload(item.id);
                             }}
                             title="Download"
+                            aria-label="Download transcription"
                         >
                             <Download className="h-3.5 w-3.5" />
                         </Button>
@@ -116,6 +115,7 @@ export function TranscriptionCard({
                                 onDelete(item.id);
                             }}
                             title="Delete"
+                            aria-label="Delete transcription"
                         >
                             <Trash2 className="h-3.5 w-3.5" />
                         </Button>

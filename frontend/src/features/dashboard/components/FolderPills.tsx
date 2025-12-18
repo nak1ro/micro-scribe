@@ -28,7 +28,7 @@ export function FolderPills() {
         return (
             <div className="flex items-center gap-2">
                 {[...Array(3)].map((_, i) => (
-                    <div key={i} className="h-8 w-20 rounded-full bg-muted animate-pulse" />
+                    <div key={i} className="h-8 w-20 rounded-lg bg-muted animate-pulse" />
                 ))}
             </div>
         );
@@ -36,7 +36,7 @@ export function FolderPills() {
 
     return (
         <>
-            <div className="flex flex-wrap items-center gap-2">
+            <div role="tablist" className="flex flex-wrap items-center gap-2">
                 {/* All pill */}
                 <FolderPill
                     name="All"
@@ -60,7 +60,7 @@ export function FolderPills() {
                 <button
                     onClick={() => setIsModalOpen(true)}
                     className={cn(
-                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full",
+                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
                         "text-sm text-muted-foreground",
                         "border border-dashed border-border",
                         "hover:border-primary hover:text-primary",
@@ -92,7 +92,7 @@ function FolderPill({ name, color, count, isActive, onClick }: FolderPillProps) 
         <button
             onClick={onClick}
             className={cn(
-                "inline-flex items-center gap-2 px-3 py-1.5 rounded-full",
+                "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg",
                 "text-sm font-medium",
                 "border transition-all duration-150",
                 isActive

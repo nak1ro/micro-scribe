@@ -236,6 +236,7 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
                             onPause={() => setIsPlaying(false)}
                             onPlay={() => setIsPlaying(true)}
                             className="hidden"
+                            aria-label="Transcription audio"
                         />
                     )}
                 </div>

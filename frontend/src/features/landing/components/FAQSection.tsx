@@ -35,34 +35,33 @@ export function FAQSection() {
                             <button
                                 type="button"
                                 className={cn(
-                                    "w-full flex items-center justify-between p-4 text-left",
+                                    "w-full flex items-center justify-between p-6 text-left",
                                     "transition-colors duration-[var(--transition-fast)]",
                                     "hover:bg-accent/50"
                                 )}
                                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
                                 aria-expanded={openIndex === index}
+                                aria-controls={`faq-content-${index}`}
                             >
-                                <span className="font-medium text-foreground">
+                                <span className="text-lg font-medium text-foreground pr-8">
                                     {faq.question}
                                 </span>
                                 <ChevronDown
                                     className={cn(
-                                        "h-5 w-5 text-muted-foreground shrink-0 ml-4",
-                                        "transition-transform duration-[var(--transition-fast)]",
+                                        "h-5 w-5 text-muted-foreground transition-transform duration-200",
                                         openIndex === index && "rotate-180"
                                     )}
                                 />
                             </button>
 
                             <div
+                                id={`faq-content-${index}`}
                                 className={cn(
-                                    "overflow-hidden transition-all duration-[var(--transition-normal)] ease-[var(--easing-soft)]",
-                                    openIndex === index
-                                        ? "max-h-96 opacity-100"
-                                        : "max-h-0 opacity-0"
+                                    "px-6 text-muted-foreground overflow-hidden transition-all duration-300",
+                                    openIndex === index ? "max-h-48 pb-6" : "max-h-0"
                                 )}
                             >
-                                <p className="px-4 pb-4 text-muted-foreground">{faq.answer}</p>
+                                <p className="text-muted-foreground">{faq.answer}</p>
                             </div>
                         </div>
                     ))}

@@ -71,11 +71,14 @@ export function BulkActionBar({
                             </Button>
 
                             {showFolderDropdown && (
-                                <div className={cn(
-                                    "absolute bottom-full mb-2 left-0",
-                                    "min-w-[180px] bg-card border border-border rounded-lg shadow-lg",
-                                    "py-1 max-h-48 overflow-y-auto"
-                                )}>
+                                <div
+                                    className={cn(
+                                        "absolute bottom-full mb-2 left-0",
+                                        "min-w-[180px] bg-card border border-border rounded-lg shadow-lg",
+                                        "py-1 max-h-48 overflow-y-auto"
+                                    )}
+                                    role="menu"
+                                >
                                     {folders && folders.length > 0 ? (
                                         folders.map((folder) => {
                                             const colors = FOLDER_COLORS[folder.color];
@@ -84,6 +87,7 @@ export function BulkActionBar({
                                                     key={folder.id}
                                                     onClick={() => handleFolderSelect(folder)}
                                                     className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent transition-colors"
+                                                    role="menuitem"
                                                 >
                                                     <div
                                                         className="w-3 h-3 rounded-sm"
@@ -148,6 +152,7 @@ export function BulkActionBar({
                         size="icon"
                         onClick={onClear}
                         className="h-8 w-8"
+                        aria-label="Clear selection"
                     >
                         <X className="h-4 w-4" />
                     </Button>
