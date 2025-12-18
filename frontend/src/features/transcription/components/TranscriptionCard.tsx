@@ -71,25 +71,11 @@ export function TranscriptionCard({
                 isSelected && "ring-2 ring-primary border-primary"
             )}
         >
-            {/* Selection checkbox */}
-            <div className="absolute top-3 left-3">
-                <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={handleCheckboxChange}
-                    onClick={(e) => e.stopPropagation()}
-                    className={cn(
-                        "h-4 w-4 rounded border-border text-primary",
-                        "focus:ring-primary cursor-pointer",
-                        "opacity-0 group-hover:opacity-100 transition-opacity",
-                        (isSelected || showActions) && "opacity-100"
-                    )}
-                />
-            </div>
+
 
             {/* Action menu */}
             {showActions && (
-                <div className="absolute top-3 right-3 flex gap-1">
+                <div className="absolute top-5 right-4 flex gap-1">
                     {item.status === "completed" && onDownload && (
                         <Button
                             variant="ghost"
@@ -124,12 +110,30 @@ export function TranscriptionCard({
             )}
 
             {/* Icon + Title */}
-            <div className="flex items-start gap-3 mb-3 pr-16">
-                <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-                    <FileAudio className="h-5 w-5 text-primary" />
+            <div className="flex items-center gap-3 mb-3 pr-16">
+                <div className="relative p-2 rounded-lg bg-primary/10 shrink-0 h-9 w-9 flex items-center justify-center">
+                    <FileAudio
+                        className={cn(
+                            "h-5 w-5 text-primary transition-opacity duration-200",
+                            (isSelected || showActions) ? "opacity-0" : "opacity-100"
+                        )}
+                    />
+                    <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={handleCheckboxChange}
+                        onClick={(e) => e.stopPropagation()}
+                        className={cn(
+                            "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
+                            "h-5 w-5 rounded border-border text-primary",
+                            "focus:ring-primary cursor-pointer",
+                            "transition-opacity duration-200",
+                            (isSelected || showActions) ? "opacity-100" : "opacity-0 pointer-events-none"
+                        )}
+                    />
                 </div>
                 <div className="min-w-0 flex-1">
-                    <h3 className="font-medium text-foreground truncate text-sm">
+                    <h3 className="font-medium text-foreground truncate text-base">
                         {item.fileName}
                     </h3>
                 </div>
