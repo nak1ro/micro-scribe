@@ -93,7 +93,7 @@ export function FolderModal({ isOpen, onClose, folder }: FolderModalProps) {
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     {/* Name Input */}
                     <div>
                         <label htmlFor="folder-name" className="block text-sm font-medium mb-1.5">

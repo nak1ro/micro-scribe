@@ -17,11 +17,14 @@ import {
     ChevronDown,
     Zap,
     Check,
+    MoreVertical,
+    Pencil,
+    Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/context/SidebarContext";
 import { useUsage } from "@/hooks/useUsage";
-import { useFolders, FOLDER_COLORS } from "@/hooks";
+import { useFolders, useDeleteFolder, FOLDER_COLORS } from "@/hooks";
 import { PlanType } from "@/types/api/usage";
 import { FolderColor } from "@/types/models/folder";
 import { FolderModal } from "@/features/folder";
@@ -393,8 +396,34 @@ interface FolderSectionProps {
 function FolderSection({ isCollapsed }: FolderSectionProps) {
     const router = useRouter();
     const { data: folders, isLoading } = useFolders();
+    const deleteFolderMutation = useDeleteFolder();
     const [isExpanded, setIsExpanded] = React.useState(true);
     const [isModalOpen, setIsModalOpen] = React.useState(false);
+    const [editingFolder, setEditingFolder] = React.useState<{
+        id: string;
+        name: string;
+        color: FolderColor;
+        itemCount: number;
+        createdAtUtc: string;
+    } | null>(null);
+
+    const handleEdit = (folder: typeof editingFolder) => {
+        setEditingFolder(folder);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setEditingFolder(null);
+    };
+
+    const handleDelete = async (folderId: string) => {
+        try {
+            await deleteFolderMutation.mutateAsync(folderId);
+        } catch (error) {
+            console.error("Failed to delete folder:", error);
+        }
+    };
 
     if (isCollapsed) {
         return (
@@ -431,7 +460,10 @@ function FolderSection({ isCollapsed }: FolderSectionProps) {
             {isExpanded && (
                 <div className="px-1.5 pb-1 space-y-0.5">
                     <button
-                        onClick={() => setIsModalOpen(true)}
+                        onClick={() => {
+                            setEditingFolder(null);
+                            setIsModalOpen(true);
+                        }}
                         className={cn(
                             "flex items-center gap-2.5 w-full rounded-lg",
                             "px-2.5 py-2",
@@ -455,6 +487,8 @@ function FolderSection({ isCollapsed }: FolderSectionProps) {
                                 color={folder.color}
                                 itemCount={folder.itemCount}
                                 onClick={() => router.push(`/dashboard?folder=${folder.id}`)}
+                                onEdit={() => handleEdit(folder)}
+                                onDelete={() => handleDelete(folder.id)}
                             />
                         ))
                     ) : (
@@ -463,7 +497,7 @@ function FolderSection({ isCollapsed }: FolderSectionProps) {
                 </div>
             )}
 
-            <FolderModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            <FolderModal isOpen={isModalOpen} onClose={handleCloseModal} folder={editingFolder} />
         </div>
     );
 }
@@ -478,29 +512,166 @@ interface FolderListItemProps {
     color: FolderColor;
     itemCount: number;
     onClick: () => void;
+    onEdit: () => void;
+    onDelete: () => void;
 }
 
-function FolderListItem({ name, color, itemCount, onClick }: FolderListItemProps) {
+function FolderListItem({ name, color, itemCount, onClick, onEdit, onDelete }: FolderListItemProps) {
     const colors = FOLDER_COLORS[color] || FOLDER_COLORS.Blue;
+    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+    const [isConfirmingDelete, setIsConfirmingDelete] = React.useState(false);
+    const menuRef = React.useRef<HTMLDivElement>(null);
+
+    // Close menu on outside click
+    React.useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+                setIsMenuOpen(false);
+                setIsConfirmingDelete(false);
+            }
+        };
+        if (isMenuOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [isMenuOpen]);
+
+    const handleMenuClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsMenuOpen(!isMenuOpen);
+        setIsConfirmingDelete(false);
+    };
+
+    const handleEditClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsMenuOpen(false);
+        onEdit();
+    };
+
+    const handleDeleteClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsConfirmingDelete(true);
+    };
+
+    const handleConfirmDelete = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsMenuOpen(false);
+        setIsConfirmingDelete(false);
+        onDelete();
+    };
+
+    const handleCancelDelete = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsConfirmingDelete(false);
+    };
 
     return (
-        <button
-            onClick={onClick}
-            className={cn(
-                "flex items-center gap-2.5 w-full rounded-lg",
-                "px-2.5 py-2",
-                "text-sm text-muted-foreground",
-                "hover:text-foreground hover:bg-accent",
-                "transition-colors duration-150"
+        <div className="relative group" ref={menuRef}>
+            <div
+                className={cn(
+                    "flex items-center gap-2.5 w-full rounded-lg",
+                    "px-2.5 py-2",
+                    "text-sm text-muted-foreground",
+                    "hover:text-foreground hover:bg-accent",
+                    "transition-colors duration-150 cursor-pointer"
+                )}
+            >
+                <div
+                    className="flex items-center gap-2.5 flex-1 min-w-0"
+                    onClick={onClick}
+                >
+                    <Folder
+                        className="h-4 w-4 shrink-0"
+                        style={{ color: colors.border }}
+                    />
+                    <span className="truncate flex-1 text-left">{name}</span>
+                </div>
+
+                {/* Item count - hidden on hover */}
+                <span className="text-xs text-muted-foreground/70 tabular-nums group-hover:hidden">
+                    {itemCount}
+                </span>
+
+                {/* 3-dot menu button - visible on hover */}
+                <button
+                    type="button"
+                    onClick={handleMenuClick}
+                    className={cn(
+                        "p-1 rounded-md hidden group-hover:flex items-center justify-center",
+                        "text-muted-foreground hover:text-foreground hover:bg-muted",
+                        "transition-colors"
+                    )}
+                >
+                    <MoreVertical className="h-4 w-4" />
+                </button>
+            </div>
+
+            {/* Dropdown Menu */}
+            {isMenuOpen && (
+                <div
+                    className={cn(
+                        "absolute right-0 top-full mt-1 z-50",
+                        "min-w-[140px] py-1",
+                        "bg-popover border border-border rounded-lg shadow-lg"
+                    )}
+                >
+                    {!isConfirmingDelete ? (
+                        <>
+                            <button
+                                onClick={handleEditClick}
+                                className={cn(
+                                    "flex items-center gap-2 w-full px-3 py-2 text-sm",
+                                    "text-foreground hover:bg-accent",
+                                    "transition-colors"
+                                )}
+                            >
+                                <Pencil className="h-3.5 w-3.5" />
+                                Edit
+                            </button>
+                            <button
+                                onClick={handleDeleteClick}
+                                className={cn(
+                                    "flex items-center gap-2 w-full px-3 py-2 text-sm",
+                                    "text-destructive hover:bg-destructive/10",
+                                    "transition-colors"
+                                )}
+                            >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                Delete
+                            </button>
+                        </>
+                    ) : (
+                        <div className="px-3 py-2 space-y-2">
+                            <p className="text-xs text-muted-foreground">
+                                Delete folder?
+                            </p>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleConfirmDelete}
+                                    className={cn(
+                                        "flex-1 px-2 py-1 text-xs font-medium rounded",
+                                        "bg-destructive text-destructive-foreground",
+                                        "hover:bg-destructive/90 transition-colors"
+                                    )}
+                                >
+                                    Delete
+                                </button>
+                                <button
+                                    onClick={handleCancelDelete}
+                                    className={cn(
+                                        "flex-1 px-2 py-1 text-xs font-medium rounded",
+                                        "bg-muted text-muted-foreground",
+                                        "hover:bg-accent transition-colors"
+                                    )}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
             )}
-        >
-            <Folder
-                className="h-4 w-4 shrink-0"
-                style={{ color: colors.border }}
-            />
-            <span className="truncate flex-1 text-left">{name}</span>
-            <span className="text-xs text-muted-foreground/70 tabular-nums">{itemCount}</span>
-        </button>
+        </div>
     );
 }
 
