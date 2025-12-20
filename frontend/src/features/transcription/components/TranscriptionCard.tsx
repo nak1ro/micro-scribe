@@ -72,7 +72,6 @@ export function TranscriptionCard({
             )}
         >
 
-
             {/* Action menu */}
             {showActions && (
                 <div className="absolute top-5 right-4 flex gap-1">
@@ -133,7 +132,7 @@ export function TranscriptionCard({
                     />
                 </div>
                 <div className="min-w-0 flex-1">
-                    <h3 className="font-medium text-foreground truncate text-base">
+                    <h3 className="font-medium text-foreground truncate text-lg">
                         {item.fileName}
                     </h3>
                 </div>
@@ -141,11 +140,11 @@ export function TranscriptionCard({
 
             {/* Preview text */}
             {item.preview ? (
-                <p className="text-xs text-muted-foreground overflow-hidden mb-4 h-10 leading-5" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                <p className="text-sm text-muted-foreground overflow-hidden mb-4 h-[72px] leading-6" style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
                     {item.preview}
                 </p>
             ) : (
-                <p className="text-xs text-muted-foreground/50 italic mb-4 h-10">
+                <p className="text-sm text-muted-foreground/50 italic mb-4 h-[72px]">
                     {item.status === "completed" ? "No preview available" : "Processing..."}
                 </p>
             )}
@@ -153,7 +152,7 @@ export function TranscriptionCard({
             {/* Footer: Status + Metadata */}
             <div className="flex items-center justify-between mt-auto pt-3 border-t border-border/50">
                 <StatusBadge status={item.status} />
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     {item.duration && (
                         <span>{formatDuration(item.duration)}</span>
                     )}
@@ -209,7 +208,7 @@ function StatusBadge({ status }: { status: TranscriptionStatus }) {
 
     return (
         <span className={cn(
-            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
+            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-sm font-medium",
             className
         )}>
             <Icon className={cn("h-3 w-3", isAnimated && "animate-spin")} />

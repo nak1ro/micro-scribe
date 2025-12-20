@@ -1,12 +1,10 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import { Search, ArrowLeft, ArrowUpDown, Check } from "lucide-react";
+import { Search, ArrowUpDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TranscriptionList } from "@/features/transcription";
-import { StatsCards } from "./StatsCards";
-import { FolderPills } from "./FolderPills";
+import { FolderPills } from "../../folder/components/FolderPills";
 import { useAddToFolder } from "@/hooks";
 import type { TranscriptionListItem } from "@/types/models/transcription";
 
@@ -111,8 +109,6 @@ export function DashboardContent({
                     onSortChange={setSortBy}
                 />
 
-                {/* Folder Pills - Only on main dashboard */}
-                {/* Folder Pills - Always visible for tab-like navigation */}
                 <FolderPills />
 
                 {/* Error Message */}
