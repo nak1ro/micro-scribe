@@ -52,13 +52,13 @@ export function TranscriptionDetailLayout({
 
     if (!showSidebar) {
         // No sidebar, just render children
-        return <div className="w-full">{children}</div>;
+        return <div className="w-full h-[calc(100vh-48px)] overflow-y-auto">{children}</div>;
     }
 
     return (
         <>
             {/* Main Content - with right margin for fixed sidebar on xl+ */}
-            <div className="xl:mr-[240px]">
+            <div className="xl:mr-[240px] h-[calc(100vh-48px)] overflow-y-auto xl:pr-4 flex flex-col">
                 {children}
             </div>
 

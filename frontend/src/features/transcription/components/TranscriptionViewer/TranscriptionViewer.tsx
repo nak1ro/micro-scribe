@@ -164,7 +164,7 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
             hasAudioUrl={!!job.presignedUrl}
             hasSegments={segments.length > 0}
         >
-            <div className="animate-fade-in pb-6">
+            <div className="animate-fade-in h-full flex flex-col">
                 {/* Hidden audio element */}
                 {job.presignedUrl && (
                     <audio
@@ -180,8 +180,8 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
                     />
                 )}
 
-                {/* Header */}
-                <div className="mb-6">
+                {/* Header - Sticky at top */}
+                <div className="mb-6 sticky top-0 bg-background z-10 pb-2">
                     <button
                         onClick={handleBack}
                         className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
@@ -237,54 +237,58 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
 
                 {/* Completed state with content */}
                 {isCompleted && (
-                    <>
+                    <div className="flex flex-col flex-1 min-h-0">
                         {/* Transcript Content */}
-                        <div className="bg-card ">
-                            {segments.length > 0 ? (
-                                <div className="text-foreground leading-relaxed">
-                                    {segments.map((segment, index) => (
-                                        <span
-                                            key={segment.id}
-                                            ref={(el) => {
-                                                if (el) segmentRefs.current.set(index, el);
-                                            }}
-                                            onClick={() => handleSegmentClick(index)}
-                                            className={cn(
-                                                "cursor-pointer transition-colors duration-200 rounded px-0.5",
-                                                "hover:bg-highlight-hover",
-                                                index === activeSegmentIndex && "bg-highlight"
-                                            )}
-                                        >
-                                            {showTimecodes && (
-                                                <span className="text-primary font-medium">
-                                                    ({formatTimestamp(segment.startSeconds)})
-                                                </span>
-                                            )}{" "}
-                                            {segment.text}{" "}
-                                        </span>
-                                    ))}
-                                </div>
-                            ) : job.transcript ? (
-                                <p className="text-foreground whitespace-pre-wrap leading-relaxed">
-                                    {job.transcript}
-                                </p>
-                            ) : (
-                                <p className="text-muted-foreground italic">No transcript available.</p>
-                            )}
+                        <div className="flex-1">
+                            <div className="bg-card">
+                                {segments.length > 0 ? (
+                                    <div className="text-foreground leading-relaxed">
+                                        {segments.map((segment, index) => (
+                                            <span
+                                                key={segment.id}
+                                                ref={(el) => {
+                                                    if (el) segmentRefs.current.set(index, el);
+                                                }}
+                                                onClick={() => handleSegmentClick(index)}
+                                                className={cn(
+                                                    "cursor-pointer transition-colors duration-200 rounded px-0.5",
+                                                    "hover:bg-highlight-hover",
+                                                    index === activeSegmentIndex && "bg-highlight"
+                                                )}
+                                            >
+                                                {showTimecodes && (
+                                                    <span className="text-primary font-medium">
+                                                        ({formatTimestamp(segment.startSeconds)})
+                                                    </span>
+                                                )}{" "}
+                                                {segment.text}{" "}
+                                            </span>
+                                        ))}
+                                    </div>
+                                ) : job.transcript ? (
+                                    <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+                                        {job.transcript}
+                                    </p>
+                                ) : (
+                                    <p className="text-muted-foreground italic">No transcript available.</p>
+                                )}
+                            </div>
                         </div>
 
-                        {/* Timeline Slider - Fixed at bottom */}
+                        {/* Timeline Slider - Sticky at bottom */}
                         {segments.length > 0 && (
-                            <TimelineSlider
-                                segments={segments}
-                                totalDuration={totalDuration}
-                                activeIndex={activeSegmentIndex}
-                                onChange={handleSliderChange}
-                                isPlaying={isPlaying}
-                                onPlayPause={job.presignedUrl ? handlePlayPause : undefined}
-                            />
+                            <div className="sticky bottom-0 pt-4 pb-2 bg-background z-10">
+                                <TimelineSlider
+                                    segments={segments}
+                                    totalDuration={totalDuration}
+                                    activeIndex={activeSegmentIndex}
+                                    onChange={handleSliderChange}
+                                    isPlaying={isPlaying}
+                                    onPlayPause={job.presignedUrl ? handlePlayPause : undefined}
+                                />
+                            </div>
                         )}
-                    </>
+                    </div>
                 )}
             </div>
         </TranscriptionDetailLayout>

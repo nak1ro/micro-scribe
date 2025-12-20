@@ -11,7 +11,7 @@ export default function TranscriptionDetailPage() {
 
     return (
         <DashboardLayout>
-            <div className="p-6">
+            <div className="h-full">
                 <TranscriptionViewer jobId={jobId} />
             </div>
         </DashboardLayout>

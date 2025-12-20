@@ -34,8 +34,8 @@ function DashboardLayoutInner({
     return (
         <div className="flex min-h-screen">
             <Sidebar onNewTranscription={onNewTranscription} />
-            <main className="flex-1 min-w-0">
-                <div className="px-4 py-6 lg:px-8">{children}</div>
+            <main className="flex-1 min-w-0 flex flex-col">
+                <div className="px-4 py-6 lg:px-8 flex-1">{children}</div>
             </main>
 
             {/* Floating Action Button - Shows when sidebar is collapsed */}
