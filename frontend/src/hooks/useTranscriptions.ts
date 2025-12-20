@@ -123,7 +123,24 @@ export function useTranscriptions(
         })),
     });
 
-    // 4. Merge polling results into the list
+    // 4. When a job transitions to completed, refetch the list to get preview text
+    React.useEffect(() => {
+        const completedJob = jobQueries.find((q) => {
+            const data = q.data;
+            return data && (
+                data.status === TranscriptionJobStatus.Completed ||
+                data.status === TranscriptionJobStatus.Failed ||
+                data.status === TranscriptionJobStatus.Cancelled
+            );
+        });
+
+        if (completedJob) {
+            // Refetch the list to get updated data including preview
+            listQuery.refetch();
+        }
+    }, [jobQueries, listQuery]);
+
+    // 5. Merge polling results into the list
     const items = React.useMemo(() => {
         if (!initialItems.length) return [];
 

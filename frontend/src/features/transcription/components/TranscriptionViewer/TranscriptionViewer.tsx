@@ -3,15 +3,15 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, Clock, Loader2, Copy, Check, AlertCircle, Download } from "lucide-react";
+import { ArrowLeft, Clock, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useTranscriptionJob } from "@/hooks/useTranscriptions";
 import { TranscriptionJobStatus } from "@/types/api/transcription";
 
 // Local components
 import { StatusBadge } from "./StatusBadge";
-import { TimecodeToggle } from "./TimecodeToggle";
 import { TimelineSlider } from "./TimelineSlider";
+import { TranscriptionDetailLayout } from "./TranscriptionDetailLayout";
 import { formatDuration, formatTimestamp } from "./utils";
 
 interface TranscriptionViewerProps {
@@ -153,18 +153,43 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
     const isPending = job.status === TranscriptionJobStatus.Pending || job.status === TranscriptionJobStatus.Processing;
 
     return (
-        <div className="max-w-4xl mx-auto animate-fade-in pb-6">
-            {/* Header */}
-            <div className="mb-6">
-                <button
-                    onClick={handleBack}
-                    className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
-                >
-                    <ArrowLeft className="h-4 w-4" />
-                    <span className="text-sm">Back to Dashboard</span>
-                </button>
+        <TranscriptionDetailLayout
+            showSidebar={isCompleted}
+            onCopyTranscript={handleCopy}
+            isCopied={copied}
+            showTimecodes={showTimecodes}
+            onToggleTimecodes={setShowTimecodes}
+            onDownloadAudio={handleDownload}
+            hasTranscript={!!job.transcript}
+            hasAudioUrl={!!job.presignedUrl}
+            hasSegments={segments.length > 0}
+        >
+            <div className="animate-fade-in pb-6">
+                {/* Hidden audio element */}
+                {job.presignedUrl && (
+                    <audio
+                        ref={audioRef}
+                        src={job.presignedUrl}
+                        onTimeUpdate={handleTimeUpdate}
+                        onSeeked={handleSeeked}
+                        onEnded={() => setIsPlaying(false)}
+                        onPause={() => setIsPlaying(false)}
+                        onPlay={() => setIsPlaying(true)}
+                        className="hidden"
+                        aria-label="Transcription audio"
+                    />
+                )}
 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                {/* Header */}
+                <div className="mb-6">
+                    <button
+                        onClick={handleBack}
+                        className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        <span className="text-sm">Back to Dashboard</span>
+                    </button>
+
                     <div>
                         <h1 className="text-2xl font-bold text-foreground mb-1">
                             {job.originalFileName}
@@ -182,143 +207,86 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
                             )}
                         </div>
                     </div>
+                </div>
 
-                    <div className="flex items-center gap-3">
-                        {/* Download button */}
-                        {isCompleted && job.presignedUrl && (
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={handleDownload}
-                                title="Download audio"
-                            >
-                                <Download className="h-4 w-4" />
-                            </Button>
-                        )}
+                {/* Pending/Processing state */}
+                {isPending && (
+                    <div className="flex flex-col items-center justify-center py-16 gap-4 bg-card border border-border rounded-xl">
+                        <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                        <div className="text-center">
+                            <p className="font-semibold text-foreground mb-1">Transcription in progress</p>
+                            <p className="text-sm text-muted-foreground">
+                                This may take a few minutes depending on the file length.
+                            </p>
+                        </div>
+                    </div>
+                )}
 
-                        {/* Timecodes Toggle */}
-                        {isCompleted && segments.length > 0 && (
-                            <TimecodeToggle
-                                enabled={showTimecodes}
-                                onChange={setShowTimecodes}
+                {/* Failed state */}
+                {job.status === TranscriptionJobStatus.Failed && (
+                    <div className="flex flex-col items-center justify-center py-16 gap-4 bg-destructive/5 border border-destructive/20 rounded-xl">
+                        <AlertCircle className="h-10 w-10 text-destructive" />
+                        <div className="text-center">
+                            <p className="font-semibold text-foreground mb-1">Transcription failed</p>
+                            <p className="text-sm text-muted-foreground">
+                                {job.errorMessage || "An error occurred during transcription."}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Completed state with content */}
+                {isCompleted && (
+                    <>
+                        {/* Transcript Content */}
+                        <div className="bg-card ">
+                            {segments.length > 0 ? (
+                                <div className="text-foreground leading-relaxed">
+                                    {segments.map((segment, index) => (
+                                        <span
+                                            key={segment.id}
+                                            ref={(el) => {
+                                                if (el) segmentRefs.current.set(index, el);
+                                            }}
+                                            onClick={() => handleSegmentClick(index)}
+                                            className={cn(
+                                                "cursor-pointer transition-colors duration-200 rounded px-0.5",
+                                                "hover:bg-highlight-hover",
+                                                index === activeSegmentIndex && "bg-highlight"
+                                            )}
+                                        >
+                                            {showTimecodes && (
+                                                <span className="text-primary font-medium">
+                                                    ({formatTimestamp(segment.startSeconds)})
+                                                </span>
+                                            )}{" "}
+                                            {segment.text}{" "}
+                                        </span>
+                                    ))}
+                                </div>
+                            ) : job.transcript ? (
+                                <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+                                    {job.transcript}
+                                </p>
+                            ) : (
+                                <p className="text-muted-foreground italic">No transcript available.</p>
+                            )}
+                        </div>
+
+                        {/* Timeline Slider - Fixed at bottom */}
+                        {segments.length > 0 && (
+                            <TimelineSlider
+                                segments={segments}
+                                totalDuration={totalDuration}
+                                activeIndex={activeSegmentIndex}
+                                onChange={handleSliderChange}
+                                isPlaying={isPlaying}
+                                onPlayPause={job.presignedUrl ? handlePlayPause : undefined}
                             />
                         )}
-
-                        {isCompleted && job.transcript && (
-                            <Button
-                                variant="outline"
-                                onClick={handleCopy}
-                                className="gap-2"
-                            >
-                                {copied ? (
-                                    <>
-                                        <Check className="h-4 w-4 text-success" />
-                                        Copied!
-                                    </>
-                                ) : (
-                                    <>
-                                        <Copy className="h-4 w-4" />
-                                        Copy Text
-                                    </>
-                                )}
-                            </Button>
-                        )}
-                    </div>
-
-                    {/* Hidden audio element */}
-                    {job.presignedUrl && (
-                        <audio
-                            ref={audioRef}
-                            src={job.presignedUrl}
-                            onTimeUpdate={handleTimeUpdate}
-                            onSeeked={handleSeeked}
-                            onEnded={() => setIsPlaying(false)}
-                            onPause={() => setIsPlaying(false)}
-                            onPlay={() => setIsPlaying(true)}
-                            className="hidden"
-                            aria-label="Transcription audio"
-                        />
-                    )}
-                </div>
+                    </>
+                )}
             </div>
-
-            {/* Pending/Processing state */}
-            {isPending && (
-                <div className="flex flex-col items-center justify-center py-16 gap-4 bg-card border border-border rounded-xl">
-                    <Loader2 className="h-10 w-10 text-primary animate-spin" />
-                    <div className="text-center">
-                        <p className="font-semibold text-foreground mb-1">Transcription in progress</p>
-                        <p className="text-sm text-muted-foreground">
-                            This may take a few minutes depending on the file length.
-                        </p>
-                    </div>
-                </div>
-            )}
-
-            {/* Failed state */}
-            {job.status === TranscriptionJobStatus.Failed && (
-                <div className="flex flex-col items-center justify-center py-16 gap-4 bg-destructive/5 border border-destructive/20 rounded-xl">
-                    <AlertCircle className="h-10 w-10 text-destructive" />
-                    <div className="text-center">
-                        <p className="font-semibold text-foreground mb-1">Transcription failed</p>
-                        <p className="text-sm text-muted-foreground">
-                            {job.errorMessage || "An error occurred during transcription."}
-                        </p>
-                    </div>
-                </div>
-            )}
-
-            {/* Completed state with content */}
-            {isCompleted && (
-                <>
-                    {/* Transcript Content */}
-                    <div className="bg-card border border-border rounded-xl p-6">
-                        {segments.length > 0 ? (
-                            <div className="text-foreground leading-relaxed">
-                                {segments.map((segment, index) => (
-                                    <span
-                                        key={segment.id}
-                                        ref={(el) => {
-                                            if (el) segmentRefs.current.set(index, el);
-                                        }}
-                                        onClick={() => handleSegmentClick(index)}
-                                        className={cn(
-                                            "cursor-pointer transition-colors duration-200 rounded px-0.5",
-                                            "hover:bg-highlight-hover",
-                                            index === activeSegmentIndex && "bg-highlight"
-                                        )}
-                                    >
-                                        {showTimecodes && (
-                                            <span className="text-primary font-medium">
-                                                ({formatTimestamp(segment.startSeconds)})
-                                            </span>
-                                        )}{" "}
-                                        {segment.text}{" "}
-                                    </span>
-                                ))}
-                            </div>
-                        ) : job.transcript ? (
-                            <p className="text-foreground whitespace-pre-wrap leading-relaxed">
-                                {job.transcript}
-                            </p>
-                        ) : (
-                            <p className="text-muted-foreground italic">No transcript available.</p>
-                        )}
-                    </div>
-
-                    {/* Timeline Slider - Fixed at bottom */}
-                    {segments.length > 0 && (
-                        <TimelineSlider
-                            segments={segments}
-                            totalDuration={totalDuration}
-                            activeIndex={activeSegmentIndex}
-                            onChange={handleSliderChange}
-                            isPlaying={isPlaying}
-                            onPlayPause={job.presignedUrl ? handlePlayPause : undefined}
-                        />
-                    )}
-                </>
-            )}
-        </div>
+        </TranscriptionDetailLayout>
     );
 }

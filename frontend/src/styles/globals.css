@@ -321,6 +321,16 @@
     background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px,
         transparent 1px);
   }
+
+  /* Hidden scrollbar - keeps functionality */
+  .scrollbar-hidden {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Keyframe Animations */
