@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { ViewerSegment } from "./types";
+import type { ViewerSegment } from "@/features/transcription/types";
 
 interface UseAudioSyncOptions {
     segments: ViewerSegment[];

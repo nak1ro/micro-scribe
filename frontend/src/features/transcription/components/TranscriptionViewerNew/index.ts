@@ -13,7 +13,7 @@ export { ExportMenu } from "./ExportMenu";
 export { TranslateMenu } from "./TranslateMenu";
 
 // Hooks
-export { useAudioSync } from "./useAudioSync";
+export { useAudioSync } from "@/features/transcription/hooks/useAudioSync";
 
 // Types
 export type {
@@ -22,7 +22,4 @@ export type {
     ViewerState,
     ExportFormat,
     ExportOption,
-} from "./types";
-
-// Mock data (for development)
-export { mockTranscription, mockTranscriptionNoSpeakers, mockTranscriptionPending } from "./mockData";
+} from "@/features/transcription/types";

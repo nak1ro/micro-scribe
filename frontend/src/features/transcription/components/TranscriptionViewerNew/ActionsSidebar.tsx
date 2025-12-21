@@ -6,7 +6,7 @@ import { Copy, Check, Clock, Users, Pencil, Settings } from "lucide-react";
 import { Button } from "@/components/ui";
 import { ExportMenu } from "./ExportMenu";
 import { TranslateMenu } from "./TranslateMenu";
-import type { ExportFormat } from "./types";
+import type { ExportFormat } from "@/features/transcription/types";
 
 interface ActionsSidebarProps {
     // Copy action

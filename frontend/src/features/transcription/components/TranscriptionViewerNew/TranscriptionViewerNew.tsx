@@ -12,9 +12,8 @@ import { ViewerLayout } from "./ViewerLayout";
 import { TranscriptContent } from "./TranscriptContent";
 import { AudioPlayer } from "./AudioPlayer";
 import { ActionsSidebar } from "./ActionsSidebar";
-import { useAudioSync } from "./useAudioSync";
-import { mockTranscription } from "./mockData";
-import type { TranscriptionData, ExportFormat } from "./types";
+import { useAudioSync } from "@/features/transcription/hooks/useAudioSync";
+import type { TranscriptionData, ExportFormat } from "@/features/transcription/types";
 
 interface TranscriptionViewerNewProps {
     // For now, use mock data. Later, this will accept jobId and fetch real data
@@ -56,10 +55,8 @@ export function TranscriptionViewerNew({
             };
         }
 
-        // Only return mock data if specifically requested or no other source
-        // For production, we might want to return undefined here
-        return jobId ? undefined : mockTranscription;
-    }, [providedData, job, jobId]);
+        return undefined;
+    }, [providedData, job]);
 
     // UI State
     const [showTimecodes, setShowTimecodes] = React.useState(true);

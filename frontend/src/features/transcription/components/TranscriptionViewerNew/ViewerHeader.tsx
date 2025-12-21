@@ -4,8 +4,9 @@ import * as React from "react";
 import { ArrowLeft, Clock, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
-import { formatTime, getLanguageName, getStatusInfo } from "./utils";
-import type { TranscriptionData } from "./types";
+import { formatTime, getLanguageName } from "@/lib/utils";
+import { getStatusInfo } from "@/features/transcription/utils";
+import type { TranscriptionData } from "@/features/transcription/types";
 
 interface ViewerHeaderProps {
     data: TranscriptionData;

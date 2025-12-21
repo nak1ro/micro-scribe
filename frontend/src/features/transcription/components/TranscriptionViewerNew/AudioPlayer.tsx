@@ -4,7 +4,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Play, Pause, SkipBack, SkipForward, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui";
-import { formatTime } from "./utils";
+import { formatTime } from "@/lib/utils";
 
 interface AudioPlayerProps {
     currentTime: number;

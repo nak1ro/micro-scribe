@@ -3,7 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { TranscriptSegment } from "./TranscriptSegment";
-import type { ViewerSegment } from "./types";
+import type { ViewerSegment } from "@/features/transcription/types";
 
 interface TranscriptContentProps {
     segments: ViewerSegment[];

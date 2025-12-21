@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { formatTimestamp, getSpeakerColor, hasSpeakerChanged } from "./utils";
-import type { ViewerSegment } from "./types";
+import { formatTimestamp, getSpeakerColor } from "@/lib/utils";
+import { hasSpeakerChanged } from "@/features/transcription/utils";
+import type { ViewerSegment } from "@/features/transcription/types";
 
 interface TranscriptSegmentProps {
     segment: ViewerSegment;
