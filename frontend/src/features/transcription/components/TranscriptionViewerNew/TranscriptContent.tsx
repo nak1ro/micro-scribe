@@ -29,20 +29,10 @@ export function TranscriptContent({
     React.useEffect(() => {
         const activeRef = segmentRefs.current.get(activeSegmentIndex);
         if (activeRef && containerRef.current) {
-            const container = containerRef.current;
-            const segmentRect = activeRef.getBoundingClientRect();
-            const containerRect = container.getBoundingClientRect();
-
-            // Check if segment is outside visible area
-            const isAbove = segmentRect.top < containerRect.top + 100;
-            const isBelow = segmentRect.bottom > containerRect.bottom - 100;
-
-            if (isAbove || isBelow) {
-                activeRef.scrollIntoView({
-                    behavior: "smooth",
-                    block: "center"
-                });
-            }
+            activeRef.scrollIntoView({
+                behavior: "smooth",
+                block: "center"
+            });
         }
     }, [activeSegmentIndex]);
 

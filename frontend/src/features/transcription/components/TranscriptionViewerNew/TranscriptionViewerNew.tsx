@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui";
+import { useTranscriptionJob } from "@/hooks/useTranscriptions";
 
 import { ViewerHeader } from "./ViewerHeader";
 import { ViewerLayout } from "./ViewerLayout";
@@ -29,8 +30,36 @@ export function TranscriptionViewerNew({
 }: TranscriptionViewerNewProps) {
     const router = useRouter();
 
-    // Use provided data or fall back to mock
-    const data = providedData || mockTranscription;
+    // Fetch data if jobId is provided
+    const { data: job, isLoading, error } = useTranscriptionJob(jobId || "");
+
+    // Use provided data, mapped job data, or mock data (only as fallback if no jobId/data)
+    const data: TranscriptionData | undefined = React.useMemo(() => {
+        if (providedData) return providedData;
+
+        if (job) {
+            return {
+                id: job.jobId,
+                fileName: job.originalFileName,
+                status: job.status.toLowerCase() as TranscriptionData["status"],
+                durationSeconds: job.durationSeconds || 0,
+                languageCode: job.languageCode || "en",
+                segments: job.segments.map((s: any) => ({
+                    id: s.id,
+                    text: s.text,
+                    startSeconds: s.startSeconds,
+                    endSeconds: s.endSeconds,
+                    speaker: s.speaker,
+                    isEdited: s.isEdited
+                })),
+                audioUrl: job.presignedUrl
+            };
+        }
+
+        // Only return mock data if specifically requested or no other source
+        // For production, we might want to return undefined here
+        return jobId ? undefined : mockTranscription;
+    }, [providedData, job, jobId]);
 
     // UI State
     const [showTimecodes, setShowTimecodes] = React.useState(true);
@@ -48,14 +77,14 @@ export function TranscriptionViewerNew({
         seekTo,
         seekToSegment,
     } = useAudioSync({
-        segments: data.segments,
-        audioUrl: data.audioUrl
+        segments: data?.segments || [],
+        audioUrl: data?.audioUrl || null
     });
 
     // Check if any segment has a speaker
     const hasSpeakers = React.useMemo(() =>
-        data.segments.some(seg => seg.speaker !== null),
-        [data.segments]
+        data?.segments.some(seg => seg.speaker !== null) || false,
+        [data?.segments]
     );
 
     // Handlers
@@ -64,6 +93,7 @@ export function TranscriptionViewerNew({
     };
 
     const handleCopy = async () => {
+        if (!data) return;
         const text = data.segments.map(seg => seg.text).join(" ");
         await navigator.clipboard.writeText(text);
         setCopied(true);
@@ -71,6 +101,8 @@ export function TranscriptionViewerNew({
     };
 
     const handleExport = (format: ExportFormat) => {
+        if (!data) return;
+
         // Placeholder - will be implemented later
         console.log(`Export as ${format}`);
 
@@ -97,6 +129,38 @@ export function TranscriptionViewerNew({
     const handleSkipForward = () => {
         seekTo(Math.min(duration, currentTime + 10));
     };
+
+    // Loading state
+    if (isLoading && !providedData) {
+        return (
+            <div className="flex flex-col h-screen bg-background items-center justify-center gap-4">
+                <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                <p className="text-muted-foreground">Loading transcription...</p>
+            </div>
+        );
+    }
+
+    // Error state
+    if (error && !providedData && !data) {
+        return (
+            <div className="flex flex-col h-screen bg-background items-center justify-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
+                    <AlertCircle className="h-8 w-8 text-destructive" />
+                </div>
+                <div className="text-center">
+                    <p className="font-semibold text-foreground mb-1">Failed to load transcription</p>
+                    <p className="text-sm text-muted-foreground">{error.message}</p>
+                </div>
+                <Button variant="ghost" onClick={handleBack}>
+                    Back to Dashboard
+                </Button>
+            </div>
+        );
+    }
+
+    if (!data) {
+        return null; // Should not happen given logic above
+    }
 
     // Pending/Processing state
     if (data.status === "pending" || data.status === "processing") {
