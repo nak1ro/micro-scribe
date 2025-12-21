@@ -3,16 +3,17 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, Clock, Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useTranscriptionJob } from "@/hooks/useTranscriptions";
 import { TranscriptionJobStatus } from "@/types/api/transcription";
 
 // Local components
-import { StatusBadge } from "./StatusBadge";
 import { TimelineSlider } from "./TimelineSlider";
 import { TranscriptionDetailLayout } from "./TranscriptionDetailLayout";
-import { formatDuration, formatTimestamp } from "./utils";
+import { TranscriptionViewerHeader } from "./TranscriptionViewerHeader";
+import { useScrollDirection } from "./useScrollDirection";
+import { formatTimestamp } from "./utils";
 
 interface TranscriptionViewerProps {
     jobId: string;
@@ -30,6 +31,10 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
     const segmentRefs = React.useRef<Map<number, HTMLSpanElement>>(new Map());
     const audioRef = React.useRef<HTMLAudioElement>(null);
     const isSeekingRef = React.useRef(false);
+    const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+
+    // Header visibility based on scroll direction
+    const isHeaderVisible = useScrollDirection({ threshold: 40, containerRef: scrollContainerRef });
 
     const segments = job?.segments || [];
     const totalDuration = job?.durationSeconds || (segments.length > 0 ? segments[segments.length - 1].endSeconds : 0);
@@ -155,6 +160,7 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
     return (
         <TranscriptionDetailLayout
             showSidebar={isCompleted}
+            scrollContainerRef={scrollContainerRef}
             onCopyTranscript={handleCopy}
             isCopied={copied}
             showTimecodes={showTimecodes}
@@ -180,34 +186,15 @@ export function TranscriptionViewer({ jobId }: TranscriptionViewerProps) {
                     />
                 )}
 
-                {/* Header - Sticky at top */}
-                <div className="mb-6 sticky top-0 bg-background z-10 pb-2">
-                    <button
-                        onClick={handleBack}
-                        className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                        <span className="text-sm">Back to Dashboard</span>
-                    </button>
-
-                    <div>
-                        <h1 className="text-2xl font-bold text-foreground mb-1">
-                            {job.originalFileName}
-                        </h1>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <StatusBadge status={job.status} />
-                            {job.durationSeconds && (
-                                <span className="flex items-center gap-1">
-                                    <Clock className="h-4 w-4" />
-                                    {formatDuration(job.durationSeconds)}
-                                </span>
-                            )}
-                            {job.languageCode && (
-                                <span className="uppercase">{job.languageCode}</span>
-                            )}
-                        </div>
-                    </div>
-                </div>
+                {/* Header - hides on scroll down, shows on scroll up */}
+                <TranscriptionViewerHeader
+                    fileName={job.originalFileName}
+                    status={job.status}
+                    durationSeconds={job.durationSeconds ?? undefined}
+                    languageCode={job.languageCode ?? undefined}
+                    onBack={handleBack}
+                    isVisible={isHeaderVisible}
+                />
 
                 {/* Pending/Processing state */}
                 {isPending && (

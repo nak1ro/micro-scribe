@@ -18,11 +18,14 @@ interface TranscriptionDetailLayoutProps {
     hasSegments: boolean;
     // Show sidebar only when transcription is completed
     showSidebar: boolean;
+    // Ref for scroll container
+    scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export function TranscriptionDetailLayout({
     children,
     showSidebar,
+    scrollContainerRef,
     ...sidebarProps
 }: TranscriptionDetailLayoutProps) {
     const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
@@ -52,13 +55,13 @@ export function TranscriptionDetailLayout({
 
     if (!showSidebar) {
         // No sidebar, just render children
-        return <div className="w-full h-[calc(100vh-48px)] overflow-y-auto">{children}</div>;
+        return <div ref={scrollContainerRef} className="w-full h-[calc(100vh-48px)] overflow-y-auto">{children}</div>;
     }
 
     return (
         <>
             {/* Main Content - with right margin for fixed sidebar on xl+ */}
-            <div className="xl:mr-[285px] h-[calc(100vh-48px)] overflow-y-auto xl:pr-4 flex flex-col">
+            <div ref={scrollContainerRef} className="xl:mr-[285px] h-[calc(100vh-48px)] overflow-y-auto xl:pr-4 flex flex-col">
                 {children}
             </div>
 

@@ -380,6 +380,18 @@
   }
 }
 
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @keyframes error-flash {
 
   0%,
@@ -423,6 +435,10 @@
 
 .animate-glow-border {
   animation: glow-border 2s ease-in-out infinite;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right var(--transition-normal) var(--easing-soft);
 }
 
 /* Reduced motion accessibility */

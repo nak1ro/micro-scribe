@@ -1,0 +1,106 @@
+"use client";
+
+import * as React from "react";
+import { cn } from "@/lib/utils";
+import { Menu, X } from "lucide-react";
+import { Button } from "@/components/ui";
+
+interface ViewerLayoutProps {
+    children: React.ReactNode;
+    sidebar: React.ReactNode;
+    audioPlayer: React.ReactNode;
+    className?: string;
+}
+
+export function ViewerLayout({
+    children,
+    sidebar,
+    audioPlayer,
+    className
+}: ViewerLayoutProps) {
+    const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+
+    return (
+        <div className={cn("flex flex-col h-screen bg-background", className)}>
+            {/* Main content area */}
+            <div className="flex-1 flex min-h-0 relative">
+                {/* Transcript area */}
+                <main className="flex-1 min-w-0 overflow-hidden flex flex-col">
+                    {children}
+                </main>
+
+                {/* Desktop Sidebar - fixed on right */}
+                <aside
+                    className={cn(
+                        "hidden lg:flex flex-col",
+                        "w-72 xl:w-80 shrink-0",
+                        "border-l border-border",
+                        "bg-background"
+                    )}
+                >
+                    {sidebar}
+                </aside>
+
+                {/* Mobile sidebar toggle */}
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsSidebarOpen(true)}
+                    className={cn(
+                        "lg:hidden fixed right-4 bottom-24 z-30",
+                        "h-12 w-12 rounded-full shadow-lg",
+                        "bg-primary text-primary-foreground",
+                        "hover:bg-primary/90"
+                    )}
+                    aria-label="Open actions menu"
+                >
+                    <Menu className="h-5 w-5" />
+                </Button>
+
+                {/* Mobile sidebar - slide from right */}
+                {isSidebarOpen && (
+                    <>
+                        {/* Backdrop */}
+                        <div
+                            className="lg:hidden fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
+                            onClick={() => setIsSidebarOpen(false)}
+                            aria-hidden="true"
+                        />
+
+                        {/* Sidebar panel */}
+                        <aside
+                            className={cn(
+                                "lg:hidden fixed right-0 top-0 bottom-0 z-50",
+                                "w-80 max-w-[85vw]",
+                                "bg-background border-l border-border",
+                                "animate-slide-in-right flex flex-col"
+                            )}
+                        >
+                            {/* Close button */}
+                            <div className="flex items-center justify-between p-4 border-b border-border">
+                                <span className="font-medium text-foreground">Actions</span>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setIsSidebarOpen(false)}
+                                    className="h-8 w-8 p-0"
+                                    aria-label="Close actions menu"
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto">
+                                {sidebar}
+                            </div>
+                        </aside>
+                    </>
+                )}
+            </div>
+
+            {/* Audio player - fixed at bottom */}
+            <div className="shrink-0 border-t border-border bg-background/95 backdrop-blur-sm">
+                {audioPlayer}
+            </div>
+        </div>
+    );
+}
