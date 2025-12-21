@@ -58,7 +58,7 @@ export function TranscriptionDetailLayout({
     return (
         <>
             {/* Main Content - with right margin for fixed sidebar on xl+ */}
-            <div className="xl:mr-[240px] h-[calc(100vh-48px)] overflow-y-auto xl:pr-4 flex flex-col">
+            <div className="xl:mr-[285px] h-[calc(100vh-48px)] overflow-y-auto xl:pr-4 flex flex-col">
                 {children}
             </div>
 

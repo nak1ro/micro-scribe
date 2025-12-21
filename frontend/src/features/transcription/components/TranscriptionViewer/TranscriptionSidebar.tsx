@@ -62,11 +62,6 @@ export function TranscriptionSidebar({
 
     return (
         <div className="flex flex-col h-full">
-            {/* Header */}
-            <div className="px-5 py-4 border-b border-border">
-                <h2 className="text-sm font-semibold text-foreground">Actions</h2>
-            </div>
-
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto px-5 py-5 space-y-8">
                 {/* Quick Actions Section - Most important, so first */}
@@ -108,7 +103,7 @@ export function TranscriptionSidebar({
                 <div className="border-t border-border" />
 
                 {/* Export Section */}
-                <SidebarSection title="Export" icon={FileText}>
+                <SidebarSection title="Export">
                     <div className="space-y-0.5">
                         {EXPORT_FORMATS.map((format) => (
                             <ExportFormatButton
@@ -125,7 +120,7 @@ export function TranscriptionSidebar({
                 </SidebarSection>
 
                 {/* Translate Section */}
-                <SidebarSection title="Translate" icon={Globe}>
+                <SidebarSection title="Translate">
                     <button
                         onClick={handleTranslate}
                         disabled={!hasTranscript}
@@ -284,4 +279,4 @@ function ComingSoonBadge() {
     );
 }
 
-export const SIDEBAR_WIDTH = 240;
+export const SIDEBAR_WIDTH = 310;
