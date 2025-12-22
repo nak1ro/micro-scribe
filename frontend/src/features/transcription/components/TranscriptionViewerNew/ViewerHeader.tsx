@@ -22,7 +22,7 @@ export function ViewerHeader({ data, onBack, className }: ViewerHeaderProps) {
     return (
         <header
             className={cn(
-                "flex items-center gap-4 px-4 py-3 md:px-6 md:py-4",
+                "flex items-center px-4 gap-4 md:px-6 h-16",
                 "bg-background/80 backdrop-blur-sm",
                 "border-b border-border",
                 "sticky top-0 z-20",
@@ -30,18 +30,18 @@ export function ViewerHeader({ data, onBack, className }: ViewerHeaderProps) {
             )}
         >
             {/* Back Button */}
-            <Button
-                variant="ghost"
-                size="sm"
-                onClick={onBack}
-                className="shrink-0 gap-2 text-muted-foreground hover:text-foreground"
-            >
-                <ArrowLeft className="h-4 w-4" />
-                <span className="hidden sm:inline">Back</span>
-            </Button>
+            {/*<Button*/}
+            {/*    variant="ghost"*/}
+            {/*    size="sm"*/}
+            {/*    onClick={onBack}*/}
+            {/*    className="shrink-0 gap-2 text-muted-foreground hover:text-foreground"*/}
+            {/*>*/}
+            {/*    <ArrowLeft className="h-4 w-4" />*/}
+            {/*    <span className="hidden sm:inline">Back</span>*/}
+            {/*</Button>*/}
 
             {/* File Name */}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 ms-15">
                 <h1 className="text-base md:text-lg font-semibold text-foreground truncate">
                     {data.fileName}
                 </h1>

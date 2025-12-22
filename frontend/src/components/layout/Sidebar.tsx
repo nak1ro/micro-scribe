@@ -2,12 +2,14 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
     Mic2,
     ChevronLeft,
     ChevronRight,
     Sparkles,
+    PanelLeftClose,
+    PanelLeftOpen,
     X,
     Menu,
     FileAudio,
@@ -37,8 +39,20 @@ const SIDEBAR_WIDTH = 245;
 const SIDEBAR_COLLAPSED_WIDTH = 68;
 
 export function Sidebar({ onNewTranscription }: SidebarProps) {
-    const { isCollapsed, isMobileOpen, toggleCollapse, closeMobile } = useSidebar();
+    const { isCollapsed, isMobileOpen, toggleCollapse, setCollapsed, closeMobile } = useSidebar();
     const { data: usage } = useUsage();
+    const pathname = usePathname();
+
+    // Auto-collapse logic based on route
+    React.useEffect(() => {
+        if (pathname?.includes("/transcriptions/")) {
+            setCollapsed(true);
+        } else {
+            // "When opens dashboard again, it becomes full again"
+            // This assumes we want to expand on ANY non-transcription page, or strictly checks for dashboard/root
+            setCollapsed(false);
+        }
+    }, [pathname, setCollapsed]);
 
     const isPremium = usage?.planType === PlanType.Pro;
     const transcriptionsUsed = usage?.usage.jobsCleanedToday ?? 0;
@@ -47,17 +61,36 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
     const sidebarContent = (
         <div className="flex flex-col h-full">
             {/* Brand Header */}
-            <div className="p-4 border-b border-border">
-                <Link
-                    href="/"
-                    className={cn(
-                        "flex items-center gap-2.5 text-foreground hover:opacity-80 transition-opacity",
-                        isCollapsed && "justify-center"
-                    )}
-                >
-                    <Mic2 className="h-7 w-7 text-primary shrink-0" />
-                    {!isCollapsed && <span className="font-semibold text-base">MicroScribe</span>}
-                </Link>
+            <div className={cn(
+                "h-16 flex items-center border-b border-border",
+                isCollapsed ? "justify-center px-0" : "justify-between px-4"
+            )}>
+                {!isCollapsed ? (
+                    <>
+                        <Link
+                            href="/"
+                            className="flex items-center gap-2.5 text-foreground hover:opacity-80 transition-opacity"
+                        >
+                            <Mic2 className="h-7 w-7 text-primary shrink-0" />
+                            <span className="font-semibold text-base">MicroScribe</span>
+                        </Link>
+                        <button
+                            onClick={toggleCollapse}
+                            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                            aria-label="Collapse sidebar"
+                        >
+                            <PanelLeftClose className="h-4 w-4" />
+                        </button>
+                    </>
+                ) : (
+                    <button
+                        onClick={toggleCollapse}
+                        className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                        aria-label="Expand sidebar"
+                    >
+                        <PanelLeftOpen className="h-5 w-5" />
+                    </button>
+                )}
             </div>
 
             {/* Upgrade Card (Free Users) - Hero CTA */}

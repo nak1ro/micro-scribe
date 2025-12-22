@@ -10,6 +10,8 @@ export default function TranscriptionDetailPage() {
     const jobId = params.id as string;
 
     return (
-        <TranscriptionViewerNew jobId={jobId} />
+        <DashboardLayout noPadding>
+            <TranscriptionViewerNew jobId={jobId} />
+        </DashboardLayout>
     );
 }

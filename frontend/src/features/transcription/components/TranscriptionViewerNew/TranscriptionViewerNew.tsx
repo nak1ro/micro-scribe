@@ -201,7 +201,7 @@ export function TranscriptionViewerNew({
 
     // Completed state - full viewer
     return (
-        <div className={cn("h-screen", className)}>
+        <div className={cn("h-full", className)}>
             {/* Hidden audio element */}
             {data.audioUrl && (
                 <audio

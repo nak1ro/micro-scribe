@@ -21,7 +21,7 @@ export function ViewerLayout({
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
     return (
-        <div className={cn("flex flex-col h-screen bg-background", className)}>
+        <div className={cn("flex flex-col h-full bg-background", className)}>
             {/* Main content area */}
             <div className="flex-1 flex min-h-0 relative">
                 {/* Transcript area */}

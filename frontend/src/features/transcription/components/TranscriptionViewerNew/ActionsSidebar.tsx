@@ -77,9 +77,9 @@ export function ActionsSidebar({
     className,
 }: ActionsSidebarProps) {
     return (
-        <div className={cn("flex flex-col h-full p-4", className)}>
+        <div className={cn("flex flex-col h-full p-6", className)}>
             {/* Actions section */}
-            <div className="space-y-3">
+            <div className="space-y-5">
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
                     Actions
                 </h3>
@@ -91,14 +91,20 @@ export function ActionsSidebar({
                 <TranslateMenu disabled={disabled} />
 
                 {/* Copy */}
-                <Button
-                    variant="outline"
-                    size="sm"
+                {/* Copy */}
+                <button
                     onClick={onCopy}
                     disabled={disabled || !canCopy}
                     className={cn(
-                        "w-full justify-start gap-2",
-                        isCopied && "text-success border-success/30"
+                        "w-full flex items-center gap-2",
+                        "px-3 py-2.5 rounded-lg",
+                        "bg-muted/50 hover:bg-muted",
+                        "border border-border hover:border-primary/30",
+                        "text-sm font-medium text-foreground",
+                        "transition-colors duration-150",
+                        "disabled:opacity-50 disabled:cursor-not-allowed",
+                        isCopied && "text-success border-success/30 bg-success/5 hover:bg-success/10 hover:border-success/30",
+                        !isCopied && "hover:text-foreground"
                     )}
                 >
                     {isCopied ? (
@@ -108,18 +114,18 @@ export function ActionsSidebar({
                         </>
                     ) : (
                         <>
-                            <Copy className="h-4 w-4" />
+                            <Copy className="h-4 w-4 text-muted-foreground" />
                             <span>Copy transcript</span>
                         </>
                     )}
-                </Button>
+                </button>
             </div>
 
             {/* Divider */}
-            <div className="h-px bg-border my-6" />
+            <div className="h-px bg-border my-8" />
 
             {/* Settings section */}
-            <div className="space-y-4">
+            <div className="space-y-6">
                 <div className="flex items-center gap-2 px-1">
                     <Settings className="h-3.5 w-3.5 text-muted-foreground" />
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -160,7 +166,7 @@ export function ActionsSidebar({
             <div className="flex-1" />
 
             {/* Edit section */}
-            <div className="pt-4 border-t border-border">
+            <div className="pt-6 border-t border-border">
                 <Button
                     variant="outline"
                     size="sm"

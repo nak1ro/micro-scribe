@@ -9,15 +9,18 @@ interface DashboardLayoutProps {
     children: React.ReactNode;
     /** Callback when New Transcription is clicked (from sidebar or FAB) */
     onNewTranscription?: () => void;
+    /** Whether to remove default padding from the content area (for full-screen views) */
+    noPadding?: boolean;
 }
 
 export function DashboardLayout({
     children,
     onNewTranscription,
+    noPadding,
 }: DashboardLayoutProps) {
     return (
         <SidebarProvider>
-            <DashboardLayoutInner onNewTranscription={onNewTranscription}>
+            <DashboardLayoutInner onNewTranscription={onNewTranscription} noPadding={noPadding}>
                 {children}
             </DashboardLayoutInner>
         </SidebarProvider>
@@ -28,6 +31,7 @@ export function DashboardLayout({
 function DashboardLayoutInner({
     children,
     onNewTranscription,
+    noPadding,
 }: DashboardLayoutProps) {
     const { isCollapsed } = useSidebar();
 
@@ -35,7 +39,7 @@ function DashboardLayoutInner({
         <div className="flex min-h-screen">
             <Sidebar onNewTranscription={onNewTranscription} />
             <main className="flex-1 min-w-0 flex flex-col">
-                <div className="px-4 py-6 lg:px-8 flex-1">{children}</div>
+                {noPadding ? children : <div className="px-4 py-6 lg:px-8 flex-1">{children}</div>}
             </main>
 
             {/* Floating Action Button - Shows when sidebar is collapsed */}
