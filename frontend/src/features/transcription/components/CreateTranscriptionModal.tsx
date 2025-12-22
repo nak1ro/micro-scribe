@@ -91,15 +91,13 @@ export function CreateTranscriptionModal({
 
     const { upload, abort, reset, progress, status, error, isUploading } = useFileUpload();
 
-    // Reset state when modal closes
+    // Reset state when modal opens or closes
     React.useEffect(() => {
-        if (!isOpen) {
-            setFile(null);
-            setYoutubeUrl("");
-            setAudioBlob(null);
-            setActiveTab("file");
-            reset();
-        }
+        setFile(null);
+        setYoutubeUrl("");
+        setAudioBlob(null);
+        setActiveTab("file");
+        reset();
     }, [isOpen, reset]);
 
     const hasContent = () => {

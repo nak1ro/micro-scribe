@@ -13,6 +13,7 @@ import { TranscriptContent } from "./TranscriptContent";
 import { AudioPlayer } from "./AudioPlayer";
 import { ActionsSidebar } from "./ActionsSidebar";
 import { useAudioSync } from "@/features/transcription/hooks/useAudioSync";
+import { handleExport as exportFile } from "@/features/transcription/utils/exportUtils";
 import type { TranscriptionData, ExportFormat } from "@/features/transcription/types";
 
 interface TranscriptionViewerNewProps {
@@ -97,20 +98,14 @@ export function TranscriptionViewerNew({
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const handleExport = (format: ExportFormat) => {
+    const handleExport = async (format: ExportFormat) => {
         if (!data) return;
 
-        // Placeholder - will be implemented later
-        console.log(`Export as ${format}`);
-
-        if (format === "mp3" && data.audioUrl) {
-            // Download original audio
-            const link = document.createElement("a");
-            link.href = data.audioUrl;
-            link.download = data.fileName.replace(/\.[^/.]+$/, ".mp3");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+        try {
+            await exportFile(format, data);
+        } catch (error) {
+            console.error("Export failed:", error);
+            // TODO: Add toast notification here
         }
     };
 
