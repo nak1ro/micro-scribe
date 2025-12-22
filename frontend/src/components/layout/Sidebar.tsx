@@ -259,48 +259,46 @@ interface UsageIndicatorProps {
 }
 
 function UsageIndicator({ used, limit, isCollapsed }: UsageIndicatorProps) {
+    const remaining = Math.max(0, limit - used);
     const percentage = Math.min((used / limit) * 100, 100);
-    const radius = 14;
-    const circumference = 2 * Math.PI * radius;
-    const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+    // Status color based on remaining usage
+    const getStatusColor = () => {
+        if (remaining === 0) return "hsl(var(--destructive))";
+        if (remaining <= 2) return "hsl(45 93% 47%)";
+        return "hsl(var(--primary))";
+    };
+
+    // Parameters for the ring indicator
+    const collapsedRadius = 10;
+    const collapsedCircumference = 2 * Math.PI * collapsedRadius;
+    const collapsedStrokeDashoffset = collapsedCircumference - (percentage / 100) * collapsedCircumference;
+
+    const expandedRadius = 14;
+    const expandedCircumference = 2 * Math.PI * expandedRadius;
+    const expandedStrokeDashoffset = expandedCircumference - (percentage / 100) * expandedCircumference;
 
     if (isCollapsed) {
         return (
-            <div className="flex justify-center" title={`${used}/${limit} today`}>
-                <svg width="36" height="36" viewBox="0 0 36 36">
-                    <circle
-                        cx="18"
-                        cy="18"
-                        r={radius}
-                        fill="none"
-                        stroke="hsl(var(--muted))"
-                        strokeWidth="4"
-                    />
-
-                    <circle
-                        cx="18"
-                        cy="18"
-                        r={radius}
-                        fill="none"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth="4"
-                        strokeLinecap="round"
-                        strokeDasharray={circumference}
-                        strokeDashoffset={strokeDashoffset}
-                        transform="rotate(-90 18 18)"
-                    />
-
-                    <text
-                        x="18"
-                        y="18"
-                        textAnchor="middle"
-                        dy="0.35em"
-                        className="text-sm fill-foreground font-medium"
-                    >
+            <div
+                className="flex items-center justify-center px-2 py-2"
+                title={`${used}/${limit} used today`}
+            >
+                <div
+                    className="flex flex-col items-center justify-center px-3 py-2 rounded-lg border-2"
+                    style={{ borderColor: getStatusColor() }}
+                >
+                    <span className="text-xs font-semibold text-foreground leading-tight">
                         {used}
-                    </text>
-
-                </svg>
+                    </span>
+                    <div
+                        className="w-4 h-[1px] my-0.5"
+                        style={{ backgroundColor: 'hsl(var(--muted-foreground))' }}
+                    />
+                    <span className="text-xs font-medium text-muted-foreground leading-tight">
+                        {limit}
+                    </span>
+                </div>
             </div>
         );
     }
@@ -308,17 +306,17 @@ function UsageIndicator({ used, limit, isCollapsed }: UsageIndicatorProps) {
     return (
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
             <svg width="32" height="32" viewBox="0 0 36 36">
-                <circle cx="18" cy="18" r={radius} fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
+                <circle cx="18" cy="18" r={expandedRadius} fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
                 <circle
                     cx="18"
                     cy="18"
-                    r={radius}
+                    r={expandedRadius}
                     fill="none"
-                    stroke="hsl(var(--primary))"
+                    stroke={getStatusColor()}
                     strokeWidth="3"
                     strokeLinecap="round"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={strokeDashoffset}
+                    strokeDasharray={expandedCircumference}
+                    strokeDashoffset={expandedStrokeDashoffset}
                     transform="rotate(-90 18 18)"
                 />
             </svg>

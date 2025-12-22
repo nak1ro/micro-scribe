@@ -4,6 +4,7 @@ import * as React from "react";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { SidebarProvider, useSidebar } from "@/context/SidebarContext";
+import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -30,7 +31,7 @@ function DashboardLayoutInner({
     const noPadding = pathname?.includes("/transcriptions/");
 
     return (
-        <div className="flex min-h-screen">
+        <div className={cn("flex", noPadding ? "h-screen overflow-hidden" : "min-h-screen")}>
             <Sidebar />
             <main className="flex-1 min-w-0 flex flex-col">
                 {noPadding ? children : <div className="px-4 py-6 lg:px-8 flex-1">{children}</div>}
