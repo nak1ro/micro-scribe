@@ -34,8 +34,6 @@ const steps = [
 export function HowItWorksSection() {
     return (
         <section id="how-it-works" className="relative py-24 scroll-mt-16 overflow-hidden">
-            {/* Subtle background */}
-            <div className="absolute inset-0 bg-gradient-to-b from-muted/20 to-background" />
 
             <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
                 {/* Header */}

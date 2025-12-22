@@ -10,13 +10,6 @@ import { heroContent, siteConfig } from "../data/content";
 export function HeroSection() {
     return (
         <section className="relative min-h-screen flex items-center overflow-visible">
-            {/* Background glow - stronger for hero */}
-            <div className="absolute inset-0 overflow-visible pointer-events-none">
-                <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-primary/15 blur-3xl" />
-                {/* This glow extends into the next section for smooth transition */}
-                <div className="absolute -bottom-16 right-1/4 w-[500px] h-[400px] rounded-full bg-secondary/10 blur-3xl" />
-            </div>
-
             {/* Bottom fade for smooth transition */}
             <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background via-background/50 to-transparent pointer-events-none" />
 

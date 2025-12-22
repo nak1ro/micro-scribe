@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 import { Check, Sparkles, Wand2, FileText, Clock, Users, Languages } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -46,21 +48,116 @@ const primaryFeatures = [
     },
 ];
 
-// Languages grid with flags
-const languages = [
-    { code: "US", name: "English" },
-    { code: "ES", name: "Spanish" },
-    { code: "FR", name: "French" },
-    { code: "DE", name: "German" },
-    { code: "IT", name: "Italian" },
-    { code: "PT", name: "Portuguese" },
-    { code: "JP", name: "Japanese" },
-    { code: "KR", name: "Korean" },
-    { code: "CN", name: "Chinese" },
-    { code: "RU", name: "Russian" },
-    { code: "AR", name: "Arabic" },
-    { code: "NL", name: "Dutch" },
+
+// All supported languages with emoji flags - popular first, then alphabetical
+const supportedLanguages = [
+    // Popular languages (first 15)
+    { name: "English", emoji: "🇬🇧" },
+    { name: "Spanish", emoji: "🇪🇸" },
+    { name: "French", emoji: "🇫🇷" },
+    { name: "German", emoji: "🇩🇪" },
+    { name: "Chinese", emoji: "🇨🇳" },
+    { name: "Japanese", emoji: "🇯🇵" },
+    { name: "Portuguese", emoji: "🇵🇹" },
+    { name: "Russian", emoji: "🇷🇺" },
+    { name: "Arabic", emoji: "🇸🇦" },
+    { name: "Hindi", emoji: "🇮🇳" },
+    { name: "Korean", emoji: "🇰🇷" },
+    { name: "Italian", emoji: "🇮🇹" },
+    { name: "Dutch", emoji: "🇳🇱" },
+    { name: "Polish", emoji: "🇵🇱" },
+    { name: "Turkish", emoji: "🇹🇷" },
+    // Remaining languages in alphabetical order
+    { name: "Afrikaans", emoji: "🇿🇦" },
+    { name: "Amharic", emoji: "🇪🇹" },
+    { name: "Assamese", emoji: "🇮🇳" },
+    { name: "Azerbaijani", emoji: "🇦🇿" },
+    { name: "Bashkir", emoji: "🇷🇺" },
+    { name: "Basque", emoji: "🇪🇸" },
+    { name: "Belarusian", emoji: "🇧🇾" },
+    { name: "Bengali", emoji: "🇧🇩" },
+    { name: "Bosnian", emoji: "🇧🇦" },
+    { name: "Breton", emoji: "🇫🇷" },
+    { name: "Bulgarian", emoji: "🇧🇬" },
+    { name: "Burmese", emoji: "🇲🇲" },
+    { name: "Catalan", emoji: "🇪🇸" },
+    { name: "Croatian", emoji: "🇭🇷" },
+    { name: "Czech", emoji: "🇨🇿" },
+    { name: "Danish", emoji: "🇩🇰" },
+    { name: "Estonian", emoji: "🇪🇪" },
+    { name: "Faroese", emoji: "🇫🇴" },
+    { name: "Finnish", emoji: "🇫🇮" },
+    { name: "Galician", emoji: "🇪🇸" },
+    { name: "Georgian", emoji: "🇬🇪" },
+    { name: "Greek", emoji: "🇬🇷" },
+    { name: "Gujarati", emoji: "🇮🇳" },
+    { name: "Haitian Creole", emoji: "🇭🇹" },
+    { name: "Hausa", emoji: "🇳🇬" },
+    { name: "Hawaiian", emoji: "🇺🇸" },
+    { name: "Hebrew", emoji: "🇮🇱" },
+    { name: "Hungarian", emoji: "🇭🇺" },
+    { name: "Icelandic", emoji: "🇮🇸" },
+    { name: "Indonesian", emoji: "🇮🇩" },
+    { name: "Javanese", emoji: "🇮🇩" },
+    { name: "Kannada", emoji: "🇮🇳" },
+    { name: "Kazakh", emoji: "🇰🇿" },
+    { name: "Khmer", emoji: "🇰🇭" },
+    { name: "Kyrgyz", emoji: "🇰🇬" },
+    { name: "Lao", emoji: "🇱🇦" },
+    { name: "Latvian", emoji: "🇱🇻" },
+    { name: "Lingala", emoji: "🇨🇩" },
+    { name: "Lithuanian", emoji: "🇱🇹" },
+    { name: "Luxembourgish", emoji: "🇱🇺" },
+    { name: "Macedonian", emoji: "🇲🇰" },
+    { name: "Malagasy", emoji: "🇲🇬" },
+    { name: "Malay", emoji: "🇲🇾" },
+    { name: "Malayalam", emoji: "🇮🇳" },
+    { name: "Maltese", emoji: "🇲🇹" },
+    { name: "Maori", emoji: "🇳🇿" },
+    { name: "Marathi", emoji: "🇮🇳" },
+    { name: "Mongolian", emoji: "🇲🇳" },
+    { name: "Nepali", emoji: "🇳🇵" },
+    { name: "Northern Sami", emoji: "🇳🇴" },
+    { name: "Norwegian", emoji: "🇳🇴" },
+    { name: "Nyanja", emoji: "🇲🇼" },
+    { name: "Occitan", emoji: "🇫🇷" },
+    { name: "Pashto", emoji: "🇦🇫" },
+    { name: "Persian", emoji: "🇮🇷" },
+    { name: "Punjabi", emoji: "🇮🇳" },
+    { name: "Romanian", emoji: "🇷🇴" },
+    { name: "Sanskrit", emoji: "🇮🇳" },
+    { name: "Serbian", emoji: "🇷🇸" },
+    { name: "Shona", emoji: "🇿🇼" },
+    { name: "Sindhi", emoji: "🇵🇰" },
+    { name: "Sinhala", emoji: "🇱🇰" },
+    { name: "Slovak", emoji: "🇸🇰" },
+    { name: "Slovenian", emoji: "🇸🇮" },
+    { name: "Somali", emoji: "🇸🇴" },
+    { name: "Sundanese", emoji: "🇮🇩" },
+    { name: "Swahili", emoji: "🇰🇪" },
+    { name: "Swedish", emoji: "🇸🇪" },
+    { name: "Tagalog", emoji: "🇵🇭" },
+    { name: "Tajik", emoji: "🇹🇯" },
+    { name: "Tamil", emoji: "🇮🇳" },
+    { name: "Tatar", emoji: "🇷🇺" },
+    { name: "Telugu", emoji: "🇮🇳" },
+    { name: "Thai", emoji: "🇹🇭" },
+    { name: "Tibetan", emoji: "🇨🇳" },
+    { name: "Tigrinya", emoji: "🇪🇷" },
+    { name: "Tok Pisin", emoji: "🇵🇬" },
+    { name: "Turkmen", emoji: "🇹🇲" },
+    { name: "Ukrainian", emoji: "🇺🇦" },
+    { name: "Urdu", emoji: "🇵🇰" },
+    { name: "Uzbek", emoji: "🇺🇿" },
+    { name: "Vietnamese", emoji: "🇻🇳" },
+    { name: "Wolof", emoji: "🇸🇳" },
+    { name: "Xhosa", emoji: "🇿🇦" },
+    { name: "Yiddish", emoji: "🇮🇱" },
+    { name: "Yoruba", emoji: "🇳🇬" },
+    { name: "Zulu", emoji: "🇿🇦" },
 ];
+
+const POPULAR_COUNT = 15;
 
 // Secondary features - checklist style
 const secondaryFeatures = [
@@ -73,11 +170,10 @@ const secondaryFeatures = [
 ];
 
 export function FeaturesSection() {
+    const [isExpanded, setIsExpanded] = React.useState(false);
+
     return (
-        <section className="relative py-24 overflow-hidden bg-background">
-            {/* Decorative elements */}
-            <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-secondary/5 rounded-full blur-3xl" />
+        <section className="relative py-24 overflow-hidden">
 
             <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 {/* Header */}
@@ -167,45 +263,83 @@ export function FeaturesSection() {
                     ))}
                 </div>
 
-                {/* Languages Grid */}
-                <div className="text-center mb-20">
-                    <h3 className="text-2xl font-bold text-foreground mb-8">
-                        Transcribe in <span className="text-primary">50+ languages</span>
-                    </h3>
-                    <div className="flex flex-wrap justify-center gap-3 max-w-3xl mx-auto">
-                        {languages.map((lang) => (
+                {/* Languages Section with Search */}
+                <div className="mb-20">
+                    <div className="text-center mb-8">
+                        <h3 className="text-2xl font-bold text-foreground mb-2">
+                            Transcribe in <span className="text-primary">100+ languages</span>
+                        </h3>
+                        <p className="text-muted-foreground">
+                            Powered by OpenAI Whisper for industry-leading accuracy
+                        </p>
+                    </div>
+
+                    {/* Popular Languages - always visible */}
+                    <div className="flex flex-wrap justify-center gap-2 max-w-4xl mx-auto">
+                        {supportedLanguages.slice(0, POPULAR_COUNT).map((lang) => (
                             <div
-                                key={lang.code}
+                                key={lang.name}
                                 className={cn(
-                                    "inline-flex items-center gap-2 px-4 py-2 rounded-full",
+                                    "flex items-center gap-2 px-3 py-2 rounded-lg",
                                     "bg-card border border-border",
-                                    "hover:border-primary/50 hover:bg-primary/5",
-                                    "transition-colors duration-200"
+                                    "hover:border-primary/30 hover:bg-primary/5",
+                                    "transition-all duration-300"
                                 )}
                             >
-                                {/* Flag emoji placeholder - using country code */}
-                                <span className="text-lg">
-                                    {lang.code === "US" && "🇺🇸"}
-                                    {lang.code === "ES" && "🇪🇸"}
-                                    {lang.code === "FR" && "🇫🇷"}
-                                    {lang.code === "DE" && "🇩🇪"}
-                                    {lang.code === "IT" && "🇮🇹"}
-                                    {lang.code === "PT" && "🇧🇷"}
-                                    {lang.code === "JP" && "🇯🇵"}
-                                    {lang.code === "KR" && "🇰🇷"}
-                                    {lang.code === "CN" && "🇨🇳"}
-                                    {lang.code === "RU" && "🇷🇺"}
-                                    {lang.code === "AR" && "🇸🇦"}
-                                    {lang.code === "NL" && "🇳🇱"}
-                                </span>
-                                <span className="text-sm font-medium text-foreground">
+                                <span className="text-lg">{lang.emoji}</span>
+                                <span className="text-sm text-foreground">
                                     {lang.name}
                                 </span>
                             </div>
                         ))}
-                        <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                            + 38 more
+                    </div>
+
+                    {/* Expandable section for remaining languages */}
+                    <div
+                        className={cn(
+                            "grid transition-[grid-template-rows] duration-500 ease-out",
+                            isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                        )}
+                    >
+                        <div className="overflow-hidden">
+                            <div className="flex flex-wrap justify-center gap-2 max-w-4xl mx-auto pt-2">
+                                {supportedLanguages.slice(POPULAR_COUNT).map((lang) => (
+                                    <div
+                                        key={lang.name}
+                                        className={cn(
+                                            "flex items-center gap-2 px-3 py-2 rounded-lg",
+                                            "bg-card border border-border",
+                                            "hover:border-primary/30 hover:bg-primary/5",
+                                            "transition-all duration-300"
+                                        )}
+                                    >
+                                        <span className="text-lg">{lang.emoji}</span>
+                                        <span className="text-sm text-foreground">
+                                            {lang.name}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
+                    </div>
+
+                    {/* Expand/Collapse button */}
+                    <div className="text-center mt-6">
+                        <button
+                            onClick={() => setIsExpanded(!isExpanded)}
+                            className={cn(
+                                "inline-flex items-center gap-2 px-4 py-2 rounded-lg",
+                                "text-sm font-medium text-primary",
+                                "bg-primary/10 hover:bg-primary/20",
+                                "transition-colors"
+                            )}
+                        >
+                            {isExpanded ? (
+                                <>Show less</>
+                            ) : (
+                                <>+ {supportedLanguages.length - POPULAR_COUNT} more languages</>
+                            )}
+                        </button>
                     </div>
                 </div>
 

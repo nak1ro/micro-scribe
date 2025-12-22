@@ -57,8 +57,6 @@ const useCases = [
 export function UseCasesSection() {
     return (
         <section className="relative py-24 overflow-hidden">
-            {/* Subtle background */}
-            <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/30 to-background" />
 
             <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 {/* Header */}

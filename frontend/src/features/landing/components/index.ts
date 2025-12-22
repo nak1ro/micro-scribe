@@ -11,3 +11,5 @@ export { WhisperReviewsSection } from "./WhisperReviewsSection";
 export { FAQSection } from "./FAQSection";
 export { FinalCTASection } from "./FinalCTASection";
 export { SectionSeparator } from "./SectionSeparator";
+export { LandingBackground } from "./LandingBackground";
+

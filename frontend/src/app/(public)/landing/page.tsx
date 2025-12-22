@@ -1,4 +1,4 @@
-import {PublicLayout} from "@/components/layout";
+import { PublicLayout } from "@/components/layout";
 import {
     HeroSection,
     ProblemSolutionSection,
@@ -9,21 +9,25 @@ import {
     WhisperReviewsSection,
     FAQSection,
     FinalCTASection,
-    SectionSeparator,
+    LandingBackground,
 } from "@/features/landing";
 
 export default function LandingPage() {
     return (
         <PublicLayout>
-            <HeroSection/>
-            <ProblemSolutionSection/>
-            <HowItWorksSection/>
-            <PricingSection/>
-            <FeaturesSection/>
-            <WhisperReviewsSection/>
-            <UseCasesSection/>
-            <FAQSection/>
-            <FinalCTASection/>
+            <LandingBackground>
+                <HeroSection />
+                <ProblemSolutionSection />
+                <HowItWorksSection />
+                <PricingSection />
+                <FeaturesSection />
+                <WhisperReviewsSection />
+                <UseCasesSection />
+                <FAQSection />
+                <FinalCTASection />
+            </LandingBackground>
         </PublicLayout>
     );
 }
+
+
