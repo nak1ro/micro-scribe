@@ -1,4 +1,5 @@
 import { transcriptionApi } from "@/services/transcription/api";
+import { audioExtractor } from "@/services/media/audioExtractor";
 import {
     UploadSessionResponse,
     PartETagDto,
@@ -33,16 +34,45 @@ export async function orchestrateUpload(
 
     const config: UploadConfig = { ...DEFAULT_UPLOAD_CONFIG, ...configOverrides };
 
+    // Step 0: Extract/Normalize Audio (Client-side)
+    onStatusChange?.("extracting");
+
+    // Normalize audio/video to MP3 16kHz Mono 64kbps
+    // This reduces file size significantly and ensures compatibility
+    let fileToUpload: File | Blob = file;
+    try {
+        const extractedBlob = await audioExtractor.extractAudio(file, (progress) => {
+            // We can optionally report extraction progress here, 
+            // but let's keep it simple for now or map 0-50% to extracting??
+            // For now, we just stay in "extracting" state.
+            console.debug(`Extraction progress: ${progress}%`);
+        });
+
+        // Create a new File object from the blob, preserving name (but changin ext)
+        const newName = file.name.replace(/\.[^/.]+$/, "") + ".mp3";
+        fileToUpload = new File([extractedBlob], newName, { type: "audio/mpeg" });
+        console.log(`Audio normalized: ${file.size} -> ${fileToUpload.size} bytes`);
+    } catch (err) {
+        console.error("Audio extraction failed, falling back to original file:", err);
+        // Fallback: If extraction fails (e.g. browser compatibility), try uploading original
+        // But throwing might be safer if we want to enforce normalization.
+        // Let's warn and proceed for now, or throw?
+        // User requested "every file should be converted", so likely we should throw or handle gracefully.
+        throw new Error(`Audio processing failed: ${(err as Error).message}`);
+    }
+
+    checkAbort(signal);
+
     // Step 1: Initiate upload session
     onStatusChange?.("initiating");
 
     // Use consistent content type for both signing and upload
-    const contentType = file.type || "application/octet-stream";
+    const contentType = fileToUpload.type || "application/octet-stream";
 
     const session = await transcriptionApi.initiateUpload({
-        fileName: file.name,
+        fileName: fileToUpload instanceof File ? fileToUpload.name : "audio.mp3",
         contentType,
-        sizeBytes: file.size,
+        sizeBytes: fileToUpload.size,
         clientRequestId: crypto.randomUUID(),
     });
 
@@ -57,11 +87,11 @@ export async function orchestrateUpload(
     // Frontend follows that decision, not its own size comparison
     if (!session.uploadId && session.uploadUrl) {
         // Single-file upload (backend returned presigned PUT URL, no multipart ID)
-        await uploadSingleFile(file, session.uploadUrl, contentType, config, signal);
+        await uploadSingleFile(fileToUpload, session.uploadUrl, contentType, config, signal);
         onProgress?.(100);
     } else if (session.uploadId) {
         // Multipart upload (backend initiated multipart and returned uploadId)
-        parts = await uploadChunked(file, session, config, signal, onProgress);
+        parts = await uploadChunked(fileToUpload, session, config, signal, onProgress);
     } else {
         throw new Error("Invalid session: neither uploadUrl nor uploadId provided");
     }
@@ -118,7 +148,7 @@ function checkAbort(signal?: AbortSignal): void {
 }
 
 async function uploadSingleFile(
-    file: File,
+    file: File | Blob,
     presignedUrl: string,
     contentType: string,
     config: UploadConfig,
@@ -138,7 +168,7 @@ async function uploadSingleFile(
 }
 
 async function uploadChunked(
-    file: File,
+    file: File | Blob,
     session: UploadSessionResponse,
     config: UploadConfig,
     signal?: AbortSignal,

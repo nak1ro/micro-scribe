@@ -3,7 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { ChevronDown, FileText, FileType, Subtitles, Table, Music } from "lucide-react";
-import type { ExportFormat, ExportOption } from "./types";
+import type { ExportFormat, ExportOption } from "@/features/transcription/types";
 
 interface ExportMenuProps {
     onExport: (format: ExportFormat) => void;

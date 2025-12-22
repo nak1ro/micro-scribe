@@ -5,6 +5,7 @@ export type UploadStatus =
     | "idle"
     | "initiating"
     | "uploading"
+    | "extracting"
     | "completing"
     | "validating"
     | "creating-job"
@@ -16,6 +17,7 @@ export type UploadStatus =
 export type UploadStage =
     | "initiating"
     | "uploading"
+    | "extracting"
     | "completing"
     | "validating"
     | "creating-job";
