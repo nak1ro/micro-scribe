@@ -1,69 +1,165 @@
 import * as React from "react";
-import {
-    Mic,
-    GraduationCap,
-    Briefcase,
-    Newspaper,
-    BookOpen,
-    Accessibility,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCasesContent } from "../data/content";
+import Image from "next/image";
 
-const iconMap = {
-    Mic,
-    GraduationCap,
-    Briefcase,
-    Newspaper,
-    BookOpen,
-    Accessibility,
-};
+// Use cases with real stock photos - asymmetric bento grid
+const useCases = [
+    {
+        id: "podcasters",
+        title: "Podcasters",
+        description: "Turn episodes into show notes, blogs, and social content",
+        image: "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800&q=80",
+        size: "large",
+        accent: "from-violet-500/80 to-fuchsia-500/80",
+    },
+    {
+        id: "students",
+        title: "Students",
+        description: "Never miss a lecture again",
+        image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=600&q=80",
+        size: "small",
+        accent: "from-blue-500/80 to-cyan-500/80",
+    },
+    {
+        id: "journalists",
+        title: "Journalists",
+        description: "Transcribe interviews in minutes",
+        image: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=600&q=80",
+        size: "small",
+        accent: "from-amber-500/80 to-orange-500/80",
+    },
+    {
+        id: "business",
+        title: "Business Teams",
+        description: "Meeting notes and action items, automatically",
+        image: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&q=80",
+        size: "large",
+        accent: "from-emerald-500/80 to-teal-500/80",
+    },
+    {
+        id: "researchers",
+        title: "Researchers",
+        description: "Analyze hours of interviews with searchable text",
+        image: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=600&q=80",
+        size: "medium",
+        accent: "from-rose-500/80 to-pink-500/80",
+    },
+    {
+        id: "creators",
+        title: "Content Creators",
+        description: "YouTube captions and repurpose content",
+        image: "https://images.unsplash.com/photo-1611162616475-46b635cb6868?w=600&q=80",
+        size: "medium",
+        accent: "from-indigo-500/80 to-purple-500/80",
+    },
+];
 
 export function UseCasesSection() {
     return (
-        <section className="relative min-h-screen flex items-center py-12 overflow-hidden">
-            {/* Subtle glow */}
-            <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full bg-secondary/5 blur-3xl" />
-            </div>
+        <section className="relative py-24 overflow-hidden">
+            {/* Subtle background */}
+            <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/30 to-background" />
+
             <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                {/* Heading */}
-                <div className="text-center mb-8">
-                    <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
-                        {useCasesContent.heading}
+                {/* Header */}
+                <div className="text-center mb-16">
+                    <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4 tracking-tight">
+                        Built for{" "}
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
+                            everyone
+                        </span>
                     </h2>
+                    <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                        From solo creators to enterprise teams, MicroScribe adapts to your workflow
+                    </p>
                 </div>
 
-                {/* Use Cases Grid */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {useCasesContent.cases.map((useCase, index) => {
-                        const Icon = iconMap[useCase.icon as keyof typeof iconMap];
-                        return (
-                            <div
-                                key={index}
-                                className={cn(
-                                    "p-4 rounded-xl",
-                                    "bg-card border border-border",
-                                    "shadow-card",
-                                    "transition-all duration-[var(--transition-fast)] ease-[var(--easing-soft)]",
-                                    "hover:-translate-y-1 hover:shadow-md"
-                                )}
-                            >
-                                {/* Icon */}
-                                <div className="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center mb-4">
-                                    <Icon className="h-6 w-6 text-secondary" />
-                                </div>
+                {/* Bento Grid - Asymmetric Layout */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-[200px]">
+                    {useCases.map((useCase) => (
+                        <div
+                            key={useCase.id}
+                            className={cn(
+                                "group relative rounded-2xl overflow-hidden cursor-pointer",
+                                "transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl",
+                                // Size variants for asymmetric layout
+                                useCase.size === "large" && "md:col-span-2 md:row-span-2",
+                                useCase.size === "medium" && "lg:col-span-2",
+                                useCase.size === "small" && "col-span-1"
+                            )}
+                        >
+                            {/* Background Image with Grayscale */}
+                            <div className="absolute inset-0">
+                                <Image
+                                    src={useCase.image}
+                                    alt={useCase.title}
+                                    fill
+                                    className={cn(
+                                        "object-cover",
+                                        "grayscale group-hover:grayscale-0",
+                                        "scale-105 group-hover:scale-100",
+                                        "transition-all duration-700"
+                                    )}
+                                />
+                            </div>
 
-                                {/* Title */}
-                                <h3 className="text-lg font-semibold text-foreground mb-2">
+                            {/* Gradient Overlay */}
+                            <div
+                                className={cn(
+                                    "absolute inset-0",
+                                    "bg-gradient-to-t from-black/90 via-black/50 to-transparent",
+                                    "group-hover:from-black/70 group-hover:via-transparent",
+                                    "transition-all duration-500"
+                                )}
+                            />
+
+                            {/* Color Accent Overlay on Hover */}
+                            <div
+                                className={cn(
+                                    "absolute inset-0 opacity-0 group-hover:opacity-30",
+                                    "bg-gradient-to-br",
+                                    useCase.accent,
+                                    "transition-opacity duration-500"
+                                )}
+                            />
+
+                            {/* Content */}
+                            <div className="absolute inset-0 p-6 flex flex-col justify-end">
+                                <h3 className={cn(
+                                    "font-bold text-white mb-2",
+                                    "transform group-hover:-translate-y-1 transition-transform duration-300",
+                                    useCase.size === "large" ? "text-3xl" : "text-xl"
+                                )}>
                                     {useCase.title}
                                 </h3>
-
-                                {/* Description */}
-                                <p className="text-muted-foreground">{useCase.description}</p>
+                                <p className={cn(
+                                    "text-white/80 leading-relaxed",
+                                    "transform translate-y-4 opacity-0",
+                                    "group-hover:translate-y-0 group-hover:opacity-100",
+                                    "transition-all duration-300 delay-100",
+                                    useCase.size === "large" ? "text-lg" : "text-sm"
+                                )}>
+                                    {useCase.description}
+                                </p>
                             </div>
-                        );
-                    })}
+
+                            {/* Corner accent */}
+                            <div className={cn(
+                                "absolute top-4 right-4 w-3 h-3 rounded-full",
+                                "bg-gradient-to-br",
+                                useCase.accent,
+                                "opacity-0 group-hover:opacity-100",
+                                "transition-opacity duration-300"
+                            )} />
+                        </div>
+                    ))}
+                </div>
+
+                {/* Bottom tagline */}
+                <div className="text-center mt-12">
+                    <p className="text-muted-foreground">
+                        <span className="font-semibold text-foreground">50,000+</span> professionals trust MicroScribe daily
+                    </p>
                 </div>
             </div>
         </section>

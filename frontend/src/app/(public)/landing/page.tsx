@@ -8,6 +8,7 @@ import {
     UseCasesSection,
     PricingSection,
     TestimonialsSection,
+    WhisperReviewsSection,
     FAQSection,
     FinalCTASection,
     SectionSeparator,
@@ -17,19 +18,20 @@ export default function LandingPage() {
     return (
         <PublicLayout>
             <HeroSection />
-            <SectionSeparator/>
+            <SectionSeparator />
             <PricingSection />
-            <SectionSeparator/>
+            <SectionSeparator />
             <HowItWorksSection />
             <SectionSeparator />
             <FeaturesSection />
-            <SectionSeparator/>
+            <WhisperReviewsSection />
+            <SectionSeparator />
             <UseCasesSection />
             <SectionSeparator />
             <ProblemSolutionSection />
-            <SectionSeparator/>
+            <SectionSeparator />
             <FinalCTASection />
-            <SectionSeparator/>
+            <SectionSeparator />
             <FAQSection />
         </PublicLayout>
     );
