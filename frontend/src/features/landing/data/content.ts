@@ -22,8 +22,7 @@ export const heroContent = {
     },
     trustBadges: [
         "Free tier available",
-        "No credit card required",
-        "50+ languages",
+        "No credit card required"
     ],
     stats: [
         { value: "1.2M+", label: "Minutes transcribed" },
@@ -214,7 +213,6 @@ export const pricingContent = {
         {
             name: "Free Plan",
             price: "$0",
-            period: "forever",
             priceLabel: "100% Free",
             description: "Perfect for trying out",
             features: [
@@ -244,10 +242,9 @@ export const pricingContent = {
         {
             name: "Premium Plan",
             price: "$12",
-            period: "month",
+            period: "/month",
             priceLabel: "Billed Monthly",
             description: "Unlock Full AI Transcription Power",
-            badge: "🔥 Most Popular",
             features: [
                 {
                     icon: "Infinity",
@@ -276,6 +273,10 @@ export const pricingContent = {
                 variant: "default" as const,
             },
             highlighted: true,
+            priceMonthly: "$12",
+            priceAnnual: "$10",
+            priceLabelMonthly: "Billed Monthly",
+            priceLabelAnnual: "Billed Annually ($120/year)",
         },
     ],
     note: "All plans start with a free trial • No credit card required • Cancel anytime",

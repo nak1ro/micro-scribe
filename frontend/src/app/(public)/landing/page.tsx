@@ -17,9 +17,7 @@ export default function LandingPage() {
     return (
         <PublicLayout>
             <HeroSection />
-            <SectionSeparator variant="gradient" />
-            <SocialProofSection />
-            <SectionSeparator />
+            <SectionSeparator/>
             <PricingSection />
             <SectionSeparator/>
             <HowItWorksSection />
@@ -30,8 +28,6 @@ export default function LandingPage() {
             <SectionSeparator />
             <ProblemSolutionSection />
             <SectionSeparator/>
-            <TestimonialsSection />
-            <SectionSeparator />
             <FinalCTASection />
             <SectionSeparator/>
             <FAQSection />

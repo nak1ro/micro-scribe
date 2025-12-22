@@ -68,20 +68,6 @@ export function HeroSection() {
                                 </div>
                             ))}
                         </div>
-
-                        {/* Stats */}
-                        <div className="mt-12 grid grid-cols-3 gap-4 max-w-md mx-auto lg:mx-0">
-                            {heroContent.stats.map((stat, index) => (
-                                <div key={index} className="text-center lg:text-left">
-                                    <div className="text-2xl sm:text-3xl font-bold text-foreground">
-                                        {stat.value}
-                                    </div>
-                                    <div className="text-sm text-muted-foreground">
-                                        {stat.label}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
                     </div>
 
                     {/* Right Column - Product Mockup */}
