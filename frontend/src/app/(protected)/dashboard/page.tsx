@@ -3,7 +3,6 @@
 import * as React from "react";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { DashboardLayout } from "@/components/layout";
 import { CreateTranscriptionModal } from "@/features/transcription";
 import { DashboardContent, useDashboardModal } from "@/features/dashboard";
 import { useTranscriptions, useFolderItems, useFolder } from "@/hooks";
@@ -47,12 +46,24 @@ function DashboardPageContent() {
     const isLoading = folderId ? isLoadingFolder : isLoadingAll;
     const error = folderId ? null : allError;
 
+
+
     const handleUploadSuccess = async () => {
         await refetch();
     };
 
+    // Check for "action=new" in URL to open modal
+    React.useEffect(() => {
+        if (searchParams.get("action") === "new") {
+            openModal();
+            // Optional: Clean up URL without reload if desired, but "new" action works fine as persistent trigger until closed?
+            // Actually better to replace URL to avoid re-opening on refresh if we wanted, but for now simple is fine.
+            // Let's just open it.
+        }
+    }, [searchParams, openModal]);
+
     return (
-        <DashboardLayout onNewTranscription={openModal}>
+        <>
             <DashboardContent
                 items={items}
                 isLoading={isLoading}
@@ -72,7 +83,7 @@ function DashboardPageContent() {
                 onOptimisticUpdate={updateOptimisticItem}
                 onOptimisticRemove={removeOptimisticItem}
             />
-        </DashboardLayout>
+        </>
     );
 }
 

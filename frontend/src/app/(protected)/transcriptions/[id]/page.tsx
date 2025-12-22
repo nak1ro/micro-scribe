@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useParams } from "next/navigation";
-import { DashboardLayout } from "@/components/layout";
 import { TranscriptionViewerNew } from "@/features/transcription/components/TranscriptionViewerNew";
 
 export default function TranscriptionDetailPage() {
@@ -10,8 +9,6 @@ export default function TranscriptionDetailPage() {
     const jobId = params.id as string;
 
     return (
-        <DashboardLayout noPadding>
-            <TranscriptionViewerNew jobId={jobId} />
-        </DashboardLayout>
+        <TranscriptionViewerNew jobId={jobId} />
     );
 }

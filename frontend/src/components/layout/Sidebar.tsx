@@ -22,6 +22,7 @@ import {
     MoreVertical,
     Pencil,
     Trash2,
+    ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/context/SidebarContext";
@@ -58,6 +59,9 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
     const transcriptionsUsed = usage?.usage.jobsCleanedToday ?? 0;
     const transcriptionsLimit = usage?.limits.dailyTranscriptionLimit ?? 5;
 
+    // Check if we are in transcription view
+    const isTranscriptionView = pathname?.includes("/transcriptions/");
+
     const sidebarContent = (
         <div className="flex flex-col h-full">
             {/* Brand Header */}
@@ -74,22 +78,42 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
                             <Mic2 className="h-7 w-7 text-primary shrink-0" />
                             <span className="font-semibold text-base">MicroScribe</span>
                         </Link>
-                        <button
-                            onClick={toggleCollapse}
-                            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                            aria-label="Collapse sidebar"
-                        >
-                            <PanelLeftClose className="h-4 w-4" />
-                        </button>
+                        {isTranscriptionView ? (
+                            <Link
+                                href="/dashboard"
+                                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                                aria-label="Back to Dashboard"
+                            >
+                                <ArrowLeft className="h-4 w-4" />
+                            </Link>
+                        ) : (
+                            <button
+                                onClick={toggleCollapse}
+                                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                                aria-label="Collapse sidebar"
+                            >
+                                <PanelLeftClose className="h-4 w-4" />
+                            </button>
+                        )}
                     </>
                 ) : (
-                    <button
-                        onClick={toggleCollapse}
-                        className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                        aria-label="Expand sidebar"
-                    >
-                        <PanelLeftOpen className="h-5 w-5" />
-                    </button>
+                    isTranscriptionView ? (
+                        <Link
+                            href="/dashboard"
+                            className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                            aria-label="Back to Dashboard"
+                        >
+                            <ArrowLeft className="h-5 w-5" />
+                        </Link>
+                    ) : (
+                        <button
+                            onClick={toggleCollapse}
+                            className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                            aria-label="Expand sidebar"
+                        >
+                            <PanelLeftOpen className="h-5 w-5" />
+                        </button>
+                    )
                 )}
             </div>
 
@@ -101,7 +125,7 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
             )}
 
             {/* Usage*/}
-            <div className="px-4 py-2 space-y-2">
+            <div className="mt-5 px-4 py-2 space-y-2">
                 {!isPremium && (
                     <UsageIndicator
                         used={transcriptionsUsed}
@@ -244,23 +268,38 @@ function UsageIndicator({ used, limit, isCollapsed }: UsageIndicatorProps) {
         return (
             <div className="flex justify-center" title={`${used}/${limit} today`}>
                 <svg width="36" height="36" viewBox="0 0 36 36">
-                    <circle cx="18" cy="18" r={radius} fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
+                    <circle
+                        cx="18"
+                        cy="18"
+                        r={radius}
+                        fill="none"
+                        stroke="hsl(var(--muted))"
+                        strokeWidth="4"
+                    />
+
                     <circle
                         cx="18"
                         cy="18"
                         r={radius}
                         fill="none"
                         stroke="hsl(var(--primary))"
-                        strokeWidth="3"
+                        strokeWidth="4"
                         strokeLinecap="round"
                         strokeDasharray={circumference}
                         strokeDashoffset={strokeDashoffset}
                         transform="rotate(-90 18 18)"
                     />
-                    <text x="18" y="18" textAnchor="middle" dy="0.35em"
-                        className="text-[10px] fill-foreground font-medium">
+
+                    <text
+                        x="18"
+                        y="18"
+                        textAnchor="middle"
+                        dy="0.35em"
+                        className="text-sm fill-foreground font-medium"
+                    >
                         {used}
                     </text>
+
                 </svg>
             </div>
         );
