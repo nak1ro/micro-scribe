@@ -209,6 +209,7 @@ export function TranscriptionViewerNew({
                     src={data.audioUrl}
                     className="hidden"
                     aria-label="Transcription audio"
+                    crossOrigin="anonymous"
                 />
             )}
 
