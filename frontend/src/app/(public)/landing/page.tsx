@@ -1,13 +1,11 @@
-import { PublicLayout } from "@/components/layout";
+import {PublicLayout} from "@/components/layout";
 import {
     HeroSection,
-    SocialProofSection,
     ProblemSolutionSection,
     HowItWorksSection,
     FeaturesSection,
     UseCasesSection,
     PricingSection,
-    TestimonialsSection,
     WhisperReviewsSection,
     FAQSection,
     FinalCTASection,
@@ -17,22 +15,15 @@ import {
 export default function LandingPage() {
     return (
         <PublicLayout>
-            <HeroSection />
-            <SectionSeparator />
-            <PricingSection />
-            <SectionSeparator />
-            <HowItWorksSection />
-            <SectionSeparator />
-            <FeaturesSection />
-            <WhisperReviewsSection />
-            <SectionSeparator />
-            <UseCasesSection />
-            <SectionSeparator />
-            <ProblemSolutionSection />
-            <SectionSeparator />
-            <FinalCTASection />
-            <SectionSeparator />
-            <FAQSection />
+            <HeroSection/>
+            <ProblemSolutionSection/>
+            <HowItWorksSection/>
+            <PricingSection/>
+            <FeaturesSection/>
+            <WhisperReviewsSection/>
+            <UseCasesSection/>
+            <FAQSection/>
+            <FinalCTASection/>
         </PublicLayout>
     );
 }

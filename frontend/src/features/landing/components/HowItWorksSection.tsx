@@ -1,14 +1,14 @@
 import * as React from "react";
 import Link from "next/link";
-import { Upload, Sparkles, Download, ArrowRight, ChevronRight } from "lucide-react";
+import { Upload, Sparkles, Download, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Steps data - compact version
+// Steps data
 const steps = [
     {
         number: "1",
         title: "Upload",
-        description: "Drag & drop any audio or video file",
+        description: "Drag & drop any audio or video file. We support MP3, WAV, MP4, and 20+ formats.",
         icon: Upload,
         color: "from-violet-500 to-purple-600",
         bg: "bg-violet-500/10",
@@ -16,7 +16,7 @@ const steps = [
     {
         number: "2",
         title: "Transcribe",
-        description: "AI processes with speaker detection",
+        description: "Whisper AI processes your file with speaker detection and timestamps.",
         icon: Sparkles,
         color: "from-fuchsia-500 to-pink-600",
         bg: "bg-fuchsia-500/10",
@@ -24,7 +24,7 @@ const steps = [
     {
         number: "3",
         title: "Export",
-        description: "Download as TXT, SRT, DOCX or PDF",
+        description: "Download as TXT, SRT, DOCX, or PDF. Edit and share instantly.",
         icon: Download,
         color: "from-cyan-500 to-blue-600",
         bg: "bg-cyan-500/10",
@@ -33,120 +33,136 @@ const steps = [
 
 export function HowItWorksSection() {
     return (
-        <section id="how-it-works" className="relative py-20 scroll-mt-16 overflow-hidden">
+        <section id="how-it-works" className="relative py-24 scroll-mt-16 overflow-hidden">
             {/* Subtle background */}
-            <div className="absolute inset-0 bg-gradient-to-b from-muted/30 to-background" />
+            <div className="absolute inset-0 bg-gradient-to-b from-muted/20 to-background" />
 
-            <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-                {/* Header - compact */}
-                <div className="text-center mb-16">
+            <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+                {/* Header */}
+                <div className="text-center mb-20">
                     <span className="inline-block px-3 py-1 mb-4 text-xs font-medium text-primary bg-primary/10 rounded-full uppercase tracking-wider">
                         How It Works
                     </span>
                     <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
-                        Three simple steps
+                        Simple as 1-2-3
                     </h2>
                 </div>
 
-                {/* Horizontal Flow - Desktop */}
-                <div className="hidden md:flex items-stretch justify-center gap-0">
-                    {steps.map((step, index) => (
-                        <React.Fragment key={step.number}>
-                            {/* Step Card */}
-                            <div className="relative flex-1 max-w-xs group">
+                {/* Snake/Cascade Flow */}
+                <div className="relative">
+                    {/* SVG Curved Connectors */}
+                    <svg
+                        className="absolute inset-0 w-full h-full pointer-events-none hidden md:block"
+                        preserveAspectRatio="none"
+                    >
+                        <defs>
+                            <linearGradient id="connector-gradient-1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="rgb(139, 92, 246)" stopOpacity="0.5" />
+                                <stop offset="100%" stopColor="rgb(217, 70, 239)" stopOpacity="0.5" />
+                            </linearGradient>
+                            <linearGradient id="connector-gradient-2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="rgb(217, 70, 239)" stopOpacity="0.5" />
+                                <stop offset="100%" stopColor="rgb(6, 182, 212)" stopOpacity="0.5" />
+                            </linearGradient>
+                        </defs>
+                        {/* Curve from step 1 to step 2 */}
+                        <path
+                            d="M 200 80 Q 400 80, 400 180 Q 400 280, 600 280"
+                            fill="none"
+                            stroke="url(#connector-gradient-1)"
+                            strokeWidth="3"
+                            strokeDasharray="8 4"
+                            className="animate-pulse"
+                        />
+                        {/* Curve from step 2 to step 3 */}
+                        <path
+                            d="M 600 330 Q 400 330, 400 430 Q 400 530, 200 530"
+                            fill="none"
+                            stroke="url(#connector-gradient-2)"
+                            strokeWidth="3"
+                            strokeDasharray="8 4"
+                            className="animate-pulse"
+                        />
+                    </svg>
+
+                    {/* Step Cards - Staggered */}
+                    <div className="relative space-y-12 md:space-y-16">
+                        {steps.map((step, index) => (
+                            <div
+                                key={step.number}
+                                className={cn(
+                                    "relative",
+                                    // Stagger: left, right, left
+                                    index === 0 && "md:mr-auto md:ml-0",
+                                    index === 1 && "md:ml-auto md:mr-0",
+                                    index === 2 && "md:mr-auto md:ml-0",
+                                    "md:max-w-sm"
+                                )}
+                            >
                                 {/* Card */}
                                 <div className={cn(
-                                    "relative h-full p-8 rounded-3xl border border-border/50",
-                                    "bg-card hover:border-primary/30 transition-all duration-300",
-                                    "hover:shadow-lg hover:shadow-primary/5"
+                                    "relative p-6 rounded-2xl border border-border/50",
+                                    "bg-card shadow-sm hover:shadow-lg transition-all duration-300",
+                                    "hover:border-primary/30"
                                 )}>
-                                    {/* Number badge */}
+                                    {/* Number badge - positioned based on stagger */}
                                     <div className={cn(
-                                        "absolute -top-4 left-8 w-8 h-8 rounded-full",
+                                        "absolute -top-4 w-10 h-10 rounded-xl",
                                         "bg-gradient-to-br flex items-center justify-center",
-                                        "text-white text-sm font-bold shadow-lg",
-                                        step.color
+                                        "text-white text-lg font-bold shadow-lg",
+                                        step.color,
+                                        index === 1 ? "right-6" : "left-6"
                                     )}>
                                         {step.number}
                                     </div>
 
-                                    {/* Icon */}
-                                    <div className={cn(
-                                        "w-16 h-16 rounded-2xl flex items-center justify-center mb-6",
-                                        step.bg
-                                    )}>
-                                        <step.icon className={cn(
-                                            "w-8 h-8 text-transparent bg-clip-text bg-gradient-to-br",
-                                            step.color
-                                        )} style={{ stroke: "url(#gradient-" + step.number + ")" }} />
-                                        <svg width="0" height="0">
-                                            <defs>
-                                                <linearGradient id={`gradient-${step.number}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                                                    <stop offset="0%" stopColor={step.number === "1" ? "#8b5cf6" : step.number === "2" ? "#d946ef" : "#06b6d4"} />
-                                                    <stop offset="100%" stopColor={step.number === "1" ? "#9333ea" : step.number === "2" ? "#ec4899" : "#3b82f6"} />
-                                                </linearGradient>
-                                            </defs>
-                                        </svg>
+                                    <div className="flex items-start gap-4 mt-4">
+                                        {/* Icon */}
+                                        <div className={cn(
+                                            "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
+                                            step.bg
+                                        )}>
+                                            <step.icon className={cn(
+                                                "w-6 h-6",
+                                                step.number === "1" && "text-violet-500",
+                                                step.number === "2" && "text-fuchsia-500",
+                                                step.number === "3" && "text-cyan-500"
+                                            )} />
+                                        </div>
+
+                                        {/* Content */}
+                                        <div>
+                                            <h3 className="text-xl font-bold text-foreground mb-1">
+                                                {step.title}
+                                            </h3>
+                                            <p className="text-muted-foreground text-sm leading-relaxed">
+                                                {step.description}
+                                            </p>
+                                        </div>
                                     </div>
-
-                                    {/* Content */}
-                                    <h3 className="text-xl font-bold text-foreground mb-2">
-                                        {step.title}
-                                    </h3>
-                                    <p className="text-muted-foreground text-sm leading-relaxed">
-                                        {step.description}
-                                    </p>
                                 </div>
+
+                                {/* Mobile connector arrow */}
+                                {index < steps.length - 1 && (
+                                    <div className="md:hidden flex justify-center py-4">
+                                        <div className={cn(
+                                            "w-8 h-8 rounded-full flex items-center justify-center",
+                                            "bg-gradient-to-br",
+                                            index === 0 ? "from-violet-500 to-fuchsia-500" : "from-fuchsia-500 to-cyan-500"
+                                        )}>
+                                            <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M12 5v14M5 12l7 7 7-7" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-
-                            {/* Arrow connector */}
-                            {index < steps.length - 1 && (
-                                <div className="flex items-center px-2 text-muted-foreground/30">
-                                    <ChevronRight className="w-8 h-8" />
-                                </div>
-                            )}
-                        </React.Fragment>
-                    ))}
-                </div>
-
-                {/* Mobile - Vertical compact */}
-                <div className="md:hidden space-y-4">
-                    {steps.map((step, index) => (
-                        <div key={step.number} className="relative">
-                            {/* Connector line */}
-                            {index < steps.length - 1 && (
-                                <div className="absolute left-6 top-16 bottom-0 w-0.5 bg-gradient-to-b from-primary/30 to-transparent" />
-                            )}
-
-                            <div className="flex items-start gap-4">
-                                {/* Number + Icon */}
-                                <div className={cn(
-                                    "relative w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
-                                    "bg-gradient-to-br shadow-lg",
-                                    step.color
-                                )}>
-                                    <step.icon className="w-6 h-6 text-white" />
-                                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-background text-foreground text-xs font-bold flex items-center justify-center border border-border">
-                                        {step.number}
-                                    </span>
-                                </div>
-
-                                {/* Content */}
-                                <div className="pt-1">
-                                    <h3 className="text-lg font-bold text-foreground">
-                                        {step.title}
-                                    </h3>
-                                    <p className="text-muted-foreground text-sm">
-                                        {step.description}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
 
                 {/* CTA */}
-                <div className="text-center mt-16">
+                <div className="text-center mt-20">
                     <Link
                         href="/auth?mode=signup"
                         className={cn(
@@ -157,7 +173,7 @@ export function HowItWorksSection() {
                             "transition-all duration-300 hover:scale-105"
                         )}
                     >
-                        Get Started Free
+                        Start Transcribing
                         <ArrowRight className="w-4 h-4" />
                     </Link>
                 </div>
