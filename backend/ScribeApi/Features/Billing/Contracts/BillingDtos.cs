@@ -14,6 +14,9 @@ public record CheckoutSessionResponse(string SessionId, string Url);
 // Response with billing portal URL
 public record PortalSessionResponse(string Url);
 
+// Request to create a billing portal session
+public record CreatePortalSessionRequest(string? ReturnUrl = null);
+
 // Current subscription status for a user
 public record SubscriptionStatusDto(
     PlanType Plan,

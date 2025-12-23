@@ -9,23 +9,19 @@ public class CreateWebhookRequestValidator : AbstractValidator<CreateWebhookRequ
     {
         RuleFor(x => x.Url)
             .NotEmpty()
-            .Must(BeValidUrl)
-            .WithMessage("URL must be a valid HTTPS URL.");
+            .Must(BeAValidUrl)
+            .WithMessage("Url must be a valid absolute URL (http or https).");
 
         RuleFor(x => x.Secret)
             .NotEmpty()
-            .MinimumLength(16)
-            .WithMessage("Secret must be at least 16 characters.");
-
-        RuleFor(x => x.Events)
-            .NotEmpty()
-            .Must(events => events.All(e => WebhookEvents.All.Contains(e)))
-            .WithMessage($"Events must be one of: {string.Join(", ", WebhookEvents.All)}");
+            .MinimumLength(8)
+            .WithMessage("Secret must be at least 8 characters long.");
     }
 
-    private static bool BeValidUrl(string url)
+    private bool BeAValidUrl(string url)
     {
-        return Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps;
+        return Uri.TryCreate(url, UriKind.Absolute, out var uriResult)
+               && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
     }
 }
 
@@ -34,23 +30,19 @@ public class UpdateWebhookRequestValidator : AbstractValidator<UpdateWebhookRequ
     public UpdateWebhookRequestValidator()
     {
         RuleFor(x => x.Url)
-            .Must(BeValidUrl!)
-            .When(x => x.Url != null)
-            .WithMessage("URL must be a valid HTTPS URL.");
+            .Must(BeAValidUrl)
+            .When(x => !string.IsNullOrEmpty(x.Url))
+            .WithMessage("Url must be a valid absolute URL (http or https).");
 
         RuleFor(x => x.Secret)
-            .MinimumLength(16)
-            .When(x => x.Secret != null)
-            .WithMessage("Secret must be at least 16 characters.");
-
-        RuleFor(x => x.Events)
-            .Must(events => events!.All(e => WebhookEvents.All.Contains(e)))
-            .When(x => x.Events != null)
-            .WithMessage($"Events must be one of: {string.Join(", ", WebhookEvents.All)}");
+            .MinimumLength(8)
+            .When(x => !string.IsNullOrEmpty(x.Secret))
+            .WithMessage("Secret must be at least 8 characters long.");
     }
 
-    private static bool BeValidUrl(string url)
+    private bool BeAValidUrl(string? url)
     {
-        return Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps;
+        return Uri.TryCreate(url, UriKind.Absolute, out var uriResult)
+               && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
     }
 }

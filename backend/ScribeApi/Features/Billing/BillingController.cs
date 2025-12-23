@@ -43,13 +43,13 @@ public class BillingController : ControllerBase
     // Create a billing portal session for subscription management
     [HttpPost("portal")]
     public async Task<ActionResult<PortalSessionResponse>> CreatePortalSession(
-        [FromQuery] string? returnUrl,
+        [FromQuery] CreatePortalSessionRequest request,
         CancellationToken ct)
     {
         var userId = User.GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        var result = await _billingService.CreatePortalSessionAsync(userId, returnUrl, ct);
+        var result = await _billingService.CreatePortalSessionAsync(userId, request.ReturnUrl, ct);
         return Ok(result);
     }
 
