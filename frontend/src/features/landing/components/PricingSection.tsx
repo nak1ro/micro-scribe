@@ -3,27 +3,31 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-    Infinity,
+    Infinite,
     Upload,
-    Sparkles,
-    Zap,
+    Sparks,
+    Flash,
     Clock,
     CheckCircle,
-} from "lucide-react";
+    Download,
+    Group,
+} from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
 import { pricingContent } from "../data/content";
 import { PricingToggle } from "@/features/pricing/components/PricingToggle";
 import { BillingInterval } from "@/features/pricing/data";
 
-// Icon mapping for features
+// Icon mapping for features - using Iconoir icons
 const iconMap: Record<string, React.ElementType> = {
-    Infinity,
+    Infinity: Infinite,
     Upload,
-    Sparkles,
-    Zap,
+    Sparkles: Sparks,
+    Zap: Flash,
     Clock,
     CheckCircle,
+    Download,
+    Users: Group,
 };
 
 // Hook for intersection observer
@@ -190,20 +194,14 @@ export function PricingSection() {
                                                         )}
                                                     >
                                                         <Icon
-                                                            className={cn(
-                                                                "h-5 w-5",
-                                                                "text-primary"
-                                                            )}
+                                                            width={24}
+                                                            height={24}
+                                                            className="text-primary"
                                                         />
                                                     </div>
-                                                    <div className="flex-1">
-                                                        <p className="text-sm font-semibold text-foreground">
-                                                            {feature.title}
-                                                        </p>
-                                                        <p className="text-xs text-muted-foreground mt-0.5">
-                                                            {feature.description}
-                                                        </p>
-                                                    </div>
+                                                    <p className="flex-1 text-sm text-foreground">
+                                                        {feature.text}
+                                                    </p>
                                                 </div>
                                             );
                                         })}

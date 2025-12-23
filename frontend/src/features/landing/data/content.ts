@@ -218,18 +218,19 @@ export const pricingContent = {
             features: [
                 {
                     icon: "Upload",
-                    title: `${planLimits.free.dailyTranscriptionLimit} Free Uploads Daily`,
-                    description: `Upload ${planLimits.free.dailyTranscriptionLimit} files per day, up to ${planLimits.free.maxMinutesPerFile} minutes each`,
-                },
-                {
-                    icon: "CheckCircle",
-                    title: "100% Free Access",
-                    description: "Try AI transcription with basic limits, no credit card required",
+                    text: "3 files per day, up to 10 minutes each",
                 },
                 {
                     icon: "Clock",
-                    title: "Standard Processing",
-                    description: "Free users have standard priority, transcription may take a bit longer",
+                    text: "1 file at a time, lower priority queue",
+                },
+                {
+                    icon: "Download",
+                    text: "Basic export (TXT only)",
+                },
+                {
+                    icon: "CheckCircle",
+                    text: "Free access — no credit card required",
                 },
             ],
             cta: {
@@ -248,23 +249,27 @@ export const pricingContent = {
             features: [
                 {
                     icon: "Infinity",
-                    title: "Unlimited Transcriptions",
-                    description: "No daily limits, transcribe as much as you need",
+                    text: "Unlimited transcriptions, 20+ files at once",
                 },
                 {
                     icon: "Upload",
-                    title: "Extended File Uploads",
-                    description: `Upload files up to ${planLimits.pro.maxMinutesPerFile / 60} hours or ${planLimits.pro.maxFileSizeMB / 1024}GB and process ${planLimits.pro.maxFilesPerUpload} files at once`,
-                },
-                {
-                    icon: "Sparkles",
-                    title: "Advanced AI Features",
-                    description: "50+ languages, bulk exports, speaker recognition & more",
+                    text: "Files up to 3 hours / 2GB",
                 },
                 {
                     icon: "Zap",
-                    title: "Priority Processing",
-                    description: "Get lightning-fast transcriptions, always at the front of the queue",
+                    text: "Priority queue — faster processing",
+                },
+                {
+                    icon: "Download",
+                    text: "Multi-format export (TXT, DOCX, SRT, CSV, MP3)",
+                },
+                {
+                    icon: "Users",
+                    text: "Speaker recognition & timestamps",
+                },
+                {
+                    icon: "Sparkles",
+                    text: "AI summaries & translations",
                 },
             ],
             cta: {
