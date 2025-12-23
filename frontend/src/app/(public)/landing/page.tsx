@@ -10,6 +10,7 @@ import {
     FAQSection,
     FinalCTASection,
     LandingBackground,
+    TestimonialsSection,
 } from "@/features/landing";
 
 export default function LandingPage() {

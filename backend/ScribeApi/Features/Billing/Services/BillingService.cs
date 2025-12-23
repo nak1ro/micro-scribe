@@ -69,8 +69,7 @@ public class BillingService : IBillingService
                 PlanType.Free,
                 SubscriptionStatus.Active,
                 null,
-                false,
-                null);
+                false);
         }
 
         // Get active subscription from DB
@@ -85,8 +84,7 @@ public class BillingService : IBillingService
                 user.Plan,
                 SubscriptionStatus.Active,
                 null,
-                false,
-                user.StripeCustomerId);
+                false);
         }
 
         // Check if cancel at period end from Stripe
@@ -94,21 +92,19 @@ public class BillingService : IBillingService
         
         if (string.IsNullOrEmpty(subscription.StripeSubscriptionId))
             return new SubscriptionStatusDto(
-                subscription.Plan,
+                user.Plan,
                 subscription.Status,
                 subscription.CurrentPeriodEndUtc,
-                cancelAtPeriodEnd,
-                user.StripeCustomerId);
+                cancelAtPeriodEnd);
         
         var stripeSubscription = await _stripeClient.GetSubscriptionAsync(subscription.StripeSubscriptionId, ct);
         cancelAtPeriodEnd = stripeSubscription?.CancelAtPeriodEnd ?? false;
 
         return new SubscriptionStatusDto(
-            subscription.Plan,
+            user.Plan,
             subscription.Status,
             subscription.CurrentPeriodEndUtc,
-            cancelAtPeriodEnd,
-            user.StripeCustomerId);
+            cancelAtPeriodEnd);
     }
 
     public async Task<string> EnsureStripeCustomerAsync(string userId, CancellationToken ct = default)
@@ -118,16 +114,19 @@ public class BillingService : IBillingService
             .FirstOrDefaultAsync(u => u.Id == userId, ct)
             ?? throw new InvalidOperationException($"User {userId} not found");
 
-        if (!string.IsNullOrEmpty(user.StripeCustomerId))
+        // Check if user already has a subscription with StripeCustomerId
+        var existingSubscription = await _context.Subscriptions
+            .Where(s => s.UserId == userId && !string.IsNullOrEmpty(s.StripeCustomerId))
+            .OrderByDescending(s => s.CreatedAtUtc)
+            .FirstOrDefaultAsync(ct);
+
+        if (existingSubscription != null)
         {
-            return user.StripeCustomerId;
+            return existingSubscription.StripeCustomerId;
         }
 
         // Create new Stripe customer
         var customer = await _stripeClient.CreateCustomerAsync(user.Email!, user.UserName, ct);
-
-        user.StripeCustomerId = customer.Id;
-        await _context.SaveChangesAsync(ct);
 
         _logger.LogInformation("Created Stripe customer {CustomerId} for user {UserId}", customer.Id, userId);
 

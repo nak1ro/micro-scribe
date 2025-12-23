@@ -22,8 +22,7 @@ public record SubscriptionStatusDto(
     PlanType Plan,
     SubscriptionStatus Status,
     DateTime? CurrentPeriodEnd,
-    bool CancelAtPeriodEnd,
-    string? StripeCustomerId
+    bool CancelAtPeriodEnd
 );
 
 // Publishable key for frontend Stripe initialization

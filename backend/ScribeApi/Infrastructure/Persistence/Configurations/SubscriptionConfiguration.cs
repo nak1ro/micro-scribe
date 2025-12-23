@@ -12,10 +12,6 @@ public class SubscriptionConfiguration : IEntityTypeConfiguration<Subscription>
 
         builder.HasKey(x => x.Id);
 
-        builder.Property(x => x.Plan)
-            .HasConversion<string>()
-            .HasMaxLength(50);
-
         builder.Property(x => x.Status)
             .HasConversion<string>()
             .HasMaxLength(50);

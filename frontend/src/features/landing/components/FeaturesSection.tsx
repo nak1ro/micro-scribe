@@ -171,6 +171,7 @@ const secondaryFeatures = [
 
 export function FeaturesSection() {
     const [isExpanded, setIsExpanded] = React.useState(false);
+    const [showAllFeatures, setShowAllFeatures] = React.useState(false);
 
     return (
         <section className="relative py-24 overflow-hidden">
@@ -343,26 +344,52 @@ export function FeaturesSection() {
                     </div>
                 </div>
 
-                {/* Secondary Features - Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    {secondaryFeatures.map((feature, index) => (
-                        <div
-                            key={index}
-                            className={cn(
-                                "group flex flex-col items-center text-center p-6 rounded-xl",
-                                "bg-card border border-border",
-                                "hover:border-primary/30 hover:bg-primary/5",
-                                "transition-all duration-300"
-                            )}
-                        >
-                            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                                <feature.icon className="w-6 h-6 text-primary" />
+                {/* Secondary Features - Grid with collapse */}
+                <div className="mt-12">
+                    <div className="text-center mb-6">
+                        <h3 className="text-xl font-semibold text-foreground">
+                            And much more...
+                        </h3>
+                    </div>
+
+                    {/* Always visible features */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                        {secondaryFeatures.slice(0, showAllFeatures ? secondaryFeatures.length : 4).map((feature, index) => (
+                            <div
+                                key={index}
+                                className={cn(
+                                    "group flex flex-col items-center text-center p-6 rounded-xl",
+                                    "bg-card border border-border",
+                                    "hover:border-primary/30 hover:bg-primary/5",
+                                    "transition-all duration-300"
+                                )}
+                            >
+                                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                                    <feature.icon className="w-6 h-6 text-primary" />
+                                </div>
+                                <span className="text-sm font-medium text-foreground">
+                                    {feature.text}
+                                </span>
                             </div>
-                            <span className="text-sm font-medium text-foreground">
-                                {feature.text}
-                            </span>
+                        ))}
+                    </div>
+
+                    {/* Show more button */}
+                    {secondaryFeatures.length > 4 && (
+                        <div className="text-center mt-6">
+                            <button
+                                onClick={() => setShowAllFeatures(!showAllFeatures)}
+                                className={cn(
+                                    "inline-flex items-center gap-2 px-4 py-2 rounded-lg",
+                                    "text-sm font-medium text-primary",
+                                    "bg-primary/10 hover:bg-primary/20",
+                                    "transition-colors"
+                                )}
+                            >
+                                {showAllFeatures ? "Show less" : `+ ${secondaryFeatures.length - 4} more features`}
+                            </button>
                         </div>
-                    ))}
+                    )}
                 </div>
             </div>
         </section>

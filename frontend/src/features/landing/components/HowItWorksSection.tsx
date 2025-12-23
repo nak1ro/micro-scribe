@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 import Link from "next/link";
 import { Upload, Sparkles, Download, ArrowRight } from "lucide-react";
@@ -31,10 +33,37 @@ const steps = [
     },
 ];
 
-export function HowItWorksSection() {
-    return (
-        <section id="how-it-works" className="relative py-24 scroll-mt-16 overflow-hidden">
+// Hook for intersection observer
+function useInView(threshold = 0.3) {
+    const ref = React.useRef<HTMLDivElement>(null);
+    const [isInView, setIsInView] = React.useState(false);
 
+    React.useEffect(() => {
+        const element = ref.current;
+        if (!element) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setIsInView(true);
+                    observer.disconnect();
+                }
+            },
+            { threshold }
+        );
+
+        observer.observe(element);
+        return () => observer.disconnect();
+    }, [threshold]);
+
+    return { ref, isInView };
+}
+
+export function HowItWorksSection() {
+    const { ref: sectionRef, isInView } = useInView(0.2);
+
+    return (
+        <section id="how-it-works" className="relative py-24 scroll-mt-16 overflow-hidden" ref={sectionRef}>
             <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
                 {/* Header */}
                 <div className="text-center mb-20">
@@ -70,7 +99,10 @@ export function HowItWorksSection() {
                             stroke="url(#connector-gradient-1)"
                             strokeWidth="3"
                             strokeDasharray="8 4"
-                            className="animate-pulse"
+                            className={cn(
+                                "transition-all duration-1000",
+                                isInView ? "opacity-100" : "opacity-0"
+                            )}
                         />
                         {/* Curve from step 2 to step 3 */}
                         <path
@@ -79,7 +111,10 @@ export function HowItWorksSection() {
                             stroke="url(#connector-gradient-2)"
                             strokeWidth="3"
                             strokeDasharray="8 4"
-                            className="animate-pulse"
+                            className={cn(
+                                "transition-all duration-1000 delay-500",
+                                isInView ? "opacity-100" : "opacity-0"
+                            )}
                         />
                     </svg>
 
@@ -89,21 +124,26 @@ export function HowItWorksSection() {
                             <div
                                 key={step.number}
                                 className={cn(
-                                    "relative",
+                                    "relative transition-all duration-700",
                                     // Stagger: left, right, left
                                     index === 0 && "md:mr-auto md:ml-0",
                                     index === 1 && "md:ml-auto md:mr-0",
                                     index === 2 && "md:mr-auto md:ml-0",
-                                    "md:max-w-sm"
+                                    "md:max-w-sm",
+                                    // Animation on scroll
+                                    isInView
+                                        ? "opacity-100 translate-y-0"
+                                        : "opacity-0 translate-y-8"
                                 )}
+                                style={{ transitionDelay: `${index * 200}ms` }}
                             >
                                 {/* Card */}
                                 <div className={cn(
                                     "relative p-6 rounded-2xl border border-border/50",
                                     "bg-card shadow-sm hover:shadow-lg transition-all duration-300",
-                                    "hover:border-primary/30"
+                                    "hover:border-primary/30 hover:scale-[1.02]"
                                 )}>
-                                    {/* Number badge - positioned based on stagger */}
+                                    {/* Number badge */}
                                     <div className={cn(
                                         "absolute -top-4 w-10 h-10 rounded-xl",
                                         "bg-gradient-to-br flex items-center justify-center",
@@ -160,7 +200,10 @@ export function HowItWorksSection() {
                 </div>
 
                 {/* CTA */}
-                <div className="text-center mt-20">
+                <div className={cn(
+                    "text-center mt-20 transition-all duration-700 delay-700",
+                    isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                )}>
                     <Link
                         href="/auth?mode=signup"
                         className={cn(

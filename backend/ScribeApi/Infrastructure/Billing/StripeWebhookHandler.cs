@@ -73,9 +73,7 @@ public class StripeWebhookHandler
 
         _logger.LogInformation("Checkout completed for customer {CustomerId}", session.CustomerId);
 
-        var user = await _context.Users
-            .OfType<ApplicationUser>()
-            .FirstOrDefaultAsync(u => u.StripeCustomerId == session.CustomerId, ct);
+        var user = await FindUserByCustomerIdAsync(session.CustomerId, ct);
 
         if (user == null)
         {
@@ -112,7 +110,6 @@ public class StripeWebhookHandler
         }
 
         localSub.Status = MapStripeStatus(stripeSub.Status);
-        localSub.Plan = PlanType.Pro;
         var firstItem = stripeSub.Items.Data.FirstOrDefault();
         if (firstItem != null)
         {
@@ -180,18 +177,20 @@ public class StripeWebhookHandler
         }
     }
 
+    // Find user by Stripe customer ID via the Subscription entity
     private async Task<ApplicationUser?> FindUserByCustomerIdAsync(string customerId, CancellationToken ct)
     {
-        var user = await _context.Users
-            .OfType<ApplicationUser>()
-            .FirstOrDefaultAsync(u => u.StripeCustomerId == customerId, ct);
+        var subscription = await _context.Subscriptions
+            .Include(s => s.User)
+            .FirstOrDefaultAsync(s => s.StripeCustomerId == customerId, ct);
 
-        if (user == null)
+        if (subscription?.User == null)
         {
             _logger.LogWarning("No user found for Stripe customer {CustomerId}", customerId);
+            return null;
         }
 
-        return user;
+        return subscription.User;
     }
 
     private static SubscriptionStatus MapStripeStatus(string status)

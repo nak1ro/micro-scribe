@@ -24,9 +24,6 @@ public class Subscription
     // FK to owning user
     public required string UserId { get; set; }
 
-    // Subscription plan type
-    public PlanType Plan { get; set; } = PlanType.Free;
-
     // Stripe customer identifier
     public required string StripeCustomerId { get; set; }
 
