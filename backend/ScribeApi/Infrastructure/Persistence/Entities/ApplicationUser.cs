@@ -4,6 +4,9 @@ namespace ScribeApi.Infrastructure.Persistence.Entities;
 
 public class ApplicationUser : IdentityUser
 {
+    // Stripe customer identifier for billing
+    public string? StripeCustomerId { get; set; }
+
     // User's subscription plan type
     public PlanType Plan { get; set; } = PlanType.Free;
 

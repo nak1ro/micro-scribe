@@ -191,6 +191,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IPlanResolver, PlanResolver>();
         services.AddSingleton<IPlanGuard, PlanGuard>();
 
+        // Billing
+        services.AddBilling(configuration);
+
         return services;
     }
 }
