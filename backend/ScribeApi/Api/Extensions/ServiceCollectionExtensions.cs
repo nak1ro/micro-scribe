@@ -21,6 +21,7 @@ using ScribeApi.Features.Uploads; // Added
 using ScribeApi.Features.Transcriptions.Contracts;
 using ScribeApi.Features.Transcriptions.Services;
 using ScribeApi.Features.Uploads.Contracts;
+using ScribeApi.Features.Uploads.Services;
 using ScribeApi.Features.Webhooks.Contracts;
 using ScribeApi.Features.Webhooks.Services;
 using ScribeApi.Features.Usage.Services;

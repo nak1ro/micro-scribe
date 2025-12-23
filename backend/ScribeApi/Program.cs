@@ -5,6 +5,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Services
 builder.Services.AddApiServices(builder.Configuration);
+builder.Services.AddRateLimiting(builder.Configuration);
 
 var app = builder.Build();
 
@@ -17,7 +18,9 @@ app.UseHttpsRedirection();
 
 app.UseRouting();
 
-app.UseCors("LocalhostPolicy"); 
+app.UseCors("LocalhostPolicy");
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();

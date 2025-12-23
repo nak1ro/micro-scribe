@@ -10,8 +10,9 @@ using ScribeApi.Core.Storage;
 using ScribeApi.Infrastructure.BackgroundJobs;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
+using ScribeApi.Features.Uploads.Contracts;
 
-namespace ScribeApi.Features.Uploads.Contracts;
+namespace ScribeApi.Features.Uploads.Services;
 
 public class UploadService : IUploadService
 {

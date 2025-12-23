@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using ScribeApi.Api.Extensions;
 using ScribeApi.Features.Auth.Contracts;
 using ScribeApi.Shared.Extensions;
 
@@ -7,6 +9,7 @@ namespace ScribeApi.Features.Auth;
 
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;

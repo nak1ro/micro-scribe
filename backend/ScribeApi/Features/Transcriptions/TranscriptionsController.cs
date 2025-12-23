@@ -1,6 +1,8 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using ScribeApi.Api.Extensions;
 using ScribeApi.Features.Media.Contracts;
 using ScribeApi.Features.Transcriptions.Contracts;
 using ScribeApi.Features.Transcriptions.Services;
@@ -13,6 +15,7 @@ namespace ScribeApi.Features.Transcriptions;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
+[EnableRateLimiting(RateLimitingExtensions.TranscriptionPolicy)]
 public class TranscriptionsController : ControllerBase
 {
     private readonly ITranscriptionJobService _jobService;

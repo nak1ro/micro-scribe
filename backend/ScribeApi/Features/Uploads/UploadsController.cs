@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using ScribeApi.Api.Extensions;
 using ScribeApi.Api.Filters;
 using ScribeApi.Features.Uploads.Contracts;
 using ScribeApi.Shared.Extensions;
@@ -9,6 +11,7 @@ namespace ScribeApi.Features.Uploads;
 [Authorize]
 [ApiController]
 [Route("api/uploads/sessions")]
+[EnableRateLimiting(RateLimitingExtensions.UploadPolicy)]
 public class UploadsController : ControllerBase
 {
     private readonly IUploadService _uploadService;
