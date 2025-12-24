@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowRight, Zap, Globe, Sparkles, X, Check } from "lucide-react";
+import { ArrowRight, Flash, Globe, Sparks, Xmark, Check } from "iconoir-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -68,9 +68,9 @@ function useCountUp(end: number, duration: number = 1500, isInView: boolean, suf
 
 // Bold statistics that grab attention
 const stats = [
-    { value: 98.5, suffix: "%", label: "Accuracy", icon: Sparkles },
+    { value: 98.5, suffix: "%", label: "Accuracy", icon: Sparks },
     { value: 100, suffix: "+", label: "Languages", icon: Globe },
-    { value: 5, suffix: "x", label: "Faster", icon: Zap },
+    { value: 5, suffix: "x", label: "Faster", icon: Flash },
 ];
 
 // The transformation - what we solve
@@ -117,11 +117,12 @@ function AnimatedStat({
             className={cn(
                 "relative group text-center p-8 rounded-2xl",
                 "bg-muted/30 backdrop-blur-sm border border-border",
-                "hover:bg-muted/50 hover:border-primary/30",
-                "transition-all duration-700",
+                "hover-subtle",
                 isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             )}
-            style={{ transitionDelay: `${delay}ms` }}
+            style={{
+                transition: `opacity 700ms ${delay}ms, transform 700ms ${delay}ms`
+            }}
         >
             <div className="relative">
                 <Icon className="w-8 h-8 text-primary mx-auto mb-4" />
@@ -156,7 +157,7 @@ export function ProblemSolutionSection() {
                     <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 tracking-tight">
                         Stop wasting time on
                         <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/65">
                             manual transcription
                         </span>
                     </h2>
@@ -187,7 +188,7 @@ export function ProblemSolutionSection() {
                 >
                     {/* Connection arrow between boxes */}
                     <div className="hidden md:flex absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-xl shadow-primary/30 animate-pulse">
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary/65 flex items-center justify-center shadow-xl shadow-primary/30 animate-pulse">
                             <ArrowRight className="w-7 h-7 text-primary-foreground" />
                         </div>
                     </div>
@@ -197,13 +198,13 @@ export function ProblemSolutionSection() {
                         <div className="relative p-8 rounded-2xl bg-gradient-to-br from-destructive/5 to-destructive/10 border border-destructive/20 overflow-hidden">
                             {/* Decorative X pattern */}
                             <div className="absolute top-4 right-4 opacity-10">
-                                <X className="w-24 h-24 text-destructive" strokeWidth={1} />
+                                <Xmark className="w-24 h-24 text-destructive" strokeWidth={1} />
                             </div>
 
                             <div className="relative">
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center">
-                                        <X className="w-5 h-5 text-destructive" />
+                                        <Xmark className="w-5 h-5 text-destructive" />
                                     </div>
                                     <h3 className="text-2xl font-bold text-foreground">
                                         {transformation.before.title}
@@ -221,7 +222,7 @@ export function ProblemSolutionSection() {
                                             style={{ transitionDelay: `${700 + i * 100}ms` }}
                                         >
                                             <span className="w-6 h-6 rounded-full bg-destructive/20 flex items-center justify-center shrink-0">
-                                                <X className="w-3 h-3 text-destructive" />
+                                                <Xmark className="w-3 h-3 text-destructive" />
                                             </span>
                                             <span className="text-lg text-muted-foreground line-through decoration-destructive/30">
                                                 {item}
@@ -274,7 +275,7 @@ export function ProblemSolutionSection() {
 
                     {/* Mobile arrow */}
                     <div className="md:hidden flex justify-center py-6">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg rotate-90">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/65 flex items-center justify-center shadow-lg rotate-90">
                             <ArrowRight className="w-5 h-5 text-primary-foreground" />
                         </div>
                     </div>
@@ -292,15 +293,15 @@ export function ProblemSolutionSection() {
                         href="/auth?mode=signup"
                         className={cn(
                             "inline-flex items-center gap-2 px-8 py-4 rounded-full",
-                            "bg-gradient-to-r from-primary to-secondary",
+                            "bg-gradient-to-r from-primary to-primary/65",
                             "text-primary-foreground font-semibold text-lg",
-                            "hover:from-primary/90 hover:to-secondary/90",
                             "shadow-lg shadow-primary/30",
-                            "transition-all duration-300 hover:scale-105"
+                            "hover-glow",
+                            "group"
                         )}
                     >
                         Start Transcribing Free
-                        <ArrowRight className="w-5 h-5" />
+                        <ArrowRight className="w-5 h-5 hover-icon-arrow" />
                     </Link>
                     <p className="mt-4 text-muted-foreground text-sm">
                         No credit card required • 10 free transcriptions daily

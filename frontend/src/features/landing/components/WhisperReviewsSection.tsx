@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { Quote } from "lucide-react";
+import { QuoteMessage } from "iconoir-react";
 
 // Hook for intersection observer
 function useInView(threshold = 0.15) {
@@ -171,7 +171,7 @@ export function WhisperReviewsSection() {
                     <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4 tracking-tight">
                         What developers say about
                         <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/65">
                             Whisper AI
                         </span>
                     </h2>
@@ -188,14 +188,15 @@ export function WhisperReviewsSection() {
                             className={cn(
                                 "break-inside-avoid p-6 rounded-2xl",
                                 "bg-muted/30 backdrop-blur-sm border border-border",
-                                "hover:bg-muted/50 hover:border-border/80",
-                                "transition-all duration-700",
+                                "hover-subtle",
                                 isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                             )}
-                            style={{ transitionDelay: `${200 + index * 100}ms` }}
+                            style={{
+                                transition: `opacity 700ms ${200 + index * 100}ms, transform 700ms ${200 + index * 100}ms`
+                            }}
                         >
                             {/* Quote icon */}
-                            <Quote className="w-8 h-8 text-primary/50 mb-4" />
+                            <QuoteMessage className="w-8 h-8 text-primary/50 mb-4" />
 
                             {/* Quote text */}
                             <blockquote className={cn(
@@ -209,7 +210,7 @@ export function WhisperReviewsSection() {
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     {/* Avatar */}
-                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-primary-foreground font-medium text-sm">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/65 flex items-center justify-center text-primary-foreground font-medium text-sm">
                                         {review.author.charAt(0).toUpperCase()}
                                     </div>
                                     <div>

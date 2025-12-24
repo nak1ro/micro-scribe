@@ -139,8 +139,8 @@ export function SocialProofSection() {
                             key={index}
                             className={cn(
                                 "flex items-center gap-2 px-4 py-2",
-                                "text-muted-foreground/60 hover:text-muted-foreground",
-                                "transition-all duration-700",
+                                "hover-fade",
+                                "transition-transform duration-700",
                                 isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
                             )}
                             style={{ transitionDelay: `${100 + index * 80}ms` }}

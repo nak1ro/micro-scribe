@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, Sparkles, Wand2, FileText, Clock, Users, Languages } from "lucide-react";
+import { Check, Sparks, MagicWand, Page, Clock, Group, Language } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
@@ -161,12 +161,12 @@ const POPULAR_COUNT = 15;
 
 // Secondary features - checklist style
 const secondaryFeatures = [
-    { icon: Sparkles, text: "AI-powered summaries" },
-    { icon: Wand2, text: "Automatic punctuation" },
-    { icon: FileText, text: "Searchable transcripts" },
+    { icon: Sparks, text: "AI-powered summaries" },
+    { icon: MagicWand, text: "Automatic punctuation" },
+    { icon: Page, text: "Searchable transcripts" },
     { icon: Clock, text: "Real-time processing" },
-    { icon: Users, text: "Team collaboration" },
-    { icon: Languages, text: "Translation to 30+ languages" },
+    { icon: Group, text: "Team collaboration" },
+    { icon: Language, text: "Translation to 30+ languages" },
 ];
 
 export function FeaturesSection() {
@@ -256,7 +256,7 @@ export function FeaturesSection() {
                                 {/* Floating decoration */}
                                 <div className={cn(
                                     "absolute -z-10 w-full h-full rounded-2xl",
-                                    "bg-gradient-to-br from-primary/20 to-secondary/20",
+                                    "bg-gradient-to-br from-primary/20 to-primary/10",
                                     index % 2 === 0 ? "-bottom-4 -right-4" : "-bottom-4 -left-4"
                                 )} />
                             </div>
@@ -283,8 +283,7 @@ export function FeaturesSection() {
                                 className={cn(
                                     "flex items-center gap-2 px-3 py-2 rounded-lg",
                                     "bg-card border border-border",
-                                    "hover:border-primary/30 hover:bg-primary/5",
-                                    "transition-all duration-300"
+                                    "hover-subtle"
                                 )}
                             >
                                 <span className="text-lg">{lang.emoji}</span>
@@ -360,11 +359,10 @@ export function FeaturesSection() {
                                 className={cn(
                                     "group flex flex-col items-center text-center p-6 rounded-xl",
                                     "bg-card border border-border",
-                                    "hover:border-primary/30 hover:bg-primary/5",
-                                    "transition-all duration-300"
+                                    "hover-subtle"
                                 )}
                             >
-                                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 hover-icon-pop">
                                     <feature.icon className="w-6 h-6 text-primary" />
                                 </div>
                                 <span className="text-sm font-medium text-foreground">

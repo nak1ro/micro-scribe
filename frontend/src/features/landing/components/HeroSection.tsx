@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowRight, Sparkles, Play, Pause } from "lucide-react";
+import { ArrowRight, Sparks, PlaySolid, PauseSolid } from "iconoir-react";
 import { Button } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
@@ -67,7 +67,7 @@ export function HeroSection() {
                         mounted ? "opacity-80 translate-y-0" : "opacity-0 translate-y-4"
                     )}
                 >
-                    <Sparkles className="h-4 w-4" />
+                    <Sparks className="h-4 w-4" />
                     <span>Powered by Whisper AI</span>
                 </div>
 
@@ -105,11 +105,19 @@ export function HeroSection() {
                         mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                     )}
                 >
-                    <Link href="/auth?mode=signup">
-                        <Button size="lg" className="text-base px-8 h-12 gap-2 group">
-                            Start transcribing
-                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                        </Button>
+                    <Link
+                        href="/auth?mode=signup"
+                        className={cn(
+                            "inline-flex items-center gap-2 px-8 py-3 rounded-full",
+                            "bg-gradient-to-r from-primary to-primary/65",
+                            "text-white font-semibold text-base",
+                            "shadow-lg shadow-primary/25",
+                            "hover-glow",
+                            "group"
+                        )}
+                    >
+                        Start transcribing
+                        <ArrowRight className="h-4 w-4 hover-icon-arrow" />
                     </Link>
                     <span className="text-sm text-muted-foreground">
                         Free to start · No credit card
@@ -138,9 +146,9 @@ export function HeroSection() {
                                 )}
                             >
                                 {isPlaying ? (
-                                    <Pause className="w-4 h-4" />
+                                    <PauseSolid className="w-4 h-4" />
                                 ) : (
-                                    <Play className="w-4 h-4 ml-0.5" />
+                                    <PlaySolid className="w-4 h-4 ml-0.5" />
                                 )}
                             </button>
 

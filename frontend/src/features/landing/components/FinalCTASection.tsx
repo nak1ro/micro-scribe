@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Sparkles, Shield, CreditCard, ArrowRight, Zap } from "lucide-react";
+import { Sparks, Shield, CreditCard, ArrowRight, Flash } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
 import { finalCTAContent } from "../data/content";
@@ -62,7 +62,7 @@ export function FinalCTASection() {
         <section className="relative min-h-screen flex items-center py-12 overflow-hidden" ref={ref}>
             {/* Enhanced gradient background */}
             <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] rounded-full bg-gradient-to-r from-primary/20 via-accent/30 to-secondary/20 blur-3xl" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] rounded-full bg-gradient-to-r from-primary/20 via-primary/15 to-primary/10 blur-3xl" />
                 <div className="absolute top-1/3 right-1/4 w-[300px] h-[300px] rounded-full bg-primary/10 blur-2xl animate-pulse" />
                 <div className="absolute bottom-1/3 left-1/4 w-[250px] h-[250px] rounded-full bg-secondary/10 blur-2xl animate-pulse" style={{ animationDelay: "1s" }} />
             </div>
@@ -80,12 +80,12 @@ export function FinalCTASection() {
                 <div
                     className={cn(
                         "inline-flex items-center gap-2 px-4 py-1.5 mb-8 text-sm font-medium rounded-full",
-                        "bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20",
+                        "bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20",
                         "transition-all duration-700",
                         isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
                     )}
                 >
-                    <Zap className="w-4 h-4 text-primary" />
+                    <Flash className="w-4 h-4 text-primary" />
                     <span className="text-primary">Get started in 30 seconds</span>
                 </div>
 
@@ -124,15 +124,15 @@ export function FinalCTASection() {
                             size="lg"
                             className={cn(
                                 "text-lg px-10 py-7 h-auto",
-                                "bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90",
-                                "shadow-xl shadow-primary/30 hover:shadow-2xl hover:shadow-primary/40",
-                                "transition-all duration-300 hover:scale-105",
+                                "bg-gradient-to-r from-primary to-primary/65",
+                                "shadow-xl shadow-primary/30",
+                                "hover-glow",
                                 "group"
                             )}
                         >
-                            <Sparkles className="h-5 w-5 mr-2 group-hover:rotate-12 transition-transform" />
+                            <Sparks className="h-5 w-5 mr-2 hover-icon-spin" />
                             {finalCTAContent.cta.label}
-                            <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                            <ArrowRight className="h-5 w-5 ml-2 hover-icon-arrow" />
                         </Button>
                     </Link>
                 </div>

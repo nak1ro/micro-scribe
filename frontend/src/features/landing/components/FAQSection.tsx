@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown } from "lucide-react";
+import { NavArrowDown } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { faqContent } from "../data/content";
 
@@ -32,8 +32,7 @@ export function FAQSection() {
                                 type="button"
                                 className={cn(
                                     "w-full flex items-center justify-between p-6 text-left",
-                                    "transition-colors duration-[var(--transition-fast)]",
-                                    "hover:bg-accent/50"
+                                    "hover-subtle"
                                 )}
                                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
                                 aria-expanded={openIndex === index}
@@ -42,7 +41,7 @@ export function FAQSection() {
                                 <span className="text-lg font-medium text-foreground pr-8">
                                     {faq.question}
                                 </span>
-                                <ChevronDown
+                                <NavArrowDown
                                     className={cn(
                                         "h-5 w-5 text-muted-foreground transition-transform duration-200",
                                         openIndex === index && "rotate-180"

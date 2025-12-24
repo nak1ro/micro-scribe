@@ -119,8 +119,8 @@ export function PricingSection() {
                             <div
                                 key={index}
                                 className={cn(
-                                    "relative rounded-2xl overflow-hidden bg-card",
-                                    "shadow-lg hover:shadow-xl transition-all duration-500",
+                                    "relative rounded-2xl overflow-hidden bg-card shadow-lg",
+                                    "hover-lift",
                                     isPro && "md:scale-[1.02]",
                                     // Animation
                                     isInView
@@ -134,7 +134,7 @@ export function PricingSection() {
                                     className={cn(
                                         "px-6 py-6 text-center",
                                         isPro
-                                            ? "bg-gradient-to-br from-primary via-primary to-secondary text-primary-foreground"
+                                            ? "bg-gradient-to-br from-primary to-primary/65 text-primary-foreground"
                                             : "bg-card border-b border-border"
                                     )}
                                 >
@@ -186,7 +186,7 @@ export function PricingSection() {
                                         {tier.features.map((feature, featureIndex) => {
                                             const Icon = iconMap[feature.icon] || CheckCircle;
                                             return (
-                                                <div key={featureIndex} className="flex items-start gap-3">
+                                                <div key={featureIndex} className="flex items-center gap-3">
                                                     <div
                                                         className={cn(
                                                             "shrink-0 w-9 h-9 rounded-lg flex items-center justify-center",

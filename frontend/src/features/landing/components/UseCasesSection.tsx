@@ -63,7 +63,7 @@ export function UseCasesSection() {
                 <div className="text-center mb-16">
                     <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4 tracking-tight">
                         Built for{" "}
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/65">
                             everyone
                         </span>
                     </h2>

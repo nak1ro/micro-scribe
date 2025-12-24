@@ -331,6 +331,94 @@
   .scrollbar-hidden::-webkit-scrollbar {
     display: none;
   }
+
+  /* Monotone gradient utilities - softer, less aggressive gradients */
+  .bg-gradient-primary {
+    background: linear-gradient(to bottom right, hsl(var(--primary)), hsl(var(--primary) / 0.65));
+  }
+
+  .bg-gradient-primary-text {
+    background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--primary) / 0.65));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     STANDARDIZED HOVER EFFECTS
+     Use these consistent effects across the app for cohesive UX
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  /* hover-lift: Cards, containers - subtle scale + shadow elevation */
+  .hover-lift {
+    transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .hover-lift:hover {
+    transform: scale(1.02);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+
+  /* hover-glow: Primary CTA buttons - scale + glowing shadow */
+  .hover-glow {
+    transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .hover-glow:hover {
+    transform: scale(1.05);
+    box-shadow: 0 25px 50px -12px hsl(var(--primary) / 0.4);
+  }
+
+  /* hover-subtle: Tags, pills, secondary elements - background tint + border */
+  .hover-subtle {
+    transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .hover-subtle:hover {
+    background-color: hsl(var(--primary) / 0.05);
+    border-color: hsl(var(--primary) / 0.3);
+  }
+
+  /* hover-fade: Muted elements, logos - opacity increase */
+  .hover-fade {
+    opacity: 0.6;
+    transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .hover-fade:hover {
+    opacity: 1;
+  }
+
+  /* hover-icon-arrow: Arrow icons in buttons - translate right */
+  .group:hover .hover-icon-arrow {
+    transform: translateX(4px);
+  }
+
+  .hover-icon-arrow {
+    transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* hover-icon-spin: Sparkle/star icons - subtle rotation */
+  .group:hover .hover-icon-spin {
+    transform: rotate(12deg);
+  }
+
+  .hover-icon-spin {
+    transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* hover-icon-pop: Icons that scale up */
+  .group:hover .hover-icon-pop,
+  .hover-icon-pop:hover {
+    transform: scale(1.1);
+  }
+
+  .hover-icon-pop {
+    transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
 }
 
 /* Keyframe Animations */

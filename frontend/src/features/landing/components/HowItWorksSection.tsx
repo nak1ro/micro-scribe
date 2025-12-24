@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Upload, Sparkles, Download, ArrowRight } from "lucide-react";
+import { Upload, Sparks, Download, ArrowRight } from "iconoir-react";
 import { cn } from "@/lib/utils";
 
 // Steps data
@@ -19,7 +19,7 @@ const steps = [
         number: "2",
         title: "Transcribe",
         description: "Whisper AI processes your file with speaker detection and timestamps.",
-        icon: Sparkles,
+        icon: Sparks,
         color: "from-fuchsia-500 to-pink-600",
         bg: "bg-fuchsia-500/10",
     },
@@ -140,8 +140,8 @@ export function HowItWorksSection() {
                                 {/* Card */}
                                 <div className={cn(
                                     "relative p-6 rounded-2xl border border-border/50",
-                                    "bg-card shadow-sm hover:shadow-lg transition-all duration-300",
-                                    "hover:border-primary/30 hover:scale-[1.02]"
+                                    "bg-card shadow-sm",
+                                    "hover-lift"
                                 )}>
                                     {/* Number badge */}
                                     <div className={cn(
@@ -208,14 +208,15 @@ export function HowItWorksSection() {
                         href="/auth?mode=signup"
                         className={cn(
                             "inline-flex items-center gap-2 px-6 py-3 rounded-full",
-                            "bg-gradient-to-r from-primary to-secondary",
+                            "bg-gradient-to-r from-primary to-primary/65",
                             "text-white font-semibold",
-                            "hover:opacity-90 shadow-lg shadow-primary/25",
-                            "transition-all duration-300 hover:scale-105"
+                            "shadow-lg shadow-primary/25",
+                            "hover-glow",
+                            "group"
                         )}
                     >
                         Start Transcribing
-                        <ArrowRight className="w-4 h-4" />
+                        <ArrowRight className="w-4 h-4 hover-icon-arrow" />
                     </Link>
                 </div>
             </div>

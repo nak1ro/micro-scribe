@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Star, ChevronLeft, ChevronRight } from "lucide-react";
+import { StarSolid, NavArrowLeft, NavArrowRight } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { testimonialsContent } from "../data/content";
 
@@ -106,12 +106,12 @@ export function TestimonialsSection() {
                             "absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10",
                             "w-10 h-10 rounded-full bg-card border border-border shadow-lg",
                             "flex items-center justify-center",
-                            "hover:bg-muted transition-colors",
+                            "hover-subtle",
                             "hidden md:flex"
                         )}
                         aria-label="Previous testimonials"
                     >
-                        <ChevronLeft className="w-5 h-5 text-muted-foreground" />
+                        <NavArrowLeft className="w-5 h-5 text-muted-foreground" />
                     </button>
 
                     <button
@@ -120,12 +120,12 @@ export function TestimonialsSection() {
                             "absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10",
                             "w-10 h-10 rounded-full bg-card border border-border shadow-lg",
                             "flex items-center justify-center",
-                            "hover:bg-muted transition-colors",
+                            "hover-subtle",
                             "hidden md:flex"
                         )}
                         aria-label="Next testimonials"
                     >
-                        <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                        <NavArrowRight className="w-5 h-5 text-muted-foreground" />
                     </button>
 
                     {/* Carousel track */}
@@ -191,14 +191,14 @@ function TestimonialCard({ testimonial }: { testimonial: typeof testimonialsCont
         <div
             className={cn(
                 "p-5 rounded-xl h-full",
-                "bg-card border border-border",
-                "shadow-sm hover:shadow-md transition-shadow duration-300"
+                "bg-card border border-border shadow-sm",
+                "hover-lift"
             )}
         >
             {/* Stars */}
             <div className="flex gap-1 mb-4">
                 {Array.from({ length: testimonial.rating }).map((_, i) => (
-                    <Star
+                    <StarSolid
                         key={i}
                         className="h-4 w-4 fill-warning text-warning"
                     />
