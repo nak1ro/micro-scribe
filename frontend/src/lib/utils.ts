@@ -53,7 +53,12 @@ export function getLanguageName(code: string): string {
 }
 
 // Generate speaker color from name (consistent hash-based color)
-export function getSpeakerColor(speaker: string): string {
+export function getSpeakerColor(speaker: string, customColor?: string | null): string {
+    // If custom color provided from API, use it
+    if (customColor) {
+        return customColor;
+    }
+
     const colors = [
         "text-violet-500",
         "text-blue-500",
@@ -72,3 +77,40 @@ export function getSpeakerColor(speaker: string): string {
     }
     return colors[Math.abs(hash) % colors.length];
 }
+
+// Get background color variant for speaker badges
+export function getSpeakerBgColor(speaker: string, customColor?: string | null): string {
+    // If custom color provided from API, convert to bg variant
+    if (customColor) {
+        return customColor.replace("text-", "bg-").replace("-500", "-500/20");
+    }
+
+    const colors = [
+        "bg-violet-500/20",
+        "bg-blue-500/20",
+        "bg-emerald-500/20",
+        "bg-amber-500/20",
+        "bg-rose-500/20",
+        "bg-cyan-500/20",
+        "bg-fuchsia-500/20",
+        "bg-lime-500/20",
+    ];
+
+    let hash = 0;
+    for (let i = 0; i < speaker.length; i++) {
+        hash = speaker.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+}
+
+// Get speaker display name (use custom name or fallback to ID)
+export function getSpeakerDisplayName(speakerId: string, displayName?: string | null): string {
+    if (displayName) return displayName;
+    // Convert "SPEAKER_00" to "Speaker 1" etc.
+    const match = speakerId.match(/SPEAKER_(\d+)/i);
+    if (match) {
+        return `Speaker ${parseInt(match[1], 10) + 1}`;
+    }
+    return speakerId;
+}
+

@@ -3,10 +3,11 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { TranscriptSegment } from "./TranscriptSegment";
-import type { ViewerSegment } from "@/features/transcription/types";
+import type { ViewerSegment, SpeakerInfo } from "@/features/transcription/types";
 
 interface TranscriptContentProps {
     segments: ViewerSegment[];
+    speakers: SpeakerInfo[];
     activeSegmentIndex: number;
     showTimecodes: boolean;
     showSpeakers: boolean;
@@ -16,6 +17,7 @@ interface TranscriptContentProps {
 
 export function TranscriptContent({
     segments,
+    speakers,
     activeSegmentIndex,
     showTimecodes,
     showSpeakers,
@@ -24,6 +26,13 @@ export function TranscriptContent({
 }: TranscriptContentProps) {
     const segmentRefs = React.useRef<Map<number, HTMLDivElement>>(new Map());
     const containerRef = React.useRef<HTMLDivElement>(null);
+
+    // Build speaker lookup map
+    const speakerMap = React.useMemo(() => {
+        const map = new Map<string, SpeakerInfo>();
+        speakers.forEach(s => map.set(s.id, s));
+        return map;
+    }, [speakers]);
 
     // Auto-scroll to keep active segment centered
     React.useEffect(() => {
@@ -93,6 +102,7 @@ export function TranscriptContent({
                         <div key={pIndex} className="text-foreground leading-relaxed text-base md:text-lg">
                             {paragraph.map((segment) => {
                                 const index = segment.originalIndex;
+                                const speakerInfo = segment.speaker ? speakerMap.get(segment.speaker) : undefined;
                                 return (
                                     <TranscriptSegment
                                         key={segment.id}
@@ -102,6 +112,7 @@ export function TranscriptContent({
                                         showTimecode={showTimecodes}
                                         showSpeaker={showSpeakers}
                                         previousSpeaker={index > 0 ? segments[index - 1].speaker : null}
+                                        speakerInfo={speakerInfo}
                                         onClick={onSegmentClick}
                                         segmentRef={(el) => {
                                             if (el) {

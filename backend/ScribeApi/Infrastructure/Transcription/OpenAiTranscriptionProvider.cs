@@ -34,7 +34,8 @@ public class OpenAiTranscriptionProvider : ITranscriptionProvider
         Stream audioStream,
         string fileName,
         TranscriptionQuality quality, 
-        string? languageHint, 
+        string? languageHint,
+        bool enableSpeakerDiarization, // OpenAI doesn't support diarization - parameter ignored
         CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(_settings.ApiKey))

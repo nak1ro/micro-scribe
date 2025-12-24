@@ -24,6 +24,7 @@ public class ChunkedTranscriptionService
         List<AudioChunk> chunks,
         TranscriptionQuality quality,
         string? languageHint,
+        bool enableSpeakerDiarization,
         CancellationToken ct)
     {
         if (chunks.Count == 0)
@@ -32,7 +33,7 @@ public class ChunkedTranscriptionService
         // Single chunk - just transcribe directly
         if (chunks.Count == 1)
         {
-            return await TranscribeSingleChunkAsync(chunks[0], quality, languageHint, ct);
+            return await TranscribeSingleChunkAsync(chunks[0], quality, languageHint, enableSpeakerDiarization, ct);
         }
 
         _logger.LogInformation("Starting chunked transcription of {Count} chunks", chunks.Count);
@@ -51,7 +52,8 @@ public class ChunkedTranscriptionService
             var result = await TranscribeSingleChunkAsync(
                 chunk, 
                 quality, 
-                languageHint ?? detectedLanguage, // Use detected language from first chunk
+                languageHint ?? detectedLanguage,
+                enableSpeakerDiarization,
                 ct);
 
             // Use language from first chunk if not specified
@@ -91,6 +93,7 @@ public class ChunkedTranscriptionService
         AudioChunk chunk,
         TranscriptionQuality quality,
         string? languageHint,
+        bool enableSpeakerDiarization,
         CancellationToken ct)
     {
         await using var audioStream = await _storageService.OpenReadAsync(chunk.StoragePath, ct);
@@ -101,6 +104,7 @@ public class ChunkedTranscriptionService
             fileName,
             quality,
             languageHint,
+            enableSpeakerDiarization,
             ct);
     }
 }

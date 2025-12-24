@@ -286,6 +286,7 @@ export function TranscriptionViewerNew({
                 {/* Transcript content */}
                 <TranscriptContent
                     segments={data.segments}
+                    speakers={data.speakers}
                     activeSegmentIndex={activeSegmentIndex}
                     showTimecodes={showTimecodes}
                     showSpeakers={showSpeakers}

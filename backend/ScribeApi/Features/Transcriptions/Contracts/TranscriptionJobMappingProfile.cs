@@ -15,7 +15,7 @@ public class TranscriptionJobMappingProfile : Profile
             .ForMember(dest => dest.OriginalFileName, opt => opt.MapFrom(src => src.MediaFile.OriginalFileName))
             .ForMember(dest => dest.Segments, opt => opt.MapFrom(src => src.Segments))
             .ForMember(dest => dest.PresignedUrl, opt => opt.MapFrom(_ => (string?)null));
-
+            
         CreateMap<TranscriptSegment, TranscriptSegmentDto>();
         CreateMap<TranscriptionSpeaker, TranscriptionSpeakerDto>();
     }

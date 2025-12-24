@@ -151,12 +151,16 @@ public static class ServiceCollectionExtensions
 
         // Transcription provider - configurable via Transcription:Provider (OpenAi or WhisperX)
         var transcriptionProvider = configuration["Transcription:Provider"] ?? "OpenAi";
+        Console.WriteLine($"[STARTUP] Transcription Provider configured: '{transcriptionProvider}'");
+        
         if (transcriptionProvider.Equals("WhisperX", StringComparison.OrdinalIgnoreCase))
         {
+            Console.WriteLine("[STARTUP] Registering WhisperXTranscriptionProvider");
             services.AddHttpClient<ITranscriptionProvider, WhisperXTranscriptionProvider>();
         }
         else
         {
+            Console.WriteLine("[STARTUP] Registering OpenAiTranscriptionProvider");
             services.AddHttpClient<ITranscriptionProvider, OpenAiTranscriptionProvider>();
         }
 

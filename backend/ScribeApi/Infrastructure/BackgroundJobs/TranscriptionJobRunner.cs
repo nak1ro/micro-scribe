@@ -201,6 +201,7 @@ public class TranscriptionJobRunner
                     Path.GetFileName(chunk.StoragePath),
                     job.Quality,
                     job.SourceLanguage,
+                    job.EnableSpeakerDiarization,
                     ct);
             }
             else
@@ -210,6 +211,7 @@ public class TranscriptionJobRunner
                     chunkResult.Chunks,
                     job.Quality,
                     job.SourceLanguage,
+                    job.EnableSpeakerDiarization,
                     ct);
             }
 

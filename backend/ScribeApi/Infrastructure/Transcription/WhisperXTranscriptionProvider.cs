@@ -31,12 +31,13 @@ public class WhisperXTranscriptionProvider : ITranscriptionProvider
         string fileName,
         TranscriptionQuality quality,
         string? languageHint,
+        bool enableSpeakerDiarization,
         CancellationToken ct)
     {
         var url = $"{_settings.BaseUrl.TrimEnd('/')}/transcribe";
 
-        _logger.LogInformation("Sending transcription request to WhisperX at {Url}. File: {FileName}, Quality: {Quality}",
-            url, fileName, quality);
+        _logger.LogInformation("Sending transcription request to WhisperX at {Url}. File: {FileName}, Quality: {Quality}, Diarization: {Diarization}",
+            url, fileName, quality, enableSpeakerDiarization);
 
         // Buffer stream into memory for multipart upload
         using var memoryStream = new MemoryStream();
@@ -66,8 +67,8 @@ public class WhisperXTranscriptionProvider : ITranscriptionProvider
             content.Add(new StringContent(languageHint), "language");
         }
 
-        // Diarization is disabled by default (controlled separately)
-        content.Add(new StringContent("false"), "enable_diarization");
+        // Add diarization flag
+        content.Add(new StringContent(enableSpeakerDiarization.ToString().ToLower()), "enable_diarization");
 
         try
         {
