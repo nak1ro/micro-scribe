@@ -107,7 +107,9 @@ export interface CreateTranscriptionJobRequest {
     mediaFileId?: string;
     uploadSessionId?: string;
     quality?: TranscriptionQuality;
-    languageCode?: string | null;
+    sourceLanguage?: string | null;
+    enableSpeakerDiarization?: boolean;
+    targetLanguage?: string | null;
 }
 
 export interface TranscriptionJobResponse {
@@ -123,7 +125,7 @@ export interface TranscriptionJobListItem {
     originalFileName: string;
     status: TranscriptionJobStatus;
     quality: TranscriptionQuality;
-    languageCode: string | null;
+    sourceLanguage: string | null;
     durationSeconds: number | null;
     transcriptPreview: string | null;
     createdAtUtc: string;
@@ -136,11 +138,14 @@ export interface TranscriptionJobDetailResponse {
     originalFileName: string;
     status: TranscriptionJobStatus;
     quality: TranscriptionQuality;
-    languageCode: string | null;
+    sourceLanguage: string | null;
+    targetLanguage: string | null;
     transcript: string | null;
     errorMessage: string | null;
     durationSeconds: number | null;
     segments: TranscriptSegmentDto[];
+    enableSpeakerDiarization: boolean;
+    speakers: TranscriptionSpeakerDto[];
     presignedUrl: string | null;
     createdAtUtc: string;
     startedAtUtc: string | null;
@@ -153,6 +158,7 @@ export interface TranscriptSegmentDto {
     startSeconds: number;
     endSeconds: number;
     speaker: string | null;
+    translatedText: string | null;
     isEdited: boolean;
     originalText: string | null;
 }
@@ -167,4 +173,16 @@ export enum ExportFormat {
     Vtt = 2,
     Docx = 3,
     Pdf = 4,
+}
+
+// Speaker metadata for diarization
+export interface TranscriptionSpeakerDto {
+    id: string;
+    displayName: string | null;
+    color: string | null;
+}
+
+// Request for on-demand translation
+export interface TranslateJobRequest {
+    targetLanguage: string;
 }

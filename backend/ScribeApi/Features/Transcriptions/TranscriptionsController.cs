@@ -61,7 +61,7 @@ public class TranscriptionsController : ControllerBase
             OriginalFileName = j.MediaFile?.OriginalFileName ?? "Unknown",
             Status = j.Status,
             Quality = j.Quality,
-            LanguageCode = j.LanguageCode,
+            SourceLanguage = j.SourceLanguage,
             DurationSeconds = j.MediaFile?.DurationSeconds,
             TranscriptPreview = !string.IsNullOrEmpty(j.Transcript) 
                 ? (j.Transcript.Length > 150 ? j.Transcript.Substring(0, 150) + "..." : j.Transcript)

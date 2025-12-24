@@ -76,7 +76,7 @@ public class TranscriptionJobRunner
 
             // Step 4 & 5 Combined: Atomic Completion & Usage Update
             _logger.LogDebug("[Job {JobId}] Step 4: Atomic Completion & Billing", jobId);
-            await CompleteJobAtomicAsync(jobId, job!.UserId, job!.DurationSeconds, job!.LanguageCode, ct);
+            await CompleteJobAtomicAsync(jobId, job!.UserId, job!.DurationSeconds, job!.SourceLanguage, ct);
 
             _logger.LogInformation("Transcription job {JobId} completed successfully", jobId);
         }
@@ -200,7 +200,7 @@ public class TranscriptionJobRunner
                     audioStream,
                     Path.GetFileName(chunk.StoragePath),
                     job.Quality,
-                    job.LanguageCode,
+                    job.SourceLanguage,
                     ct);
             }
             else
@@ -209,7 +209,7 @@ public class TranscriptionJobRunner
                 result = await _chunkedTranscriptionService.TranscribeChunkedAsync(
                     chunkResult.Chunks,
                     job.Quality,
-                    job.LanguageCode,
+                    job.SourceLanguage,
                     ct);
             }
 
@@ -217,7 +217,7 @@ public class TranscriptionJobRunner
                 result.Segments.Count, result.DetectedLanguage);
 
             job.Transcript = result.FullTranscript;
-            job.LanguageCode = result.DetectedLanguage;
+            job.SourceLanguage = result.DetectedLanguage;
 
             AddSegments(job, result.Segments);
 

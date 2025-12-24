@@ -38,8 +38,10 @@ export interface TranscriptionFormData {
     file?: File;
     youtubeUrl?: string;
     audioBlob?: Blob;
-    languageCode: string;
+    sourceLanguage: string;
     quality: TranscriptionQuality;
+    enableSpeakerDiarization: boolean;
+    targetLanguage: string;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -86,8 +88,10 @@ export function CreateTranscriptionModal({
     const [file, setFile] = React.useState<File | null>(null);
     const [youtubeUrl, setYoutubeUrl] = React.useState("");
     const [audioBlob, setAudioBlob] = React.useState<Blob | null>(null);
-    const [languageCode, setLanguageCode] = React.useState("auto");
+    const [sourceLanguage, setSourceLanguage] = React.useState("auto");
     const [quality, setQuality] = React.useState<TranscriptionQuality>(TranscriptionQuality.Balanced);
+    const [enableSpeakerDiarization, setEnableSpeakerDiarization] = React.useState(false);
+    const [targetLanguage, setTargetLanguage] = React.useState("");
 
     const { upload, abort, reset, progress, status, error, isUploading } = useFileUpload();
 
@@ -97,6 +101,8 @@ export function CreateTranscriptionModal({
         setYoutubeUrl("");
         setAudioBlob(null);
         setActiveTab("file");
+        setEnableSpeakerDiarization(false);
+        setTargetLanguage("");
         reset();
     }, [isOpen, reset]);
 
@@ -140,7 +146,7 @@ export function CreateTranscriptionModal({
                 uploadDate: new Date().toISOString(),
                 status: "uploading",
                 duration: null,
-                language: languageCode === "auto" ? null : languageCode,
+                language: sourceLanguage === "auto" ? null : sourceLanguage,
                 preview: null,
             });
 
@@ -150,8 +156,10 @@ export function CreateTranscriptionModal({
             // Run upload in background
             try {
                 const job = await upload(uploadFile, {
-                    languageCode: languageCode === "auto" ? undefined : languageCode,
+                    sourceLanguage: sourceLanguage === "auto" ? undefined : sourceLanguage,
                     quality,
+                    enableSpeakerDiarization,
+                    targetLanguage: targetLanguage || undefined,
                 });
 
                 if (job) {
@@ -336,14 +344,14 @@ export function CreateTranscriptionModal({
 
                             {/* Options */}
                             <div className="mt-6 pt-6 border-t border-border space-y-4">
-                                {/* Language */}
+                                {/* Source Language */}
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                     <label className="text-sm font-medium text-foreground min-w-[100px]">
                                         Language
                                     </label>
                                     <select
-                                        value={languageCode}
-                                        onChange={(e) => setLanguageCode(e.target.value)}
+                                        value={sourceLanguage}
+                                        onChange={(e) => setSourceLanguage(e.target.value)}
                                         className={cn(
                                             "flex-1 h-10 px-3 rounded-md",
                                             "bg-background border border-input",
@@ -357,6 +365,58 @@ export function CreateTranscriptionModal({
                                             </option>
                                         ))}
                                     </select>
+                                </div>
+
+                                {/* Target Language (Translation) */}
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                    <label className="text-sm font-medium text-foreground min-w-[100px]">
+                                        Translate To
+                                    </label>
+                                    <select
+                                        value={targetLanguage}
+                                        onChange={(e) => setTargetLanguage(e.target.value)}
+                                        className={cn(
+                                            "flex-1 h-10 px-3 rounded-md",
+                                            "bg-background border border-input",
+                                            "text-sm text-foreground",
+                                            "focus:outline-none focus:ring-2 focus:ring-ring"
+                                        )}
+                                    >
+                                        <option value="">None (no translation)</option>
+                                        {LANGUAGES.filter(lang => lang.code !== "auto").map((lang) => (
+                                            <option key={lang.code} value={lang.code}>
+                                                {lang.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Speaker Diarization */}
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                    <label className="text-sm font-medium text-foreground min-w-[100px]">
+                                        Speakers
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setEnableSpeakerDiarization(!enableSpeakerDiarization)}
+                                        className={cn(
+                                            "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors",
+                                            "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                                            enableSpeakerDiarization ? "bg-primary" : "bg-muted"
+                                        )}
+                                        role="switch"
+                                        aria-checked={enableSpeakerDiarization}
+                                    >
+                                        <span
+                                            className={cn(
+                                                "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition",
+                                                enableSpeakerDiarization ? "translate-x-5" : "translate-x-0"
+                                            )}
+                                        />
+                                    </button>
+                                    <span className="text-sm text-muted-foreground">
+                                        Identify different speakers
+                                    </span>
                                 </div>
 
                                 {/* Quality */}

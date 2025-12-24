@@ -43,7 +43,7 @@ public class TranscriptionJob
     public string? ErrorMessage { get; set; }
 
     // Detected or requested language code (source language)
-    public string? LanguageCode { get; set; }
+    public string? SourceLanguage { get; set; }
 
     // Target language for translation (null = no translation)
     public string? TargetLanguage { get; set; }

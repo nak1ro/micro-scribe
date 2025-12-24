@@ -59,7 +59,7 @@ function mapJobToListItem(job: TranscriptionJobListItem): TranscriptionListItem 
         uploadDate: job.createdAtUtc,
         status: mapJobStatus(job.status),
         duration: job.durationSeconds,
-        language: job.languageCode,
+        language: job.sourceLanguage,
         preview: job.transcriptPreview,
     };
 }

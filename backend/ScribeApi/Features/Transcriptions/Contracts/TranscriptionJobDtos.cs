@@ -7,7 +7,7 @@ namespace ScribeApi.Features.Transcriptions.Contracts
         Guid? MediaFileId,
         Guid? UploadSessionId,
         TranscriptionQuality Quality = TranscriptionQuality.Balanced,
-        string? LanguageCode = null,
+        string? SourceLanguage = null,
         bool EnableSpeakerDiarization = false,
         string? TargetLanguage = null
     );
@@ -40,7 +40,7 @@ namespace ScribeApi.Features.Transcriptions.Contracts
         public string OriginalFileName { get; init; } = string.Empty;
         public TranscriptionJobStatus Status { get; init; }
         public TranscriptionQuality Quality { get; init; }
-        public string? LanguageCode { get; init; }
+        public string? SourceLanguage { get; init; }
         public string? TargetLanguage { get; init; }
         public string? Transcript { get; init; }
         public string? ErrorMessage { get; init; }
@@ -86,7 +86,7 @@ namespace ScribeApi.Features.Transcriptions.Contracts
         public string OriginalFileName { get; init; } = string.Empty;
         public TranscriptionJobStatus Status { get; init; }
         public TranscriptionQuality Quality { get; init; }
-        public string? LanguageCode { get; init; }
+        public string? SourceLanguage { get; init; }
         public double? DurationSeconds { get; init; }
         public string? TranscriptPreview { get; init; }
         public DateTime CreatedAtUtc { get; init; }

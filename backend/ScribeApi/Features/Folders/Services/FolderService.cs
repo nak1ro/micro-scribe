@@ -144,7 +144,7 @@ public class FolderService : IFolderService
                     : "Unknown",
                 Status = ftj.TranscriptionJob.Status,
                 Quality = ftj.TranscriptionJob.Quality,
-                LanguageCode = ftj.TranscriptionJob.LanguageCode,
+                SourceLanguage = ftj.TranscriptionJob.SourceLanguage,
                 DurationSeconds = ftj.TranscriptionJob.MediaFile != null 
                     ? ftj.TranscriptionJob.MediaFile.DurationSeconds 
                     : null,

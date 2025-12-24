@@ -40,7 +40,7 @@ public class JobTranslationService : IJobTranslationService
         if (job.Status != Infrastructure.Persistence.Entities.TranscriptionJobStatus.Completed)
             throw new ValidationException("Cannot translate: job is not completed.");
 
-        var sourceLanguage = job.LanguageCode;
+        var sourceLanguage = job.SourceLanguage;
         if (string.IsNullOrWhiteSpace(sourceLanguage))
             throw new ValidationException("Cannot translate: source language is unknown.");
 

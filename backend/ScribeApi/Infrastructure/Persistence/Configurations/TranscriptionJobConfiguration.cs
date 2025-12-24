@@ -20,7 +20,7 @@ public class TranscriptionJobConfiguration : IEntityTypeConfiguration<Transcript
             .HasConversion<string>()
             .HasMaxLength(20);
 
-        builder.Property(x => x.LanguageCode)
+        builder.Property(x => x.SourceLanguage)
             .HasMaxLength(10);
 
         builder.Property(x => x.ErrorMessage)

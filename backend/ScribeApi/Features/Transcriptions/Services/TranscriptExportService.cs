@@ -99,7 +99,7 @@ public class TranscriptExportService : ITranscriptExportService
         var exportData = new
         {
             jobId = job.Id,
-            language = job.LanguageCode,
+            language = job.SourceLanguage,
             durationSeconds = job.DurationSeconds,
             transcript = job.Transcript,
             segments = job.Segments.Select(s => new

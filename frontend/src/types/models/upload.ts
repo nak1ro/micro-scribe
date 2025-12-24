@@ -24,8 +24,10 @@ export type UploadStage =
 
 // Options passed when starting an upload
 export interface UploadOptions {
-    languageCode?: string;
+    sourceLanguage?: string;
     quality?: number;
+    enableSpeakerDiarization?: boolean;
+    targetLanguage?: string;
 }
 
 // Configuration for the upload orchestrator

@@ -11,9 +11,9 @@ public class CreateTranscriptionJobRequestValidator : AbstractValidator<CreateTr
             .Must(x => x.MediaFileId.HasValue || x.UploadSessionId.HasValue)
             .WithMessage("Either MediaFileId or UploadSessionId must be provided.");
 
-        RuleFor(x => x.LanguageCode)
+        RuleFor(x => x.SourceLanguage)
             .MaximumLength(10)
-            .When(x => x.LanguageCode != null);
+            .When(x => x.SourceLanguage != null);
 
         RuleFor(x => x.Quality)
             .IsInEnum()

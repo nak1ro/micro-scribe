@@ -36,7 +36,7 @@ function DashboardPageContent() {
             uploadDate: item.createdAtUtc,
             status: item.status.toLowerCase() as TranscriptionListItem["status"],
             duration: item.durationSeconds,
-            language: item.languageCode,
+            language: item.sourceLanguage,
             preview: item.transcriptPreview,
         }));
     }, [folderItemsData]);

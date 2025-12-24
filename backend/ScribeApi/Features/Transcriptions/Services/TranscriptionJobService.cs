@@ -188,7 +188,7 @@ public class TranscriptionJobService : ITranscriptionJobService
             MediaFile = null!,
             Status = TranscriptionJobStatus.Pending,
             Quality = request.Quality,
-            LanguageCode = request.LanguageCode,
+            SourceLanguage = request.SourceLanguage,
             EnableSpeakerDiarization = request.EnableSpeakerDiarization,
             CreatedAtUtc = DateTime.UtcNow
         };

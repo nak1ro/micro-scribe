@@ -121,7 +121,9 @@ export async function orchestrateUpload(
     const job = await transcriptionApi.createJob({
         uploadSessionId: session.id,
         quality: options?.quality ?? TranscriptionQuality.Balanced,
-        languageCode: options?.languageCode || null,
+        sourceLanguage: options?.sourceLanguage || null,
+        enableSpeakerDiarization: options?.enableSpeakerDiarization ?? false,
+        targetLanguage: options?.targetLanguage || null,
     });
 
     return job;

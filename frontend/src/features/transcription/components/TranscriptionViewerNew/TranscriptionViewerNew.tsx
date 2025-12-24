@@ -43,13 +43,17 @@ export function TranscriptionViewerNew({
                 fileName: job.originalFileName,
                 status: job.status.toLowerCase() as TranscriptionData["status"],
                 durationSeconds: job.durationSeconds || 0,
-                languageCode: job.languageCode || "en",
-                segments: job.segments.map((s: any) => ({
+                sourceLanguage: job.sourceLanguage || "en",
+                targetLanguage: job.targetLanguage,
+                enableSpeakerDiarization: job.enableSpeakerDiarization,
+                speakers: job.speakers || [],
+                segments: job.segments.map((s) => ({
                     id: s.id,
                     text: s.text,
                     startSeconds: s.startSeconds,
                     endSeconds: s.endSeconds,
                     speaker: s.speaker,
+                    translatedText: s.translatedText,
                     isEdited: s.isEdited
                 })),
                 audioUrl: job.presignedUrl

@@ -7,6 +7,8 @@ export type {
     TranscriptSegmentDto,
     TranscriptionJobDetailResponse,
     TranscriptionJobStatus,
+    TranscriptionSpeakerDto,
+    TranslateJobRequest,
 } from "@/types/api/transcription";
 
 // Viewer-specific types
@@ -16,6 +18,7 @@ export interface ViewerSegment {
     startSeconds: number;
     endSeconds: number;
     speaker: string | null;
+    translatedText: string | null;
     isEdited: boolean;
 }
 
@@ -27,12 +30,22 @@ export interface ViewerState {
     showSpeakers: boolean;
 }
 
+// Speaker metadata for UI
+export interface SpeakerInfo {
+    id: string;
+    displayName: string | null;
+    color: string | null;
+}
+
 export interface TranscriptionData {
     id: string;
     fileName: string;
     status: "pending" | "processing" | "completed" | "failed";
     durationSeconds: number;
-    languageCode: string;
+    sourceLanguage: string;
+    targetLanguage: string | null;
+    enableSpeakerDiarization: boolean;
+    speakers: SpeakerInfo[];
     segments: ViewerSegment[];
     audioUrl: string | null;
 }
@@ -45,3 +58,4 @@ export interface ExportOption {
     description: string;
     icon: string;
 }
+

@@ -16,7 +16,7 @@ interface ViewerHeaderProps {
 
 export function ViewerHeader({ data, onBack, className }: ViewerHeaderProps) {
     const statusInfo = getStatusInfo(data.status);
-    const languageName = getLanguageName(data.languageCode);
+    const languageName = getLanguageName(data.sourceLanguage);
     const formattedDuration = formatTime(data.durationSeconds);
 
     return (
