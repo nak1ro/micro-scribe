@@ -17,5 +17,6 @@ public class TranscriptionJobMappingProfile : Profile
             .ForMember(dest => dest.PresignedUrl, opt => opt.MapFrom(_ => (string?)null));
 
         CreateMap<TranscriptSegment, TranscriptSegmentDto>();
+        CreateMap<TranscriptionSpeaker, TranscriptionSpeakerDto>();
     }
 }

@@ -189,6 +189,7 @@ public class TranscriptionJobService : ITranscriptionJobService
             Status = TranscriptionJobStatus.Pending,
             Quality = request.Quality,
             LanguageCode = request.LanguageCode,
+            EnableSpeakerDiarization = request.EnableSpeakerDiarization,
             CreatedAtUtc = DateTime.UtcNow
         };
 

@@ -668,7 +668,9 @@ interface CreateTranscriptionJobRequest {
   mediaFileId?: string;              // Optional, existing media file GUID
   uploadSessionId?: string;          // Optional, upload session GUID (for direct flow)
   quality?: TranscriptionQuality;    // Optional, default: 1 (Balanced)
-  languageCode?: string | null;      // Optional, e.g., "en", "pl"
+  languageCode?: string | null;      // Optional, e.g., "en", "pl" (null = auto-detect)
+  enableSpeakerDiarization?: boolean; // Optional, default: false (speaker recognition)
+  targetLanguage?: string | null;    // Optional, target language for translation
 }
 ```
 
@@ -715,11 +717,14 @@ interface TranscriptionJobDetailResponse {
   originalFileName: string;
   status: TranscriptionJobStatus;
   quality: TranscriptionQuality;
-  languageCode: string | null;
+  languageCode: string | null;        // Detected/requested source language
+  targetLanguage: string | null;      // Target language for translation (null = no translation)
   transcript: string | null;
   errorMessage: string | null;
   durationSeconds: number | null;
   segments: TranscriptSegmentDto[];
+  enableSpeakerDiarization: boolean;  // Whether speaker detection was enabled
+  speakers: TranscriptionSpeakerDto[]; // Detected speakers metadata
   createdAtUtc: string;
   startedAtUtc: string | null;
   completedAtUtc: string | null;
@@ -731,9 +736,16 @@ interface TranscriptSegmentDto {
   text: string;
   startSeconds: number;
   endSeconds: number;
-  speaker: string | null;
+  speaker: string | null;             // Speaker label (e.g., "SPEAKER_00")
+  translatedText: string | null;      // Translated text (if translation requested)
   isEdited: boolean;
   originalText: string | null;
+}
+
+interface TranscriptionSpeakerDto {
+  id: string;                         // Speaker ID (e.g., "SPEAKER_00")
+  displayName: string | null;         // User-editable display name
+  color: string | null;               // UI color assignment
 }
 ```
 
@@ -804,6 +816,36 @@ interface UpdateSegmentRequest {
 #### Response
 
 **Success (200 OK)** - Returns reverted `TranscriptSegmentDto`
+
+---
+
+### Endpoint: Translate Transcription Job
+
+**Description:** Translates a completed transcription to a target language. Can be called after transcription is complete.
+
+**Method:** `POST`  
+**URL:** `/api/transcriptions/{jobId}/translate`  
+**Authorization:** Required (Authenticated)
+
+#### Request Body
+```typescript
+interface TranslateJobRequest {
+  targetLanguage: string;  // Required, ISO 639-1 code (e.g., "ru", "es", "de")
+}
+```
+
+**Example Request:**
+```json
+{
+  "targetLanguage": "ru"
+}
+```
+
+#### Response
+
+**Success (204 No Content)**
+
+> **Note:** After translation completes, each segment's `translatedText` field will be populated. Call `GET /api/transcriptions/{jobId}` to retrieve the translated segments.
 
 ---
 

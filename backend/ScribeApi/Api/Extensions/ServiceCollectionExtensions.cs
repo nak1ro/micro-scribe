@@ -147,9 +147,19 @@ public static class ServiceCollectionExtensions
         services.AddScoped<WebhookDeliveryJob>();
         services.AddHttpClient<WebhookDeliveryJob>();
         services.Configure<OpenAiSettings>(configuration.GetSection("OpenAi"));
+        services.Configure<WhisperXSettings>(configuration.GetSection("WhisperX"));
 
-        services.AddHttpClient<OpenAiTranscriptionProvider>();
-        services.AddScoped<ITranscriptionProvider, OpenAiTranscriptionProvider>();
+        // Transcription provider - configurable via Transcription:Provider (OpenAi or WhisperX)
+        var transcriptionProvider = configuration["Transcription:Provider"] ?? "OpenAi";
+        if (transcriptionProvider.Equals("WhisperX", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddHttpClient<ITranscriptionProvider, WhisperXTranscriptionProvider>();
+        }
+        else
+        {
+            services.AddHttpClient<ITranscriptionProvider, OpenAiTranscriptionProvider>();
+        }
+
         services.AddScoped<IFfmpegMediaService, FfmpegMediaService>();
         services.AddScoped<ChunkedTranscriptionService>();
         services.AddScoped<TranscriptionJobRunner>();
@@ -158,6 +168,11 @@ public static class ServiceCollectionExtensions
         
         // Transcription settings
         services.Configure<TranscriptionSettings>(configuration.GetSection("Transcription"));
+
+        // Translation services
+        services.Configure<TranslationSettings>(configuration.GetSection("Translation"));
+        services.AddHttpClient<ITranslationService, Infrastructure.Translation.AzureTranslationService>();
+        services.AddScoped<IJobTranslationService, JobTranslationService>();
 
         // Hangfire
         services.AddHangfireServices(configuration);

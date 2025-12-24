@@ -22,6 +22,7 @@ public class TranscriptionsController : ControllerBase
     private readonly ITranscriptionJobQueries _queries;
     private readonly ITranscriptExportService _exportService;
     private readonly ITranscriptEditService _editService;
+    private readonly IJobTranslationService _translationService;
     private readonly IFileStorageService _storageService;
     private readonly IMapper _mapper;
 
@@ -30,6 +31,7 @@ public class TranscriptionsController : ControllerBase
         ITranscriptionJobQueries queries,
         ITranscriptExportService exportService,
         ITranscriptEditService editService,
+        IJobTranslationService translationService,
         IFileStorageService storageService,
         IMapper mapper)
     {
@@ -37,6 +39,7 @@ public class TranscriptionsController : ControllerBase
         _queries = queries;
         _exportService = exportService;
         _editService = editService;
+        _translationService = translationService;
         _storageService = storageService;
         _mapper = mapper;
     }
@@ -174,5 +177,19 @@ public class TranscriptionsController : ControllerBase
         var result = await _editService.RevertSegmentAsync(jobId, segmentId, userId, ct);
 
         return Ok(result);
+    }
+
+    [HttpPost("{jobId:guid}/translate")]
+    public async Task<IActionResult> TranslateJob(
+        Guid jobId,
+        [FromBody] TranslateJobRequest request,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        await _translationService.TranslateJobAsync(jobId, userId, request.TargetLanguage, ct);
+
+        return NoContent();
     }
 }

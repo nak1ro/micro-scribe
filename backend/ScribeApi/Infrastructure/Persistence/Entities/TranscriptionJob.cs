@@ -42,8 +42,11 @@ public class TranscriptionJob
     // Error message if job failed
     public string? ErrorMessage { get; set; }
 
-    // Detected or requested language code
+    // Detected or requested language code (source language)
     public string? LanguageCode { get; set; }
+
+    // Target language for translation (null = no translation)
+    public string? TargetLanguage { get; set; }
 
     // Duration of processed audio in seconds
     public double? DurationSeconds { get; set; }
@@ -59,6 +62,12 @@ public class TranscriptionJob
 
     // Soft delete flag
     public bool IsDeleted { get; set; }
+
+    // Whether speaker diarization is enabled for this job
+    public bool EnableSpeakerDiarization { get; set; }
+
+    // Speaker metadata (stored as JSONB)
+    public List<TranscriptionSpeaker> Speakers { get; set; } = new();
 
     // Nav
     public required ApplicationUser User { get; set; }

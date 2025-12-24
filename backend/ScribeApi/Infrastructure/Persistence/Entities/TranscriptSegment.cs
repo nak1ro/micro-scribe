@@ -17,6 +17,9 @@ public class TranscriptSegment
     // Speaker label for diarization support
     public string? Speaker { get; set; }
 
+    // Translated text (null if no translation requested)
+    public string? TranslatedText { get; set; }
+
     // Original text before any edits
     public string? OriginalText { get; set; }
 
