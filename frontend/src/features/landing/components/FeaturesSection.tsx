@@ -281,7 +281,7 @@ export function FeaturesSection() {
                             <div
                                 key={lang.name}
                                 className={cn(
-                                    "flex items-center gap-2 px-3 py-2 rounded-lg",
+                                    "flex items-center gap-2 px-3 py-2 rounded-xl",
                                     "bg-card border border-border",
                                     "hover-subtle"
                                 )}
@@ -307,7 +307,7 @@ export function FeaturesSection() {
                                     <div
                                         key={lang.name}
                                         className={cn(
-                                            "flex items-center gap-2 px-3 py-2 rounded-lg",
+                                            "flex items-center gap-2 px-3 py-2 rounded-xl",
                                             "bg-card border border-border",
                                             "hover:border-primary/30 hover:bg-primary/5",
                                             "transition-all duration-300"
@@ -357,7 +357,7 @@ export function FeaturesSection() {
                             <div
                                 key={index}
                                 className={cn(
-                                    "group flex flex-col items-center text-center p-6 rounded-xl",
+                                    "group flex flex-col items-center text-center p-6 rounded-2xl",
                                     "bg-card border border-border",
                                     "hover-subtle"
                                 )}

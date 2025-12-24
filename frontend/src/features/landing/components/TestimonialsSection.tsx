@@ -190,7 +190,7 @@ function TestimonialCard({ testimonial }: { testimonial: typeof testimonialsCont
     return (
         <div
             className={cn(
-                "p-5 rounded-xl h-full",
+                "p-5 rounded-2xl h-full",
                 "bg-card border border-border shadow-sm",
                 "hover-lift"
             )}

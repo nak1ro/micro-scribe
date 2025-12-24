@@ -2,7 +2,7 @@
 // All strings, numbers, and configuration in one place
 
 export const siteConfig = {
-    name: "MicroScribe",
+    name: "ScribeRocket",
     tagline: "Transcription made easy",
     description:
         "AI-powered transcription with timestamps, summaries, and translations. Upload and get results in seconds.",
@@ -292,7 +292,7 @@ export const testimonialsContent = {
     testimonials: [
         {
             quote:
-                "MicroScribe saves me 8+ hours every week. I just upload my podcast episodes and get perfect transcripts in minutes.",
+                "ScribeRocket saves me 8+ hours every week. I just upload my podcast episodes and get perfect transcripts in minutes.",
             name: "Sarah Chen",
             role: "Podcaster",
             rating: 5,

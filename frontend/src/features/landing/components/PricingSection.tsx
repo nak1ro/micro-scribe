@@ -1,34 +1,12 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import {
-    Infinite,
-    Upload,
-    Sparks,
-    Flash,
-    Clock,
-    CheckCircle,
-    Download,
-    Group,
-} from "iconoir-react";
+import { CheckCircle } from "iconoir-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui";
 import { pricingContent } from "../data/content";
 import { PricingToggle } from "@/features/pricing/components/PricingToggle";
+import { PricingCard } from "@/features/pricing/components/PricingCard";
 import { BillingInterval } from "@/features/pricing/data";
-
-// Icon mapping for features - using Iconoir icons
-const iconMap: Record<string, React.ElementType> = {
-    Infinity: Infinite,
-    Upload,
-    Sparkles: Sparks,
-    Zap: Flash,
-    Clock,
-    CheckCircle,
-    Download,
-    Users: Group,
-};
 
 // Hook for intersection observer
 function useInView(threshold = 0.2) {
@@ -66,21 +44,28 @@ export function PricingSection() {
             className="relative min-h-screen flex items-center py-12 scroll-mt-16 overflow-hidden"
             ref={ref}
         >
-            {/* Dot grid pattern overlay with fade masks for smooth transition */}
-            <div className="absolute inset-0 pointer-events-none">
-                {/* Dot grid */}
-                <div className="absolute inset-0 bg-dot-grid" />
-                {/* Top fade - transitions from previous section */}
-                <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-background to-transparent" />
-                {/* Bottom fade - transitions to next section */}
-                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
+            {/* Left decorative elements */}
+            <div className="absolute left-8 lg:left-16 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center gap-6 opacity-40">
+                <div className="w-3 h-3 rounded-full bg-primary animate-bounce" style={{ animationDuration: "2s" }} />
+                <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDuration: "2.5s", animationDelay: "0.3s" }} />
+                <div className="relative w-10 h-10">
+                    <div className="absolute inset-0 rounded-full border border-primary/40 animate-ping" style={{ animationDuration: "3s" }} />
+                    <div className="absolute inset-3 rounded-full bg-primary/30" />
+                </div>
+                <div className="w-2 h-2 rounded-full bg-secondary/50 animate-bounce" style={{ animationDuration: "2.2s", animationDelay: "0.5s" }} />
             </div>
 
-            {/* Slightly stronger glow to emphasize pricing */}
-            <div className="absolute inset-0 pointer-events-none">
-                <div
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] rounded-full bg-primary/8 blur-3xl" />
+            {/* Right decorative elements */}
+            <div className="absolute right-8 lg:right-16 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center gap-6 opacity-40">
+                <div className="w-2 h-2 rounded-full bg-secondary/50 animate-bounce" style={{ animationDuration: "2.3s" }} />
+                <div className="relative w-10 h-10">
+                    <div className="absolute inset-0 rounded-full border border-secondary/40 animate-ping" style={{ animationDuration: "3.5s" }} />
+                    <div className="absolute inset-3 rounded-full bg-secondary/30" />
+                </div>
+                <div className="w-3 h-3 rounded-full bg-secondary animate-bounce" style={{ animationDuration: "2s", animationDelay: "0.2s" }} />
+                <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDuration: "2.6s", animationDelay: "0.4s" }} />
             </div>
+
             <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 {/* Heading */}
                 <div
@@ -111,117 +96,26 @@ export function PricingSection() {
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 max-w-5xl mx-auto">
                     {pricingContent.tiers.map((tier, index) => {
                         const isPro = tier.highlighted;
-
-                        const price = isPro ? (billingInterval === "monthly" ? tier.priceMonthly : tier.priceAnnual) : tier.price;
-                        const priceLabel = isPro ? (billingInterval === "monthly" ? tier.priceLabelMonthly : tier.priceLabelAnnual) : tier.priceLabel;
+                        const price = isPro
+                            ? (billingInterval === "monthly" ? tier.priceMonthly : tier.priceAnnual)
+                            : tier.price;
+                        const priceLabel = isPro
+                            ? (billingInterval === "monthly" ? tier.priceLabelMonthly : tier.priceLabelAnnual)
+                            : tier.priceLabel;
 
                         return (
-                            <div
+                            <PricingCard
                                 key={index}
-                                className={cn(
-                                    "relative rounded-2xl overflow-hidden bg-card shadow-lg",
-                                    "hover-lift",
-                                    isPro && "md:scale-[1.02]",
-                                    // Animation
-                                    isInView
-                                        ? "opacity-100 translate-y-0 scale-100"
-                                        : "opacity-0 translate-y-8 scale-95"
-                                )}
-                                style={{ transitionDelay: `${200 + index * 150}ms` }}
-                            >
-                                {/* Header with gradient for Pro */}
-                                <div
-                                    className={cn(
-                                        "px-6 py-6 text-center",
-                                        isPro
-                                            ? "bg-gradient-to-br from-primary to-primary/65 text-primary-foreground"
-                                            : "bg-card border-b border-border"
-                                    )}
-                                >
-                                    <h3
-                                        className={cn(
-                                            "text-sm font-medium mb-2",
-                                            isPro ? "text-white/80" : "text-muted-foreground"
-                                        )}
-                                    >
-                                        {tier.name}
-                                        {isPro && " – " + tier.description}
-                                    </h3>
+                                name={tier.name}
+                                description={tier.description}
+                                price={price || "$0"}
+                                period={tier.period}
+                                priceLabel={priceLabel}
+                                features={tier.features}
+                                cta={tier.cta}
+                                highlighted={isPro}
 
-                                    {/* Price */}
-                                    <div className="flex items-baseline justify-center gap-1">
-                                        <span
-                                            className={cn(
-                                                "text-4xl sm:text-5xl font-bold",
-                                                isPro ? "text-white" : "text-foreground"
-                                            )}
-                                        >
-                                            {price}
-                                        </span>
-                                        <span
-                                            className={cn(
-                                                "text-base",
-                                                isPro ? "text-white/70" : "text-muted-foreground"
-                                            )}
-                                        >
-                                            {tier.period}
-                                        </span>
-                                    </div>
-
-                                    {priceLabel && (
-                                        <p
-                                            className={cn(
-                                                "text-xs mt-1",
-                                                isPro ? "text-white/60" : "text-muted-foreground"
-                                            )}
-                                        >
-                                            {priceLabel}
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* Features */}
-                                <div className="bg-card px-6 py-6">
-                                    <div className="space-y-5 mb-6">
-                                        {tier.features.map((feature, featureIndex) => {
-                                            const Icon = iconMap[feature.icon] || CheckCircle;
-                                            return (
-                                                <div key={featureIndex} className="flex items-center gap-3">
-                                                    <div
-                                                        className={cn(
-                                                            "shrink-0 w-9 h-9 rounded-lg flex items-center justify-center",
-                                                            isPro ? "bg-primary/10" : "bg-muted"
-                                                        )}
-                                                    >
-                                                        <Icon
-                                                            width={24}
-                                                            height={24}
-                                                            className="text-primary"
-                                                        />
-                                                    </div>
-                                                    <p className="flex-1 text-sm text-foreground">
-                                                        {feature.text}
-                                                    </p>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-
-                                    {/* CTA */}
-                                    <Link href={tier.cta.href}>
-                                        <Button
-                                            variant={isPro ? "default" : "outline"}
-                                            size="lg"
-                                            className={cn(
-                                                "w-full text-sm font-semibold uppercase tracking-wide",
-                                                isPro && "bg-primary hover:bg-primary/90"
-                                            )}
-                                        >
-                                            {tier.cta.label}
-                                        </Button>
-                                    </Link>
-                                </div>
-                            </div>
+                            />
                         );
                     })}
                 </div>

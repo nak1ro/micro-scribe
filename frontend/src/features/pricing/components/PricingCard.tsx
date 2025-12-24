@@ -1,82 +1,93 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import { Check } from "lucide-react";
+import {
+    Infinite,
+    Upload,
+    Sparks,
+    Flash,
+    Clock,
+    CheckCircle,
+    Download,
+    Group,
+} from "iconoir-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui";
-import { BillingInterval, pricingConfig } from "../data";
+import { PricingButton } from "./PricingButton";
 
-interface PricingCardProps {
-    name: string;
-    description: string;
-    price: number;
-    interval: BillingInterval;
-    features: string[];
-    cta: string;
-    ctaHref: string;
-    highlighted?: boolean;
-    badge?: string;
+// Icon mapping for features - using Iconoir icons
+const iconMap: Record<string, React.ElementType> = {
+    Infinity: Infinite,
+    Upload,
+    Sparkles: Sparks,
+    Zap: Flash,
+    Clock,
+    CheckCircle,
+    Download,
+    Users: Group,
+};
+
+export interface PricingFeature {
+    icon: string;
+    text: string;
 }
 
-// Individual pricing plan card with features and CTA
+export interface PricingCardProps {
+    name: string;
+    description?: string;
+    price: string;
+    period?: string;
+    priceLabel?: string;
+    features: PricingFeature[];
+    cta: {
+        label: string;
+        href: string;
+    };
+    highlighted?: boolean;
+    // Animation support for landing page
+    animationClass?: string;
+    animationDelay?: string;
+}
+
+// Reusable pricing card component - used on landing page and pricing page
 export function PricingCard({
     name,
     description,
     price,
-    interval,
+    period,
+    priceLabel,
     features,
     cta,
-    ctaHref,
     highlighted = false,
-    badge,
+    animationClass,
+    animationDelay,
 }: PricingCardProps) {
-    const isFree = price === 0;
-    const displayPrice = price;
-    const period = isFree ? "forever" : interval === "annual" ? "mo" : "month";
-
     return (
         <div
             className={cn(
-                "relative rounded-2xl overflow-hidden bg-card",
-                "border-2 transition-all duration-300",
-                highlighted
-                    ? "border-primary shadow-xl shadow-primary/20 md:scale-[1.02]"
-                    : "border-border hover:border-muted-foreground/30 shadow-lg"
+                "relative rounded-2xl overflow-hidden bg-card shadow-lg",
+                "hover:shadow-[0_0_25px_hsl(var(--primary)/0.15)] transition-all duration-200",
+                animationClass
             )}
+            style={animationDelay ? { transitionDelay: animationDelay } : undefined}
         >
-            {/* Header */}
+            {/* Header with gradient for highlighted/Pro */}
             <div
                 className={cn(
                     "px-6 py-6 text-center",
                     highlighted
-                        ? "bg-gradient-to-br from-primary via-primary to-secondary text-primary-foreground"
+                        ? "bg-gradient-to-br from-primary to-primary/65 text-primary-foreground"
                         : "bg-card border-b border-border"
                 )}
             >
-                {badge && (
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-xs font-semibold mb-3">
-                        🔥 {badge}
-                    </div>
-                )}
-
                 <h3
                     className={cn(
-                        "text-sm font-medium mb-1",
+                        "text-sm font-medium mb-2",
                         highlighted ? "text-white/80" : "text-muted-foreground"
                     )}
                 >
                     {name}
+                    {highlighted && description && " – " + description}
                 </h3>
-
-                <p
-                    className={cn(
-                        "text-xs mb-3",
-                        highlighted ? "text-white/60" : "text-muted-foreground"
-                    )}
-                >
-                    {description}
-                </p>
 
                 {/* Price */}
                 <div className="flex items-baseline justify-center gap-1">
@@ -86,61 +97,63 @@ export function PricingCard({
                             highlighted ? "text-white" : "text-foreground"
                         )}
                     >
-                        ${displayPrice}
+                        {price}
                     </span>
-                    <span
-                        className={cn(
-                            "text-base",
-                            highlighted ? "text-white/70" : "text-muted-foreground"
-                        )}
-                    >
-                        /{period}
-                    </span>
+                    {period && (
+                        <span
+                            className={cn(
+                                "text-base",
+                                highlighted ? "text-white/70" : "text-muted-foreground"
+                            )}
+                        >
+                            {period}
+                        </span>
+                    )}
                 </div>
 
-                {interval === "annual" && !isFree && (
+                {priceLabel && (
                     <p
                         className={cn(
                             "text-xs mt-1",
                             highlighted ? "text-white/60" : "text-muted-foreground"
                         )}
                     >
-                        Billed ${displayPrice * 12}/year
+                        {priceLabel}
                     </p>
                 )}
             </div>
 
             {/* Features */}
             <div className="bg-card px-6 py-6">
-                <ul className="space-y-3 mb-6">
-                    {features.map((feature, index) => (
-                        <li key={index} className="flex items-start gap-3">
-                            <div
-                                className={cn(
-                                    "shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5",
-                                    highlighted ? "bg-primary/10" : "bg-muted"
-                                )}
-                            >
-                                <Check className="h-3 w-3 text-primary" />
+                <div className="space-y-5 mb-6">
+                    {features.map((feature, index) => {
+                        const Icon = iconMap[feature.icon] || CheckCircle;
+                        return (
+                            <div key={index} className="flex items-center gap-3">
+                                <div
+                                    className={cn(
+                                        "shrink-0 w-9 h-9 rounded-xl flex items-center justify-center",
+                                        highlighted ? "bg-primary/10" : "bg-muted"
+                                    )}
+                                >
+                                    <Icon
+                                        width={24}
+                                        height={24}
+                                        className="text-primary"
+                                    />
+                                </div>
+                                <p className="flex-1 text-sm text-foreground">
+                                    {feature.text}
+                                </p>
                             </div>
-                            <span className="text-sm text-foreground">{feature}</span>
-                        </li>
-                    ))}
-                </ul>
+                        );
+                    })}
+                </div>
 
                 {/* CTA */}
-                <Link href={ctaHref}>
-                    <Button
-                        variant={highlighted ? "default" : "outline"}
-                        size="lg"
-                        className={cn(
-                            "w-full text-sm font-semibold",
-                            highlighted && "bg-primary hover:bg-primary/90"
-                        )}
-                    >
-                        {cta}
-                    </Button>
-                </Link>
+                <PricingButton href={cta.href} highlighted={highlighted}>
+                    {cta.label}
+                </PricingButton>
             </div>
         </div>
     );

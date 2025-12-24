@@ -54,22 +54,21 @@ export function PricingPage() {
                         <PricingCard
                             name={planCardContent.free.name}
                             description={planCardContent.free.description}
-                            price={freePrice}
-                            interval={interval}
+                            price={`$${freePrice}`}
+                            period={freePrice === 0 ? undefined : "/month"}
+                            priceLabel={freePrice === 0 ? "Free forever" : undefined}
                             features={planCardContent.free.features}
-                            cta={planCardContent.free.cta}
-                            ctaHref={planCardContent.free.ctaHref}
+                            cta={{ label: planCardContent.free.cta, href: planCardContent.free.ctaHref }}
                         />
                         <PricingCard
                             name={planCardContent.pro.name}
                             description={planCardContent.pro.description}
-                            price={proPrice}
-                            interval={interval}
+                            price={`$${proPrice}`}
+                            period="/month"
+                            priceLabel={interval === "annual" ? `Billed $${proPrice * 12}/year` : "Billed monthly"}
                             features={planCardContent.pro.features}
-                            cta={planCardContent.pro.cta}
-                            ctaHref={planCardContent.pro.ctaHref}
+                            cta={{ label: planCardContent.pro.cta, href: planCardContent.pro.ctaHref }}
                             highlighted
-                            badge={planCardContent.pro.badge}
                         />
                     </div>
                 </div>

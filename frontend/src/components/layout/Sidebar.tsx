@@ -76,7 +76,7 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
                             className="flex items-center gap-2.5 text-foreground hover:opacity-80 transition-opacity"
                         >
                             <Mic2 className="h-7 w-7 text-primary shrink-0" />
-                            <span className="font-semibold text-base">MicroScribe</span>
+                            <span className="font-semibold text-base">ScribeRocket</span>
                         </Link>
                         {isTranscriptionView ? (
                             <Link
@@ -108,7 +108,7 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
                     ) : (
                         <button
                             onClick={toggleCollapse}
-                            className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                            className="p-2 rounded-md text-muted-foreground  hover:text-foreground hover:bg-accent transition-colors"
                             aria-label="Expand sidebar"
                         >
                             <PanelLeftOpen className="h-5 w-5" />
@@ -215,7 +215,7 @@ function UpgradeCard() {
             <div
                 className={cn(
                     "relative overflow-hidden rounded-xl p-4",
-                    "bg-gradient-to-br from-primary via-secondary to-primary",
+                    "bg-gradient-primary from-primary via-secondary to-primary",
                     "text-primary-foreground",
                     "shadow-lg shadow-primary/25",
                     "hover:shadow-xl hover:shadow-primary/35",
@@ -364,7 +364,7 @@ function NewTranscriptionButton({ isCollapsed, onClick }: NewTranscriptionButton
                 className={cn(
                     "flex items-center justify-center gap-2 w-full",
                     "px-4 py-2.5 rounded-lg",
-                    "bg-primary text-primary-foreground",
+                    "bg-gradient-primary text-primary-foreground",
                     "font-medium text-sm",
                     "hover:bg-primary/90",
                     "hover:bg-primary/90",

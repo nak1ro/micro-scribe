@@ -33,18 +33,24 @@ export const pricingHeroContent = {
     subheadline: "Start free, upgrade when you need more power. No hidden fees, cancel anytime.",
 };
 
+// Feature format for pricing cards
+export interface PlanFeature {
+    icon: string;
+    text: string;
+}
+
 // Plan card content
 export const planCardContent = {
     free: {
         name: "Free",
         description: "Perfect for getting started",
         features: [
-            `${planLimits.free.dailyTranscriptionLimit} transcriptions per day`,
-            `Up to ${planLimits.free.maxMinutesPerFile} minutes per file`,
-            `${planLimits.free.maxFileSizeMB}MB max file size`,
-            "Standard processing speed",
-            "Basic transcription models",
-        ],
+            { icon: "Upload", text: `${planLimits.free.dailyTranscriptionLimit} transcriptions per day` },
+            { icon: "Clock", text: `Up to ${planLimits.free.maxMinutesPerFile} minutes per file` },
+            { icon: "Download", text: `${planLimits.free.maxFileSizeMB}MB max file size` },
+            { icon: "CheckCircle", text: "Standard processing speed" },
+            { icon: "CheckCircle", text: "Basic transcription models" },
+        ] as PlanFeature[],
         cta: "Start Free",
         ctaHref: "/auth?mode=signup",
     },
@@ -53,13 +59,13 @@ export const planCardContent = {
         description: "Unlock full AI transcription power",
         badge: "Most Popular",
         features: [
-            "Unlimited transcriptions",
-            `Up to ${planLimits.pro.maxMinutesPerFile / 60} hours per file`,
-            `${planLimits.pro.maxFileSizeMB / 1024}GB max file size`,
-            "Priority processing",
-            "All AI models & translation",
-            "Unlimited storage",
-        ],
+            { icon: "Infinity", text: "Unlimited transcriptions" },
+            { icon: "Upload", text: `Up to ${planLimits.pro.maxMinutesPerFile / 60} hours per file` },
+            { icon: "Download", text: `${planLimits.pro.maxFileSizeMB / 1024}GB max file size` },
+            { icon: "Zap", text: "Priority processing" },
+            { icon: "Sparkles", text: "All AI models & translation" },
+            { icon: "Users", text: "Unlimited storage" },
+        ] as PlanFeature[],
         cta: "Get Pro",
         ctaHref: "/auth?mode=signup",
     },

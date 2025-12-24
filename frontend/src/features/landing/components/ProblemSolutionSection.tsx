@@ -4,6 +4,7 @@ import * as React from "react";
 import { ArrowRight, Flash, Globe, Sparks, Xmark, Check } from "iconoir-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { CTAButton } from "@/components/ui";
 
 // Hook for intersection observer
 function useInView(threshold = 0.2) {
@@ -85,7 +86,7 @@ const transformation = {
         ],
     },
     after: {
-        title: "The MicroScribe Way",
+        title: "The ScribeRocket Way",
         items: [
             "Automatic speaker detection",
             "Perfect timestamps",
@@ -152,7 +153,7 @@ export function ProblemSolutionSection() {
                     )}
                 >
                     <span className="inline-block px-4 py-1.5 mb-6 text-sm font-medium text-primary bg-primary/10 rounded-full border border-primary/20">
-                        Why MicroScribe?
+                        Why ScribeRocket?
                     </span>
                     <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 tracking-tight">
                         Stop wasting time on
@@ -289,20 +290,9 @@ export function ProblemSolutionSection() {
                         isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                     )}
                 >
-                    <Link
-                        href="/auth?mode=signup"
-                        className={cn(
-                            "inline-flex items-center gap-2 px-8 py-4 rounded-full",
-                            "bg-gradient-to-r from-primary to-primary/65",
-                            "text-primary-foreground font-semibold text-lg",
-                            "shadow-lg shadow-primary/30",
-                            "hover-glow",
-                            "group"
-                        )}
-                    >
+                    <CTAButton size="lg">
                         Start Transcribing Free
-                        <ArrowRight className="w-5 h-5 hover-icon-arrow" />
-                    </Link>
+                    </CTAButton>
                     <p className="mt-4 text-muted-foreground text-sm">
                         No credit card required • 10 free transcriptions daily
                     </p>

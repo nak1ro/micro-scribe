@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Sparks, Shield, CreditCard, ArrowRight, Flash } from "iconoir-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui";
+import { CTAButton } from "@/components/ui";
 import { finalCTAContent } from "../data/content";
 
 // Hook for intersection observer
@@ -119,22 +119,13 @@ export function FinalCTASection() {
                         isInView ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-4 scale-95"
                     )}
                 >
-                    <Link href={finalCTAContent.cta.href}>
-                        <Button
-                            size="lg"
-                            className={cn(
-                                "text-lg px-10 py-7 h-auto",
-                                "bg-gradient-to-r from-primary to-primary/65",
-                                "shadow-xl shadow-primary/30",
-                                "hover-glow",
-                                "group"
-                            )}
-                        >
-                            <Sparks className="h-5 w-5 mr-2 hover-icon-spin" />
-                            {finalCTAContent.cta.label}
-                            <ArrowRight className="h-5 w-5 ml-2 hover-icon-arrow" />
-                        </Button>
-                    </Link>
+                    <CTAButton
+                        href={finalCTAContent.cta.href}
+                        size="xl"
+                        leftIcon={<Sparks className="h-5 w-5" />}
+                    >
+                        {finalCTAContent.cta.label}
+                    </CTAButton>
                 </div>
 
                 {/* Note */}

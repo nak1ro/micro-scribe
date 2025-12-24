@@ -85,7 +85,7 @@ export function AuthCard() {
                                 <Mic2 className="relative h-9 w-9 text-primary" />
                             </div>
                             <span className="text-xl font-bold text-foreground">
-                                MicroScribe
+                                ScribeRocket
                             </span>
                         </div>
 

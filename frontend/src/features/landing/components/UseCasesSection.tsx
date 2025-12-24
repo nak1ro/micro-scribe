@@ -68,7 +68,7 @@ export function UseCasesSection() {
                         </span>
                     </h2>
                     <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                        From solo creators to enterprise teams, MicroScribe adapts to your workflow
+                        From solo creators to enterprise teams, ScribeRocket adapts to your workflow
                     </p>
                 </div>
 
@@ -156,7 +156,7 @@ export function UseCasesSection() {
                 {/* Bottom tagline */}
                 <div className="text-center mt-12">
                     <p className="text-muted-foreground">
-                        <span className="font-semibold text-foreground">50,000+</span> professionals trust MicroScribe daily
+                        <span className="font-semibold text-foreground">50,000+</span> professionals trust ScribeRocket daily
                     </p>
                 </div>
             </div>

@@ -33,7 +33,7 @@ export function Footer() {
                             className="flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity"
                         >
                             <Mic2 className="h-6 w-6 text-primary" />
-                            <span className="text-lg font-semibold">MicroScribe</span>
+                            <span className="text-lg font-semibold">ScribeRocket</span>
                         </Link>
                         <p className="text-sm text-muted-foreground leading-relaxed">
                             Transcription made easy. Powered by OpenAI Whisper for accurate,
@@ -98,7 +98,7 @@ export function Footer() {
                 {/* Copyright */}
                 <div className="mt-12 pt-8 border-t border-border">
                     <p className="text-sm text-muted-foreground text-center">
-                        © {new Date().getFullYear()} MicroScribe. All rights reserved.
+                        © {new Date().getFullYear()} ScribeRocket. All rights reserved.
                     </p>
                 </div>
             </div>

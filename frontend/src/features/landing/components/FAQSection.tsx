@@ -24,7 +24,7 @@ export function FAQSection() {
                         <div
                             key={index}
                             className={cn(
-                                "rounded-xl border border-border bg-card overflow-hidden",
+                                "rounded-2xl border border-border bg-card overflow-hidden",
                                 "shadow-card"
                             )}
                         >

@@ -245,7 +245,7 @@ export function WhisperReviewsSection() {
                     )}
                 >
                     <p className="text-muted-foreground text-sm">
-                        MicroScribe uses OpenAI&apos;s Whisper for industry-leading transcription accuracy
+                        ScribeRocket uses OpenAI&apos;s Whisper for industry-leading transcription accuracy
                     </p>
                 </div>
             </div>

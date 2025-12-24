@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Upload, Sparks, Download, ArrowRight } from "iconoir-react";
 import { cn } from "@/lib/utils";
+import { CTAButton } from "@/components/ui";
 
 // Steps data
 const steps = [
@@ -204,20 +205,9 @@ export function HowItWorksSection() {
                     "text-center mt-20 transition-all duration-700 delay-700",
                     isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                 )}>
-                    <Link
-                        href="/auth?mode=signup"
-                        className={cn(
-                            "inline-flex items-center gap-2 px-6 py-3 rounded-full",
-                            "bg-gradient-to-r from-primary to-primary/65",
-                            "text-white font-semibold",
-                            "shadow-lg shadow-primary/25",
-                            "hover-glow",
-                            "group"
-                        )}
-                    >
+                    <CTAButton size="sm">
                         Start Transcribing
-                        <ArrowRight className="w-4 h-4 hover-icon-arrow" />
-                    </Link>
+                    </CTAButton>
                 </div>
             </div>
         </section>

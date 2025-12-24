@@ -42,7 +42,7 @@ export function Header() {
                         >
                             <Mic2 className="h-7 w-7 text-primary" />
                             <span className="hidden sm:block text-lg font-semibold">
-                                MicroScribe
+                                ScribeRocket
                             </span>
                         </Link>
 

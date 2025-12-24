@@ -145,7 +145,7 @@ export function SocialProofSection() {
                             )}
                             style={{ transitionDelay: `${100 + index * 80}ms` }}
                         >
-                            <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-sm font-bold">
+                            <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center text-sm font-bold">
                                 {logo.name.charAt(0)}
                             </div>
                             <span className="text-lg font-semibold">{logo.name}</span>
