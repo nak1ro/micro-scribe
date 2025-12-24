@@ -63,6 +63,9 @@ public class TranscriptionJob
     // Soft delete flag
     public bool IsDeleted { get; set; }
 
+    // Current processing step (Normalizing, Transcribing, Diarizing, Translating)
+    public string? ProcessingStep { get; set; }
+
     // Whether speaker diarization is enabled for this job
     public bool EnableSpeakerDiarization { get; set; }
 

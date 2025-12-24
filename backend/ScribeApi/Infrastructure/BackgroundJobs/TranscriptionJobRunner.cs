@@ -68,10 +68,12 @@ public class TranscriptionJobRunner
 
             _logger.LogDebug("[Job {JobId}] Step 2: Preparing audio. MediaFile: {MediaFileId}, StorageKey: {Key}", 
                 jobId, job!.MediaFile?.Id, job.MediaFile?.StorageObjectKey);
+            await UpdateProcessingStepAsync(job!, "Normalizing", ct);
             var chunkResult = await PrepareAudioChunksAsync(job!, ct);
 
             _logger.LogDebug("[Job {JobId}] Step 3: Running transcription. Chunks: {Count}, Duration: {Duration}s", 
                 jobId, chunkResult.Chunks.Count, chunkResult.TotalDuration.TotalSeconds);
+            await UpdateProcessingStepAsync(job!, "Transcribing", ct);
             await RunTranscriptionAsync(job!, chunkResult, ct);
 
             // Step 4 & 5 Combined: Atomic Completion & Usage Update
@@ -136,7 +138,14 @@ public class TranscriptionJobRunner
     private async Task MarkAsProcessingAsync(TranscriptionJob job, CancellationToken ct)
     {
         job.Status = TranscriptionJobStatus.Processing;
+        job.ProcessingStep = "Queued";
         job.StartedAtUtc = DateTime.UtcNow;
+        await _context.SaveChangesAsync(ct);
+    }
+
+    private async Task UpdateProcessingStepAsync(TranscriptionJob job, string step, CancellationToken ct)
+    {
+        job.ProcessingStep = step;
         await _context.SaveChangesAsync(ct);
     }
 
@@ -268,6 +277,7 @@ public class TranscriptionJobRunner
 
             // Update Status to Completed
             job.Status = TranscriptionJobStatus.Completed;
+            job.ProcessingStep = null; // Clear step on completion
             job.CompletedAtUtc = DateTime.UtcNow;
 
             // Update Usage (Billing)

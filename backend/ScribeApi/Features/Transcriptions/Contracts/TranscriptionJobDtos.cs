@@ -39,6 +39,7 @@ namespace ScribeApi.Features.Transcriptions.Contracts
         public Guid MediaFileId { get; init; }
         public string OriginalFileName { get; init; } = string.Empty;
         public TranscriptionJobStatus Status { get; init; }
+        public string? ProcessingStep { get; init; }
         public TranscriptionQuality Quality { get; init; }
         public string? SourceLanguage { get; init; }
         public string? TargetLanguage { get; init; }
