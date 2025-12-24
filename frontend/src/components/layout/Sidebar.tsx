@@ -81,7 +81,7 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
                         {isTranscriptionView ? (
                             <Link
                                 href="/dashboard"
-                                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                                className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                                 aria-label="Back to Dashboard"
                             >
                                 <ArrowLeft className="h-4 w-4" />
@@ -89,7 +89,7 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
                         ) : (
                             <button
                                 onClick={toggleCollapse}
-                                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                                className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                                 aria-label="Collapse sidebar"
                             >
                                 <SidebarCollapse className="h-4 w-4" />
@@ -119,7 +119,7 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
 
             {/* Upgrade Card (Free Users) - Hero CTA */}
             {!isPremium && !isCollapsed && (
-                <div className="px-4 py-2 mt-2">
+                <div className="px-4 py-2 mt-4">
                     <UpgradeCard />
                 </div>
             )}
@@ -146,19 +146,17 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
             </div>
 
             {/* Navigation */}
-            <div className="">
-                <SidebarSection>
-                    <SidebarNavItem
-                        href="/dashboard"
-                        icon={MusicDoubleNote}
-                        label="My Transcriptions"
-                        isCollapsed={isCollapsed}
-                    />
-                </SidebarSection>
-            </div>
+            <SidebarSection>
+                <SidebarNavItem
+                    href="/dashboard"
+                    icon={MusicDoubleNote}
+                    label="My Transcriptions"
+                    isCollapsed={isCollapsed}
+                />
+            </SidebarSection>
 
             {/* Bottom - Settings */}
-            <SidebarSection className="border-t border-border mt-auto">
+            <SidebarSection className="border-t border-border mt-auto pb-4">
                 <SidebarNavItem
                     href="/dashboard/settings"
                     icon={Settings}
@@ -300,7 +298,7 @@ function UsageIndicator({ used, limit, isCollapsed }: UsageIndicatorProps) {
     }
 
     return (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border border-border">
             <svg width="32" height="32" viewBox="0 0 36 36">
                 <circle cx="18" cy="18" r={expandedRadius} fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
                 <circle

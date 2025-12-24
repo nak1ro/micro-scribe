@@ -9,8 +9,6 @@ import type { TranscriptionListItem } from "@/types/models/transcription";
 import { TranscriptionItem } from "@/features/transcription";
 
 type InputType = "file" | "youtube" | "voice";
-type SortField = "fileName" | "uploadDate" | "duration";
-type SortDirection = "asc" | "desc";
 
 interface TranscriptionListProps {
     items: TranscriptionListItem[];
@@ -40,10 +38,6 @@ export function TranscriptionList({
     // Selection state
     const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
 
-    // Sorting state
-    const [sortField, setSortField] = React.useState<SortField>("uploadDate");
-    const [sortDirection, setSortDirection] = React.useState<SortDirection>("desc");
-
     // Selection handlers
     const toggleSelect = (id: string) => {
         setSelectedIds(prev => {
@@ -58,25 +52,6 @@ export function TranscriptionList({
     };
 
     const clearSelection = () => setSelectedIds(new Set());
-
-    // Sort items
-    const sortedItems = React.useMemo(() => {
-        return [...items].sort((a, b) => {
-            let comparison = 0;
-            switch (sortField) {
-                case "fileName":
-                    comparison = a.fileName.localeCompare(b.fileName);
-                    break;
-                case "uploadDate":
-                    comparison = new Date(a.uploadDate).getTime() - new Date(b.uploadDate).getTime();
-                    break;
-                case "duration":
-                    comparison = (a.duration ?? 0) - (b.duration ?? 0);
-                    break;
-            }
-            return sortDirection === "asc" ? comparison : -comparison;
-        });
-    }, [items, sortField, sortDirection]);
 
     // Bulk action handlers
     const handleBulkDelete = () => {
@@ -131,7 +106,7 @@ export function TranscriptionList({
 
             {/* Card Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {sortedItems.map((item) => (
+                {items.map((item) => (
                     <TranscriptionCard
                         key={item.id}
                         item={item}

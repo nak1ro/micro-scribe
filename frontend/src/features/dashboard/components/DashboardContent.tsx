@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Search, ArrowUpDown, Check } from "lucide-react";
+import { Search, ArrowUpDown, Check, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TranscriptionList } from "@/features/transcription";
 import { FolderPills } from "../../folder/components/FolderPills";
@@ -9,6 +9,7 @@ import { useAddToFolder } from "@/hooks";
 import type { TranscriptionListItem } from "@/types/models/transcription";
 
 type SortOption = "timeAdded" | "name" | "duration";
+type SortDirection = "asc" | "desc";
 
 interface DashboardContentProps {
     items: TranscriptionListItem[];
@@ -34,6 +35,7 @@ export function DashboardContent({
     const addToFolderMutation = useAddToFolder();
     const [searchQuery, setSearchQuery] = React.useState("");
     const [sortBy, setSortBy] = React.useState<SortOption>("timeAdded");
+    const [sortDirection, setSortDirection] = React.useState<SortDirection>("desc");
 
     const handleDelete = async (id: string) => {
         try {
@@ -82,18 +84,25 @@ export function DashboardContent({
         }
 
         // Sort
-        return [...result].sort((a, b) => {
+        const sorted = [...result].sort((a, b) => {
+            let comparison = 0;
             switch (sortBy) {
                 case "name":
-                    return a.fileName.localeCompare(b.fileName);
+                    comparison = a.fileName.localeCompare(b.fileName);
+                    break;
                 case "duration":
-                    return (b.duration ?? 0) - (a.duration ?? 0);
+                    comparison = (a.duration ?? 0) - (b.duration ?? 0);
+                    break;
                 case "timeAdded":
                 default:
-                    return new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime();
+                    comparison = new Date(a.uploadDate).getTime() - new Date(b.uploadDate).getTime();
+                    break;
             }
+            return sortDirection === "asc" ? comparison : -comparison;
         });
-    }, [items, searchQuery, sortBy]);
+
+        return sorted;
+    }, [items, searchQuery, sortBy, sortDirection]);
 
     return (
         <>
@@ -106,7 +115,9 @@ export function DashboardContent({
                     searchQuery={searchQuery}
                     onSearchChange={setSearchQuery}
                     sortBy={sortBy}
+                    sortDirection={sortDirection}
                     onSortChange={setSortBy}
+                    onDirectionChange={setSortDirection}
                 />
 
                 <FolderPills />
@@ -157,7 +168,9 @@ interface SearchFilterBarProps {
     searchQuery: string;
     onSearchChange: (value: string) => void;
     sortBy: SortOption;
+    sortDirection: SortDirection;
     onSortChange: (value: SortOption) => void;
+    onDirectionChange: (value: SortDirection) => void;
 }
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
@@ -166,7 +179,7 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
     { value: "duration", label: "Duration" },
 ];
 
-function SearchFilterBar({ searchQuery, onSearchChange, sortBy, onSortChange }: SearchFilterBarProps) {
+function SearchFilterBar({ searchQuery, onSearchChange, sortBy, sortDirection, onSortChange, onDirectionChange }: SearchFilterBarProps) {
     const [sortOpen, setSortOpen] = React.useState(false);
     const sortRef = React.useRef<HTMLDivElement>(null);
 
@@ -180,6 +193,20 @@ function SearchFilterBar({ searchQuery, onSearchChange, sortBy, onSortChange }: 
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    const handleSortOptionClick = (option: SortOption) => {
+        if (sortBy === option) {
+            // Toggle direction if same option clicked
+            onDirectionChange(sortDirection === "asc" ? "desc" : "asc");
+        } else {
+            onSortChange(option);
+            // Default to desc for time/duration, asc for name
+            onDirectionChange(option === "name" ? "asc" : "desc");
+        }
+        setSortOpen(false);
+    };
+
+    const DirectionIcon = sortDirection === "asc" ? ArrowUp : ArrowDown;
 
     return (
         <div className="flex flex-col sm:flex-row gap-3">
@@ -213,33 +240,37 @@ function SearchFilterBar({ searchQuery, onSearchChange, sortBy, onSortChange }: 
                         "transition-colors"
                     )}
                 >
-                    <ArrowUpDown className="h-4 w-4" />
                     <span className="hidden sm:inline">
                         {SORT_OPTIONS.find(o => o.value === sortBy)?.label}
                     </span>
+                    <DirectionIcon className="h-3 w-3 text-primary" />
                 </button>
 
                 {sortOpen && (
                     <div className={cn(
                         "absolute right-0 top-full mt-1 z-50",
-                        "w-40 py-1 rounded-lg",
+                        "w-44 py-1 rounded-lg",
                         "bg-card border border-border shadow-lg"
                     )}>
                         {SORT_OPTIONS.map((option) => (
                             <button
                                 key={option.value}
-                                onClick={() => {
-                                    onSortChange(option.value);
-                                    setSortOpen(false);
-                                }}
+                                onClick={() => handleSortOptionClick(option.value)}
                                 className={cn(
                                     "flex items-center justify-between w-full px-3 py-2 text-sm",
                                     "hover:bg-accent transition-colors",
                                     sortBy === option.value ? "text-primary" : "text-foreground"
                                 )}
                             >
-                                {option.label}
-                                {sortBy === option.value && <Check className="h-4 w-4" />}
+                                <span>{option.label}</span>
+                                <span className="flex items-center gap-1">
+                                    {sortBy === option.value && (
+                                        <>
+                                            <DirectionIcon className="h-3 w-3" />
+                                            <Check className="h-4 w-4" />
+                                        </>
+                                    )}
+                                </span>
                             </button>
                         ))}
                     </div>
