@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Loader2 } from "lucide-react";
+import { RefreshDouble } from "iconoir-react";
 import { Button } from "@/components/ui";
 import { UploadStatus } from "@/types/models/upload";
 
@@ -40,7 +40,7 @@ export function UploadProgressOverlay({ status, progress, onCancel }: UploadProg
                         {status === "uploading" ? (
                             <span className="text-xl font-bold text-primary">{progress}%</span>
                         ) : (
-                            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                            <RefreshDouble className="h-8 w-8 text-primary animate-spin" />
                         )}
                     </div>
                     {/* Progress ring for uploading */}

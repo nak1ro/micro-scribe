@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { ChevronDown, FileText, FileType, Subtitles, Table, Music } from "lucide-react";
+import { NavArrowDown, Page, TextBox, MediaVideo, Table2Columns, MusicDoubleNote } from "iconoir-react";
 import type { ExportFormat, ExportOption } from "@/features/transcription/types";
 
 interface ExportMenuProps {
@@ -45,11 +45,11 @@ const exportOptions: ExportOption[] = [
 ];
 
 const iconMap = {
-    FileText,
-    FileType,
-    Subtitles,
-    Table,
-    Music,
+    FileText: Page,
+    FileType: TextBox,
+    Subtitles: MediaVideo,
+    Table: Table2Columns,
+    Music: MusicDoubleNote,
 };
 
 export function ExportMenu({ onExport, disabled, className }: ExportMenuProps) {
@@ -106,7 +106,7 @@ export function ExportMenu({ onExport, disabled, className }: ExportMenuProps) {
                 aria-haspopup="true"
             >
                 <span>Export</span>
-                <ChevronDown
+                <NavArrowDown
                     className={cn(
                         "h-4 w-4 text-muted-foreground transition-transform duration-200",
                         isOpen && "rotate-180"

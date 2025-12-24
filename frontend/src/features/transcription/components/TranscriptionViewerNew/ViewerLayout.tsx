@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { Menu, X } from "lucide-react";
+import { Menu, Xmark } from "iconoir-react";
 import { Button } from "@/components/ui";
 
 interface ViewerLayoutProps {
@@ -86,7 +86,7 @@ export function ViewerLayout({
                                     className="h-8 w-8 p-0"
                                     aria-label="Close actions menu"
                                 >
-                                    <X className="h-4 w-4" />
+                                    <Xmark className="h-4 w-4" />
                                 </Button>
                             </div>
                             <div className="flex-1 overflow-y-auto">

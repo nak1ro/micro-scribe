@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowLeft, Clock, Globe } from "lucide-react";
+import { ArrowLeft, Clock, Globe } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
 import { formatTime, getLanguageName } from "@/lib/utils";

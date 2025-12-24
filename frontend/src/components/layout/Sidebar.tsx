@@ -4,26 +4,26 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import {
-    Mic2,
-    ChevronLeft,
-    ChevronRight,
-    Sparkles,
-    PanelLeftClose,
-    PanelLeftOpen,
-    X,
+    Microphone,
+    NavArrowLeft,
+    NavArrowRight,
+    Sparks,
+    SidebarCollapse,
+    SidebarExpand,
+    Xmark,
     Menu,
-    FileAudio,
+    MusicDoubleNote,
     Plus,
     Settings,
     Folder,
-    ChevronDown,
-    Zap,
+    NavArrowDown,
+    Flash,
     Check,
-    MoreVertical,
-    Pencil,
-    Trash2,
+    MoreVert,
+    EditPencil,
+    Trash,
     ArrowLeft,
-} from "lucide-react";
+} from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/context/SidebarContext";
 import { useUsage } from "@/hooks/useUsage";
@@ -75,7 +75,7 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
                             href="/"
                             className="flex items-center gap-2.5 text-foreground hover:opacity-80 transition-opacity"
                         >
-                            <Mic2 className="h-7 w-7 text-primary shrink-0" />
+                            <Microphone className="h-7 w-7 text-primary shrink-0" />
                             <span className="font-semibold text-base">ScribeRocket</span>
                         </Link>
                         {isTranscriptionView ? (
@@ -92,7 +92,7 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
                                 className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                                 aria-label="Collapse sidebar"
                             >
-                                <PanelLeftClose className="h-4 w-4" />
+                                <SidebarCollapse className="h-4 w-4" />
                             </button>
                         )}
                     </>
@@ -100,7 +100,7 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
                     isTranscriptionView ? (
                         <Link
                             href="/dashboard"
-                            className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                            className="w-10 h-10 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                             aria-label="Back to Dashboard"
                         >
                             <ArrowLeft className="h-5 w-5" />
@@ -108,10 +108,10 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
                     ) : (
                         <button
                             onClick={toggleCollapse}
-                            className="p-2 rounded-md text-muted-foreground  hover:text-foreground hover:bg-accent transition-colors"
+                            className="w-10 h-10 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                             aria-label="Expand sidebar"
                         >
-                            <PanelLeftOpen className="h-5 w-5" />
+                            <SidebarExpand className="h-5 w-5" />
                         </button>
                     )
                 )}
@@ -125,7 +125,10 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
             )}
 
             {/* Usage*/}
-            <div className="mt-5 px-4 py-2 space-y-2">
+            <div className={cn(
+                "mt-5 space-y-2",
+                isCollapsed ? "px-3 py-1.5" : "px-4 py-2"
+            )}>
                 {!isPremium && (
                     <UsageIndicator
                         used={transcriptionsUsed}
@@ -136,19 +139,23 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
                 {isPremium && !isCollapsed && <PremiumBadge />}
             </div>
 
-            <div className="px-4 mt-8 mb-8">
+            <div className={cn(
+                isCollapsed ? "px-3 mt-7 mb-7" : "px-4 mt-8 mb-8"
+            )}>
                 <NewTranscriptionButton isCollapsed={isCollapsed} onClick={onNewTranscription} />
             </div>
 
             {/* Navigation */}
-            <SidebarSection>
-                <SidebarNavItem
-                    href="/dashboard"
-                    icon={FileAudio}
-                    label="My Transcriptions"
-                    isCollapsed={isCollapsed}
-                />
-            </SidebarSection>
+            <div className="">
+                <SidebarSection>
+                    <SidebarNavItem
+                        href="/dashboard"
+                        icon={MusicDoubleNote}
+                        label="My Transcriptions"
+                        isCollapsed={isCollapsed}
+                    />
+                </SidebarSection>
+            </div>
 
             {/* Bottom - Settings */}
             <SidebarSection className="border-t border-border mt-auto">
@@ -188,7 +195,7 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
                     >
                         <div className="absolute top-3 right-3">
                             <button onClick={closeMobile} className="p-1.5 text-muted-foreground hover:text-foreground">
-                                <X className="h-5 w-5" />
+                                <Xmark className="h-5 w-5" />
                             </button>
                         </div>
                         {sidebarContent}
@@ -234,7 +241,7 @@ function UpgradeCard() {
 
                 <div className="relative">
                     <div className="flex items-center gap-2 mb-2">
-                        <Sparkles className="h-5 w-5" />
+                        <Sparks className="h-5 w-5" />
                         <span className="font-bold text-sm">Go Premium</span>
                     </div>
                     <p className="text-sm opacity-90 mb-2">Unlimited transcriptions</p>
@@ -280,25 +287,14 @@ function UsageIndicator({ used, limit, isCollapsed }: UsageIndicatorProps) {
 
     if (isCollapsed) {
         return (
-            <div
-                className="flex items-center justify-center px-2 py-2"
-                title={`${used}/${limit} used today`}
-            >
-                <div
-                    className="flex flex-col items-center justify-center px-3 py-2 rounded-lg border-2"
-                    style={{ borderColor: getStatusColor() }}
+            <div className="flex items-center justify-center">
+                <Link
+                    href="/dashboard/subscription"
+                    className="w-10 h-10 flex items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                    title="Go Premium"
                 >
-                    <span className="text-xs font-semibold text-foreground leading-tight">
-                        {used}
-                    </span>
-                    <div
-                        className="w-4 h-[1px] my-0.5"
-                        style={{ backgroundColor: 'hsl(var(--muted-foreground))' }}
-                    />
-                    <span className="text-xs font-medium text-muted-foreground leading-tight">
-                        {limit}
-                    </span>
-                </div>
+                    <Sparks className="h-5 w-5" />
+                </Link>
             </div>
         );
     }
@@ -335,7 +331,7 @@ function UsageIndicator({ used, limit, isCollapsed }: UsageIndicatorProps) {
 function PremiumBadge() {
     return (
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 text-primary">
-            <Sparkles className="h-5 w-5" />
+            <Sparks className="h-5 w-5" />
             <span className="text-sm font-medium">Unlimited</span>
         </div>
     );
@@ -358,6 +354,22 @@ function NewTranscriptionButton({ isCollapsed, onClick }: NewTranscriptionButton
         }
     };
 
+    if (isCollapsed) {
+        return (
+            <Link href="/dashboard?action=new" onClick={handleClick}>
+                <div
+                    className={cn(
+                        "w-10 h-10 mx-auto flex items-center justify-center rounded-lg",
+                        "bg-primary text-primary-foreground",
+                        "hover:bg-primary/90 transition-colors"
+                    )}
+                >
+                    <Plus className="h-5 w-5" />
+                </div>
+            </Link>
+        );
+    }
+
     return (
         <Link href="/dashboard?action=new" onClick={handleClick}>
             <div
@@ -366,14 +378,11 @@ function NewTranscriptionButton({ isCollapsed, onClick }: NewTranscriptionButton
                     "px-4 py-2.5 rounded-lg",
                     "bg-gradient-primary text-primary-foreground",
                     "font-medium text-sm",
-                    "hover:bg-primary/90",
-                    "hover:bg-primary/90",
-                    "transition-all duration-150",
-                    isCollapsed && "px-2"
+                    "hover:bg-primary/90 transition-all duration-150"
                 )}
             >
                 <Plus className="h-5 w-5" />
-                {!isCollapsed && <span>New</span>}
+                <span>New</span>
             </div>
         </Link>
     );
@@ -408,6 +417,18 @@ interface SidebarNavItemProps {
 }
 
 function SidebarNavItem({ href, icon: Icon, label, isCollapsed }: SidebarNavItemProps) {
+    if (isCollapsed) {
+        return (
+            <Link
+                href={href}
+                className="w-10 h-10 mx-auto flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                title={label}
+            >
+                <Icon className="h-5 w-5" />
+            </Link>
+        );
+    }
+
     return (
         <Link
             href={href}
@@ -415,13 +436,11 @@ function SidebarNavItem({ href, icon: Icon, label, isCollapsed }: SidebarNavItem
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg",
                 "text-sm font-medium text-muted-foreground",
                 "hover:text-foreground hover:bg-accent",
-                "transition-colors duration-150",
-                isCollapsed && "justify-center px-2"
+                "transition-colors duration-150"
             )}
-            title={isCollapsed ? label : undefined}
         >
             <Icon className="h-5 w-5 shrink-0" />
-            {!isCollapsed && <span>{label}</span>}
+            <span>{label}</span>
         </Link>
     );
 }
@@ -497,12 +516,12 @@ function FolderSection({ isCollapsed }: FolderSectionProps) {
 
     if (isCollapsed) {
         return (
-            <div className="px-2 py-1">
+            <div className="flex items-center justify-center">
                 <div
-                    className="flex items-center justify-center p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+                    className="w-10 h-10 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
                     title="Folders"
                 >
-                    <Folder className="h-4 w-4" />
+                    <Folder className="h-5 w-5" />
                 </div>
             </div>
         );
@@ -524,7 +543,7 @@ function FolderSection({ isCollapsed }: FolderSectionProps) {
                     <Folder className="h-4 w-4" />
                     Folders
                 </span>
-                <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", !isExpanded && "-rotate-90")} />
+                <NavArrowDown className={cn("h-3.5 w-3.5 transition-transform", !isExpanded && "-rotate-90")} />
             </button>
 
             {isExpanded && (
@@ -672,7 +691,7 @@ function FolderListItem({ name, color, itemCount, onClick, onEdit, onDelete }: F
                         "transition-colors"
                     )}
                 >
-                    <MoreVertical className="h-4 w-4" />
+                    <MoreVert className="h-4 w-4" />
                 </button>
             </div>
 
@@ -695,7 +714,7 @@ function FolderListItem({ name, color, itemCount, onClick, onEdit, onDelete }: F
                                     "transition-colors"
                                 )}
                             >
-                                <Pencil className="h-3.5 w-3.5" />
+                                <EditPencil className="h-3.5 w-3.5" />
                                 Edit
                             </button>
                             <button
@@ -706,7 +725,7 @@ function FolderListItem({ name, color, itemCount, onClick, onEdit, onDelete }: F
                                     "transition-colors"
                                 )}
                             >
-                                <Trash2 className="h-3.5 w-3.5" />
+                                <Trash className="h-3.5 w-3.5" />
                                 Delete
                             </button>
                         </>

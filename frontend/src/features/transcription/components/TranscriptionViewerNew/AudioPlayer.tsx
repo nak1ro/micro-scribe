@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { Play, Pause, SkipBack, SkipForward, Volume2 } from "lucide-react";
+import { Play, Pause, SkipPrev, SkipNext, SoundHigh } from "iconoir-react";
 import { Button } from "@/components/ui";
 import { formatTime } from "@/lib/utils";
 
@@ -156,7 +156,7 @@ export function AudioPlayer({
                         className="h-9 w-9 p-0 rounded-full"
                         aria-label="Skip back 10 seconds"
                     >
-                        <SkipBack className="h-4 w-4" />
+                        <SkipPrev className="h-4 w-4" />
                     </Button>
                 )}
 
@@ -191,13 +191,13 @@ export function AudioPlayer({
                         className="h-9 w-9 p-0 rounded-full"
                         aria-label="Skip forward 10 seconds"
                     >
-                        <SkipForward className="h-4 w-4" />
+                        <SkipNext className="h-4 w-4" />
                     </Button>
                 )}
 
                 {/* Volume indicator (visual only for now) */}
                 <div className="hidden md:flex items-center gap-2 ml-4 text-muted-foreground">
-                    <Volume2 className="h-4 w-4" />
+                    <SoundHigh className="h-4 w-4" />
                 </div>
             </div>
         </div>

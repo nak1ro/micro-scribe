@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Loader2, AlertCircle } from "lucide-react";
+import { RefreshDouble, WarningCircle } from "iconoir-react";
 import { Button } from "@/components/ui";
 import { useTranscriptionJob } from "@/hooks/useTranscriptions";
 
@@ -172,7 +172,7 @@ export function TranscriptionViewerNew({
         return (
             <div className="flex flex-col h-screen bg-background items-center justify-center gap-4">
                 <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
-                    <AlertCircle className="h-8 w-8 text-destructive" />
+                    <WarningCircle className="h-8 w-8 text-destructive" />
                 </div>
                 <div className="text-center">
                     <p className="font-semibold text-foreground mb-1">Failed to load transcription</p>
@@ -195,7 +195,7 @@ export function TranscriptionViewerNew({
             <div className="flex flex-col h-screen bg-background">
                 <ViewerHeader data={data} onBack={handleBack} />
                 <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-                    <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                    <RefreshDouble className="h-10 w-10 text-primary animate-spin" />
                     <div className="text-center">
                         <p className="font-semibold text-foreground mb-1">
                             Transcription in progress
@@ -216,7 +216,7 @@ export function TranscriptionViewerNew({
                 <ViewerHeader data={data} onBack={handleBack} />
                 <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
                     <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
-                        <AlertCircle className="h-8 w-8 text-destructive" />
+                        <WarningCircle className="h-8 w-8 text-destructive" />
                     </div>
                     <div className="text-center">
                         <p className="font-semibold text-foreground mb-1">

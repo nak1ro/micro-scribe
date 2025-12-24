@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { ChevronDown, Languages, Sparkles } from "lucide-react";
+import { NavArrowDown, Language, Sparks } from "iconoir-react";
 
 interface TranslateMenuProps {
     onTranslate?: (languageCode: string) => void;
@@ -65,7 +65,7 @@ export function TranslateMenu({ onTranslate, disabled, className }: TranslateMen
                 aria-haspopup="true"
             >
                 <div className="flex items-center gap-2">
-                    <Languages className="h-4 w-4 text-muted-foreground" />
+                    <Language className="h-4 w-4 text-muted-foreground" />
                     <span>Translate</span>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -75,7 +75,7 @@ export function TranslateMenu({ onTranslate, disabled, className }: TranslateMen
                     )}>
                         Soon
                     </span>
-                    <ChevronDown
+                    <NavArrowDown
                         className={cn(
                             "h-4 w-4 text-muted-foreground transition-transform duration-200",
                             isOpen && "rotate-180"
@@ -98,7 +98,7 @@ export function TranslateMenu({ onTranslate, disabled, className }: TranslateMen
                     {/* Coming soon notice */}
                     <div className="px-3 py-2 border-b border-border">
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Sparkles className="h-3 w-3" />
+                            <Sparks className="h-3 w-3" />
                             <span>Translation feature coming soon</span>
                         </div>
                     </div>

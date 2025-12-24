@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { Copy, Check, Clock, Users, Pencil, Settings } from "lucide-react";
+import { Copy, Check, Clock, Group, EditPencil, Settings } from "iconoir-react";
 import { Button } from "@/components/ui";
 import { ExportMenu } from "./ExportMenu";
 import { TranslateMenu } from "./TranslateMenu";
@@ -150,7 +150,7 @@ export function ActionsSidebar({
                 {hasSpeakers && (
                     <div className="flex items-center justify-between gap-3 px-1">
                         <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <Group className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm text-foreground">Speakers</span>
                         </div>
                         <Toggle
@@ -174,7 +174,7 @@ export function ActionsSidebar({
                     disabled={disabled || !onEdit}
                     className="w-full justify-start gap-2"
                 >
-                    <Pencil className="h-4 w-4" />
+                    <EditPencil className="h-4 w-4" />
                     <span>Edit transcript</span>
                 </Button>
             </div>

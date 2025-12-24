@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { Upload, Youtube, Mic, FileAudio } from "lucide-react";
+import { CloudUpload, Youtube, Microphone, MusicDoubleNote } from "iconoir-react";
 
 type InputType = "file" | "youtube" | "voice";
 
@@ -23,7 +23,7 @@ export function TranscriptionEmptyState({ onNewClick }: TranscriptionEmptyStateP
             {/* Illustration */}
             <div className="relative mb-6">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                    <FileAudio className="h-10 w-10 text-primary" />
+                    <MusicDoubleNote className="h-10 w-10 text-primary" />
                 </div>
                 {/* Decorative dots */}
                 <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-primary/30" />
@@ -40,7 +40,7 @@ export function TranscriptionEmptyState({ onNewClick }: TranscriptionEmptyStateP
             {/* 3-Option Cards */}
             <div className="flex flex-col sm:flex-row gap-3 w-full max-w-lg">
                 <OptionCard
-                    icon={Upload}
+                    icon={CloudUpload}
                     title="Upload File"
                     description="Audio or video"
                     onClick={() => onNewClick?.("file")}
@@ -52,7 +52,7 @@ export function TranscriptionEmptyState({ onNewClick }: TranscriptionEmptyStateP
                     onClick={() => onNewClick?.("youtube")}
                 />
                 <OptionCard
-                    icon={Mic}
+                    icon={Microphone}
                     title="Record Voice"
                     description="Use microphone"
                     onClick={() => onNewClick?.("voice")}

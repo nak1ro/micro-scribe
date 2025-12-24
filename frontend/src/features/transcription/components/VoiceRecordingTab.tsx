@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Mic, Trash2 } from "lucide-react";
+import { Microphone, Trash } from "iconoir-react";
 import { cn, formatFileSize } from "@/lib/utils";
 
 interface VoiceRecordingTabProps {
@@ -72,7 +72,7 @@ export function VoiceRecordingTab({ audioBlob, onRecordingComplete, onClear }: V
             <div className="space-y-4">
                 <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border border-border">
                     <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Mic className="h-5 w-5 text-primary" />
+                        <Microphone className="h-5 w-5 text-primary" />
                     </div>
                     <div className="flex-1">
                         <p className="font-medium text-foreground">Voice Recording</p>
@@ -87,7 +87,7 @@ export function VoiceRecordingTab({ audioBlob, onRecordingComplete, onClear }: V
                         title="Delete recording"
                         aria-label="Delete recording"
                     >
-                        <Trash2 className="h-5 w-5" />
+                        <Trash className="h-5 w-5" />
                     </button>
                 </div>
                 <audio controls src={audioUrl} className="w-full" aria-label="Audio preview" />
@@ -108,7 +108,7 @@ export function VoiceRecordingTab({ audioBlob, onRecordingComplete, onClear }: V
                 )}
                 aria-label={isRecording ? "Stop recording" : "Start recording"}
             >
-                <Mic className="h-10 w-10" />
+                <Microphone className="h-10 w-10" />
             </button>
 
             <div className="text-center">

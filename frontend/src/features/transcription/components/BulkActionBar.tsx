@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Download, Trash2, X, Share2, FolderPlus, ChevronDown } from "lucide-react";
+import { Download, Trash, Xmark, ShareIos, FolderPlus, NavArrowDown } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
 import { useFolders, FOLDER_COLORS } from "@/hooks";
@@ -67,7 +67,7 @@ export function BulkActionBar({
                             >
                                 <FolderPlus className="h-4 w-4" />
                                 Move to Folder
-                                <ChevronDown className="h-3 w-3" />
+                                <NavArrowDown className="h-3 w-3" />
                             </Button>
 
                             {showFolderDropdown && (
@@ -128,7 +128,7 @@ export function BulkActionBar({
                             onClick={onShare}
                             className="gap-2"
                         >
-                            <Share2 className="h-4 w-4" />
+                            <ShareIos className="h-4 w-4" />
                             Share
                         </Button>
                     )}
@@ -141,7 +141,7 @@ export function BulkActionBar({
                             onClick={onDelete}
                             className="gap-2"
                         >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash className="h-4 w-4" />
                             Delete
                         </Button>
                     )}
@@ -154,7 +154,7 @@ export function BulkActionBar({
                         className="h-8 w-8"
                         aria-label="Clear selection"
                     >
-                        <X className="h-4 w-4" />
+                        <Xmark className="h-4 w-4" />
                     </Button>
                 </div>
             </div>

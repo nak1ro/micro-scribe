@@ -3,15 +3,15 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import {
-    FileAudio,
+    MusicDoubleNote,
     Download,
-    Trash2,
-    Loader2,
-    Clock4,
-    CheckCircle2,
-    XCircle,
-    Ban,
-} from "lucide-react";
+    Trash,
+    RefreshDouble,
+    Clock,
+    CheckCircle,
+    XmarkCircle,
+    Prohibition,
+} from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import type { TranscriptionListItem, TranscriptionStatus } from "@/types/models/transcription";
@@ -102,7 +102,7 @@ export function TranscriptionCard({
                             title="Delete"
                             aria-label="Delete transcription"
                         >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <Trash className="h-3.5 w-3.5" />
                         </Button>
                     )}
                 </div>
@@ -111,7 +111,7 @@ export function TranscriptionCard({
             {/* Icon + Title */}
             <div className="flex items-center gap-3 mb-3 pr-16">
                 <div className="relative p-2 rounded-lg bg-primary/10 shrink-0 h-9 w-9 flex items-center justify-center">
-                    <FileAudio
+                    <MusicDoubleNote
                         className={cn(
                             "h-5 w-5 text-primary transition-opacity duration-200",
                             (isSelected || showActions) ? "opacity-0" : "opacity-100"
@@ -173,32 +173,32 @@ function StatusBadge({ status }: { status: TranscriptionStatus }) {
     }> = {
         uploading: {
             label: "Uploading",
-            icon: Loader2,
+            icon: RefreshDouble,
             className: "bg-primary/10 text-primary",
         },
         pending: {
             label: "Pending",
-            icon: Clock4,
+            icon: Clock,
             className: "bg-warning/10 text-warning",
         },
         processing: {
             label: "Processing",
-            icon: Loader2,
+            icon: RefreshDouble,
             className: "bg-info/10 text-info",
         },
         completed: {
             label: "Completed",
-            icon: CheckCircle2,
+            icon: CheckCircle,
             className: "bg-success/10 text-success",
         },
         failed: {
             label: "Failed",
-            icon: XCircle,
+            icon: XmarkCircle,
             className: "bg-destructive/10 text-destructive",
         },
         cancelled: {
             label: "Cancelled",
-            icon: Ban,
+            icon: Prohibition,
             className: "bg-muted text-muted-foreground",
         },
     };

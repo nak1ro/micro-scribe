@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn, formatFileSize } from "@/lib/utils";
-import { X, Upload, Youtube, Mic, FolderOpen, Trash2, CheckCircle, AlertCircle } from "lucide-react";
+import { Xmark, CloudUpload, Youtube, Microphone, Folder, Trash, CheckCircle, WarningCircle } from "iconoir-react";
 import { Button } from "@/components/ui";
 import { VoiceRecordingTab } from "./VoiceRecordingTab";
 import { UploadProgressOverlay } from "./UploadProgressOverlay";
@@ -229,7 +229,7 @@ export function CreateTranscriptionModal({
                         disabled={isUploading && status !== "uploading"}
                         className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent disabled:opacity-50"
                     >
-                        <X className="h-5 w-5" />
+                        <Xmark className="h-5 w-5" />
                     </button>
                 </div>
 
@@ -247,7 +247,7 @@ export function CreateTranscriptionModal({
                     <div className="p-6">
                         <div className="flex flex-col items-center gap-4 py-8">
                             <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
-                                <AlertCircle className="h-8 w-8 text-destructive" />
+                                <WarningCircle className="h-8 w-8 text-destructive" />
                             </div>
                             <div className="text-center">
                                 <p className="font-semibold text-foreground mb-1">Upload Failed</p>
@@ -293,7 +293,7 @@ export function CreateTranscriptionModal({
                             <TabButton
                                 active={activeTab === "file"}
                                 onClick={() => setActiveTab("file")}
-                                icon={Upload}
+                                icon={CloudUpload}
                                 label="Media File"
                             />
                             <TabButton
@@ -305,7 +305,7 @@ export function CreateTranscriptionModal({
                             <TabButton
                                 active={activeTab === "voice"}
                                 onClick={() => setActiveTab("voice")}
-                                icon={Mic}
+                                icon={Microphone}
                                 label="Voice Recording"
                             />
                         </div>
@@ -473,7 +473,7 @@ function FileUploadTab({ file, onFileSelect, onClear }: FileUploadTabProps) {
         return (
             <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border border-border">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Upload className="h-5 w-5 text-primary" />
+                    <CloudUpload className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
                     <p className="font-medium text-foreground truncate">{file.name}</p>
@@ -486,7 +486,7 @@ function FileUploadTab({ file, onFileSelect, onClear }: FileUploadTabProps) {
                     onClick={onClear}
                     className="p-2 text-muted-foreground hover:text-destructive transition-colors"
                 >
-                    <Trash2 className="h-5 w-5" />
+                    <Trash className="h-5 w-5" />
                 </button>
             </div>
         );
@@ -524,7 +524,7 @@ function FileUploadTab({ file, onFileSelect, onClear }: FileUploadTabProps) {
                 onClick={() => inputRef.current?.click()}
                 className="gap-2"
             >
-                <FolderOpen className="h-4 w-4" />
+                <Folder className="h-4 w-4" />
                 Browse file
             </Button>
 
@@ -576,7 +576,7 @@ function YouTubeTab({ url, onUrlChange, onClear }: YouTubeTabProps) {
                         onClick={onClear}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-destructive transition-colors"
                     >
-                        <X className="h-5 w-5" />
+                        <Xmark className="h-5 w-5" />
                     </button>
                 )}
             </div>

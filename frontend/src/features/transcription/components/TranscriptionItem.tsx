@@ -4,16 +4,16 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-    Trash2,
-    CheckCircle2,
-    XCircle,
-    Loader2,
-    Clock4,
-    Ban,
+    Trash,
+    CheckCircle,
+    XmarkCircle,
+    RefreshDouble,
+    Clock,
+    Prohibition,
     Download,
-    Share2,
-    MoreHorizontal
-} from "lucide-react";
+    ShareIos,
+    MoreHoriz
+} from "iconoir-react";
 import { Button } from "@/components/ui";
 import type { TranscriptionListItem, TranscriptionStatus } from "@/types/models/transcription";
 
@@ -131,32 +131,32 @@ function StatusBadge({ status }: { status: TranscriptionStatus }) {
     }> = {
         uploading: {
             label: "Uploading",
-            icon: Loader2,
+            icon: RefreshDouble,
             className: "bg-primary/10 text-primary",
         },
         pending: {
             label: "Pending",
-            icon: Clock4,
+            icon: Clock,
             className: "bg-muted text-muted-foreground",
         },
         processing: {
             label: "Processing",
-            icon: Loader2,
+            icon: RefreshDouble,
             className: "bg-info/10 text-info",
         },
         completed: {
             label: "Completed",
-            icon: CheckCircle2,
+            icon: CheckCircle,
             className: "bg-success/10 text-success",
         },
         failed: {
             label: "Failed",
-            icon: XCircle,
+            icon: XmarkCircle,
             className: "bg-destructive/10 text-destructive",
         },
         cancelled: {
             label: "Cancelled",
-            icon: Ban,
+            icon: Prohibition,
             className: "bg-muted text-muted-foreground",
         },
     };
@@ -220,7 +220,7 @@ function ActionMenu({ item, onDownload, onShare, onDelete }: ActionMenuProps) {
                 }}
                 title="Actions"
             >
-                <MoreHorizontal className="h-4 w-4" />
+                <MoreHoriz className="h-4 w-4" />
             </Button>
 
             {isOpen && (
@@ -255,7 +255,7 @@ function ActionMenu({ item, onDownload, onShare, onDelete }: ActionMenuProps) {
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors"
                             role="menuitem"
                         >
-                            <Share2 className="h-4 w-4" />
+                            <ShareIos className="h-4 w-4" />
                             Share
                         </button>
                     )}
@@ -269,7 +269,7 @@ function ActionMenu({ item, onDownload, onShare, onDelete }: ActionMenuProps) {
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
                             role="menuitem"
                         >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash className="h-4 w-4" />
                             Delete
                         </button>
                     )}

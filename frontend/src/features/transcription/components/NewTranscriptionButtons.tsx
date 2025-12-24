@@ -3,7 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
-import { Upload, Youtube, Mic } from "lucide-react";
+import { CloudUpload, Youtube, Microphone } from "iconoir-react";
 
 interface NewTranscriptionButtonsProps {
     onUploadClick?: () => void;
@@ -28,7 +28,7 @@ export function NewTranscriptionButtons({
                     onUploadClick?.();
                 }}
             >
-                <Upload className="h-5 w-5" />
+                <CloudUpload className="h-5 w-5" />
                 <span>Upload File</span>
             </Button>
 
@@ -56,7 +56,7 @@ export function NewTranscriptionButtons({
                     onMicClick?.();
                 }}
             >
-                <Mic className="h-5 w-5" />
+                <Microphone className="h-5 w-5" />
                 <span>Record Mic</span>
             </Button>
         </div>
