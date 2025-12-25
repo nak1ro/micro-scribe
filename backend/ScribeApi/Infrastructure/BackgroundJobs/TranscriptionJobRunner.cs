@@ -22,6 +22,7 @@ public class TranscriptionJobRunner
     private readonly IFileStorageService _storageService;
     private readonly IMediaService _mediaService;
     private readonly IWebhookService _webhookService;
+    private readonly IJobNotificationService _notificationService;
     private readonly TranscriptionSettings _settings;
     private readonly ILogger<TranscriptionJobRunner> _logger;
 
@@ -37,6 +38,7 @@ public class TranscriptionJobRunner
         IFileStorageService storageService,
         IMediaService mediaService,
         IWebhookService webhookService,
+        IJobNotificationService notificationService,
         IOptions<TranscriptionSettings> settings,
         ILogger<TranscriptionJobRunner> logger)
     {
@@ -48,6 +50,7 @@ public class TranscriptionJobRunner
         _storageService = storageService;
         _mediaService = mediaService;
         _webhookService = webhookService;
+        _notificationService = notificationService;
         _settings = settings.Value;
         _logger = logger;
     }
@@ -69,16 +72,19 @@ public class TranscriptionJobRunner
             _logger.LogDebug("[Job {JobId}] Step 2: Preparing audio. MediaFile: {MediaFileId}, StorageKey: {Key}", 
                 jobId, job!.MediaFile?.Id, job.MediaFile?.StorageObjectKey);
             await UpdateProcessingStepAsync(job!, "Normalizing", ct);
+            await _notificationService.NotifyJobStatusAsync(jobId, job.UserId, "Processing", "Normalizing");
             var chunkResult = await PrepareAudioChunksAsync(job!, ct);
 
             _logger.LogDebug("[Job {JobId}] Step 3: Running transcription. Chunks: {Count}, Duration: {Duration}s", 
                 jobId, chunkResult.Chunks.Count, chunkResult.TotalDuration.TotalSeconds);
             await UpdateProcessingStepAsync(job!, "Transcribing", ct);
+            await _notificationService.NotifyJobStatusAsync(jobId, job.UserId, "Processing", "Transcribing");
             await RunTranscriptionAsync(job!, chunkResult, ct);
 
             // Step 4 & 5 Combined: Atomic Completion & Usage Update
             _logger.LogDebug("[Job {JobId}] Step 4: Atomic Completion & Billing", jobId);
             await CompleteJobAtomicAsync(jobId, job!.UserId, job!.DurationSeconds, job!.SourceLanguage, ct);
+            await _notificationService.NotifyJobCompletedAsync(jobId, job.UserId);
 
             _logger.LogInformation("Transcription job {JobId} completed successfully", jobId);
         }
@@ -94,6 +100,7 @@ public class TranscriptionJobRunner
             }
 
             await MarkAsFailedAsync(job!, ex.Message, ct);
+            await _notificationService.NotifyJobFailedAsync(jobId, job!.UserId, ex.Message);
             throw; // Rethrow to allow Hangfire to retry (if appropriate) or move to DLQ
         }
         finally

@@ -10,15 +10,18 @@ public class TranslationJobRunner
 {
     private readonly AppDbContext _context;
     private readonly ITranslationService _translationService;
+    private readonly IJobNotificationService _notificationService;
     private readonly ILogger<TranslationJobRunner> _logger;
 
     public TranslationJobRunner(
         AppDbContext context,
         ITranslationService translationService,
+        IJobNotificationService notificationService,
         ILogger<TranslationJobRunner> logger)
     {
         _context = context;
         _translationService = translationService;
+        _notificationService = notificationService;
         _logger = logger;
     }
 
@@ -43,6 +46,7 @@ public class TranslationJobRunner
             job.TranslationStatus = "Translating";
             job.TranslatingToLanguage = targetLanguage;
             await _context.SaveChangesAsync(ct);
+            await _notificationService.NotifyTranslationStatusAsync(jobId, userId, "Translating", targetLanguage);
 
             var sourceLanguage = job.SourceLanguage;
             if (string.IsNullOrWhiteSpace(sourceLanguage))
@@ -87,6 +91,7 @@ public class TranslationJobRunner
 
             _logger.LogInformation("Translation completed for job {JobId} to {Language}, {Count} segments",
                 jobId, targetLanguage, translatedTexts.Count);
+            await _notificationService.NotifyTranslationStatusAsync(jobId, userId, null, null);
         }
         catch (Exception ex)
         {
@@ -94,6 +99,7 @@ public class TranslationJobRunner
             job.TranslationStatus = "Failed";
             job.TranslatingToLanguage = null;
             await _context.SaveChangesAsync(CancellationToken.None);
+            await _notificationService.NotifyTranslationStatusAsync(jobId, userId, "Failed", null);
             throw;
         }
     }
