@@ -99,7 +99,7 @@ export function TranscriptSegment({
                 }}
                 className={cn(
                     "group inline cursor-pointer transition-all duration-200",
-                    "rounded-sm px-1 py-0.5 -mx-1",
+                    "rounded-sm px-0.5 -mx-0.5",
                     "hover:bg-highlight-hover",
                     isActive && "bg-highlight"
                 )}
@@ -113,10 +113,9 @@ export function TranscriptSegment({
 
                 {/* Text content */}
                 <span className="text-foreground">{displayText}</span>
-
-                {/* Space after segment */}
-                <span> </span>
             </div>
+            {/* Space after segment (outside highlight) */}
+            <span> </span>
         </>
     );
 }

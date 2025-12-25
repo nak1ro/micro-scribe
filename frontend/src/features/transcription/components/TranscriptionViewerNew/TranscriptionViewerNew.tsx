@@ -74,6 +74,26 @@ export function TranscriptionViewerNew({
     const [copied, setCopied] = React.useState(false);
     const [displayLanguage, setDisplayLanguage] = React.useState<string | null>(null);
 
+    // Track the language being translated to auto-switch when complete
+    const prevTranslatingRef = React.useRef<string | null>(null);
+
+    // Auto-switch to translated language when translation completes
+    React.useEffect(() => {
+        if (!data) return;
+
+        const wasTranslating = prevTranslatingRef.current;
+        const nowTranslating = data.translatingToLanguage;
+
+        // If we were translating and now we're not, check if the language was added
+        if (wasTranslating && !nowTranslating) {
+            if (data.translatedLanguages.includes(wasTranslating)) {
+                setDisplayLanguage(wasTranslating);
+            }
+        }
+
+        prevTranslatingRef.current = nowTranslating;
+    }, [data?.translatingToLanguage, data?.translatedLanguages]);
+
     // Audio sync hook
     const {
         audioRef,
