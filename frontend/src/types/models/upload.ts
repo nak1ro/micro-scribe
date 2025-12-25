@@ -27,7 +27,6 @@ export interface UploadOptions {
     sourceLanguage?: string;
     quality?: number;
     enableSpeakerDiarization?: boolean;
-    targetLanguage?: string;
 }
 
 // Configuration for the upload orchestrator

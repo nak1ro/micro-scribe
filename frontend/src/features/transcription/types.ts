@@ -18,7 +18,7 @@ export interface ViewerSegment {
     startSeconds: number;
     endSeconds: number;
     speaker: string | null;
-    translatedText: string | null;
+    translations: Record<string, string>;
     isEdited: boolean;
 }
 
@@ -44,7 +44,9 @@ export interface TranscriptionData {
     processingStep: string | null;
     durationSeconds: number;
     sourceLanguage: string;
-    targetLanguage: string | null;
+    translatedLanguages: string[];
+    translationStatus: string | null;
+    translatingToLanguage: string | null;
     enableSpeakerDiarization: boolean;
     speakers: SpeakerInfo[];
     segments: ViewerSegment[];

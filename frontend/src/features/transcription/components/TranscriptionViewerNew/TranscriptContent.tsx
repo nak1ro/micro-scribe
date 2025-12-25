@@ -11,6 +11,7 @@ interface TranscriptContentProps {
     activeSegmentIndex: number;
     showTimecodes: boolean;
     showSpeakers: boolean;
+    displayLanguage: string | null;
     onSegmentClick: (index: number) => void;
     className?: string;
 }
@@ -21,6 +22,7 @@ export function TranscriptContent({
     activeSegmentIndex,
     showTimecodes,
     showSpeakers,
+    displayLanguage,
     onSegmentClick,
     className,
 }: TranscriptContentProps) {
@@ -111,6 +113,7 @@ export function TranscriptContent({
                                         isActive={index === activeSegmentIndex}
                                         showTimecode={showTimecodes}
                                         showSpeaker={showSpeakers}
+                                        displayLanguage={displayLanguage}
                                         previousSpeaker={index > 0 ? segments[index - 1].speaker : null}
                                         speakerInfo={speakerInfo}
                                         onClick={onSegmentClick}

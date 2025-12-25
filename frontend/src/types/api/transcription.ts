@@ -109,7 +109,6 @@ export interface CreateTranscriptionJobRequest {
     quality?: TranscriptionQuality;
     sourceLanguage?: string | null;
     enableSpeakerDiarization?: boolean;
-    targetLanguage?: string | null;
 }
 
 export interface TranscriptionJobResponse {
@@ -140,7 +139,9 @@ export interface TranscriptionJobDetailResponse {
     processingStep: string | null;
     quality: TranscriptionQuality;
     sourceLanguage: string | null;
-    targetLanguage: string | null;
+    translatedLanguages: string[];
+    translationStatus: string | null;
+    translatingToLanguage: string | null;
     transcript: string | null;
     errorMessage: string | null;
     durationSeconds: number | null;
@@ -159,7 +160,7 @@ export interface TranscriptSegmentDto {
     startSeconds: number;
     endSeconds: number;
     speaker: string | null;
-    translatedText: string | null;
+    translations: Record<string, string>;
     isEdited: boolean;
     originalText: string | null;
 }

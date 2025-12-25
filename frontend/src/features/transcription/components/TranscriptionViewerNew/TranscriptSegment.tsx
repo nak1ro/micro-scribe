@@ -12,6 +12,7 @@ interface TranscriptSegmentProps {
     isActive: boolean;
     showTimecode: boolean;
     showSpeaker: boolean;
+    displayLanguage: string | null;
     previousSpeaker: string | null;
     speakerInfo?: SpeakerInfo;
     onClick: (index: number) => void;
@@ -24,6 +25,7 @@ export function TranscriptSegment({
     isActive,
     showTimecode,
     showSpeaker,
+    displayLanguage,
     previousSpeaker,
     speakerInfo,
     onClick,
@@ -33,6 +35,14 @@ export function TranscriptSegment({
     const speakerColor = segment.speaker ? getSpeakerColor(segment.speaker, speakerInfo?.color) : "";
     const speakerBgColor = segment.speaker ? getSpeakerBgColor(segment.speaker, speakerInfo?.color) : "";
     const speakerName = segment.speaker ? getSpeakerDisplayName(segment.speaker, speakerInfo?.displayName) : "";
+
+    // Resolve display text based on selected language
+    const displayText = React.useMemo(() => {
+        if (displayLanguage && segment.translations) {
+            return segment.translations[displayLanguage] || segment.text;
+        }
+        return segment.text;
+    }, [displayLanguage, segment.translations, segment.text]);
 
     return (
         <>
@@ -102,7 +112,7 @@ export function TranscriptSegment({
                 )}
 
                 {/* Text content */}
-                <span className="text-foreground">{segment.text}</span>
+                <span className="text-foreground">{displayText}</span>
 
                 {/* Space after segment */}
                 <span> </span>

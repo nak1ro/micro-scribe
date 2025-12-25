@@ -32,6 +32,7 @@ export const API_ENDPOINTS = {
         GET: (jobId: string) => `/transcriptions/${jobId}`,
         CANCEL: (jobId: string) => `/transcriptions/${jobId}/cancel`,
         EXPORT: (jobId: string) => `/transcriptions/${jobId}/export`,
+        TRANSLATE: (jobId: string) => `/transcriptions/${jobId}/translate`,
         UPDATE_SEGMENT: (jobId: string, segmentId: string) => `/transcriptions/${jobId}/segments/${segmentId}`,
         REVERT_SEGMENT: (jobId: string, segmentId: string) => `/transcriptions/${jobId}/segments/${segmentId}/revert`,
     },

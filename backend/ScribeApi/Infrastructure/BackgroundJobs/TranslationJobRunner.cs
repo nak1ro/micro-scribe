@@ -27,8 +27,8 @@ public class TranslationJobRunner
     {
         _logger.LogInformation("Starting translation job {JobId} to {Language}", jobId, targetLanguage);
 
+        // Segments is JSONB, auto-loaded with entity (no Include needed)
         var job = await _context.TranscriptionJobs
-            .Include(j => j.Segments)
             .FirstOrDefaultAsync(j => j.Id == jobId && j.UserId == userId, ct);
 
         if (job == null)
@@ -75,6 +75,10 @@ public class TranslationJobRunner
             {
                 orderedSegments[i].Translations[targetLanguage] = translatedTexts[i];
             }
+
+            // Force EF Core to detect JSONB changes by reassigning the collection
+            job.Segments = orderedSegments;
+            _context.Entry(job).Property(j => j.Segments).IsModified = true;
 
             // Clear translation status
             job.TranslationStatus = null;

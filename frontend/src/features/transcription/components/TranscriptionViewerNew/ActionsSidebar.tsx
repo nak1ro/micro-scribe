@@ -6,6 +6,7 @@ import { Copy, Check, Clock, Group, EditPencil, Settings } from "iconoir-react";
 import { Button } from "@/components/ui";
 import { ExportMenu } from "./ExportMenu";
 import { TranslateMenu } from "./TranslateMenu";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import type { ExportFormat } from "@/features/transcription/types";
 
 interface ActionsSidebarProps {
@@ -21,6 +22,15 @@ interface ActionsSidebarProps {
     hasSpeakers: boolean;
     // Export
     onExport: (format: ExportFormat) => void;
+    // Translation
+    onTranslate: (targetLanguage: string) => void;
+    translatedLanguages: string[];
+    translationStatus: string | null;
+    translatingToLanguage: string | null;
+    // Language display
+    sourceLanguage: string;
+    displayLanguage: string | null;
+    onDisplayLanguageChange: (lang: string | null) => void;
     // Edit
     onEdit?: () => void;
     // Status
@@ -72,6 +82,13 @@ export function ActionsSidebar({
     onToggleSpeakers,
     hasSpeakers,
     onExport,
+    onTranslate,
+    translatedLanguages,
+    translationStatus,
+    translatingToLanguage,
+    sourceLanguage,
+    displayLanguage,
+    onDisplayLanguageChange,
     onEdit,
     disabled,
     className,
@@ -88,7 +105,13 @@ export function ActionsSidebar({
                 <ExportMenu onExport={onExport} disabled={disabled} />
 
                 {/* Translate */}
-                <TranslateMenu disabled={disabled} />
+                <TranslateMenu
+                    onTranslate={onTranslate}
+                    translatedLanguages={translatedLanguages}
+                    translationStatus={translationStatus}
+                    translatingToLanguage={translatingToLanguage}
+                    disabled={disabled}
+                />
 
                 {/* Copy */}
                 {/* Copy */}
@@ -123,6 +146,20 @@ export function ActionsSidebar({
 
             {/* Divider */}
             <div className="h-px bg-border my-8" />
+
+            {/* Language Switcher - only show if translations exist */}
+            {translatedLanguages.length > 0 && (
+                <>
+                    <LanguageSwitcher
+                        sourceLanguage={sourceLanguage}
+                        translatedLanguages={translatedLanguages}
+                        selectedLanguage={displayLanguage}
+                        onSelect={onDisplayLanguageChange}
+                        disabled={disabled}
+                    />
+                    <div className="h-px bg-border my-8" />
+                </>
+            )}
 
             {/* Settings section */}
             <div className="space-y-6">

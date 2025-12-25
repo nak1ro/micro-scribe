@@ -41,7 +41,6 @@ export interface TranscriptionFormData {
     sourceLanguage: string;
     quality: TranscriptionQuality;
     enableSpeakerDiarization: boolean;
-    targetLanguage: string;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -91,7 +90,6 @@ export function CreateTranscriptionModal({
     const [sourceLanguage, setSourceLanguage] = React.useState("auto");
     const [quality, setQuality] = React.useState<TranscriptionQuality>(TranscriptionQuality.Balanced);
     const [enableSpeakerDiarization, setEnableSpeakerDiarization] = React.useState(false);
-    const [targetLanguage, setTargetLanguage] = React.useState("");
 
     const { upload, abort, reset, progress, status, error, isUploading } = useFileUpload();
 
@@ -102,7 +100,6 @@ export function CreateTranscriptionModal({
         setAudioBlob(null);
         setActiveTab("file");
         setEnableSpeakerDiarization(false);
-        setTargetLanguage("");
         reset();
     }, [isOpen, reset]);
 
@@ -159,7 +156,6 @@ export function CreateTranscriptionModal({
                     sourceLanguage: sourceLanguage === "auto" ? undefined : sourceLanguage,
                     quality,
                     enableSpeakerDiarization,
-                    targetLanguage: targetLanguage || undefined,
                 });
 
                 if (job) {
@@ -360,30 +356,6 @@ export function CreateTranscriptionModal({
                                         )}
                                     >
                                         {LANGUAGES.map((lang) => (
-                                            <option key={lang.code} value={lang.code}>
-                                                {lang.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                {/* Target Language (Translation) */}
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                                    <label className="text-sm font-medium text-foreground min-w-[100px]">
-                                        Translate To
-                                    </label>
-                                    <select
-                                        value={targetLanguage}
-                                        onChange={(e) => setTargetLanguage(e.target.value)}
-                                        className={cn(
-                                            "flex-1 h-10 px-3 rounded-md",
-                                            "bg-background border border-input",
-                                            "text-sm text-foreground",
-                                            "focus:outline-none focus:ring-2 focus:ring-ring"
-                                        )}
-                                    >
-                                        <option value="">None (no translation)</option>
-                                        {LANGUAGES.filter(lang => lang.code !== "auto").map((lang) => (
                                             <option key={lang.code} value={lang.code}>
                                                 {lang.label}
                                             </option>

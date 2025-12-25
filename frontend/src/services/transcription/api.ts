@@ -94,4 +94,10 @@ export const transcriptionApi = {
         });
         return response.data;
     },
+
+    translateJob: async (jobId: string, targetLanguage: string): Promise<void> => {
+        await apiClient.post(API_ENDPOINTS.TRANSCRIPTIONS.TRANSLATE(jobId), {
+            targetLanguage,
+        });
+    },
 };

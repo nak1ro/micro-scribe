@@ -2,10 +2,13 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { NavArrowDown, Language, Sparks } from "iconoir-react";
+import { NavArrowDown, Language, Check, RefreshDouble } from "iconoir-react";
 
 interface TranslateMenuProps {
-    onTranslate?: (languageCode: string) => void;
+    onTranslate: (targetLanguage: string) => void;
+    translatedLanguages: string[];
+    translationStatus: string | null;
+    translatingToLanguage: string | null;
     disabled?: boolean;
     className?: string;
 }
@@ -23,9 +26,18 @@ const languages = [
     { code: "ja", name: "Japanese" },
 ];
 
-export function TranslateMenu({ onTranslate, disabled, className }: TranslateMenuProps) {
+export function TranslateMenu({
+    onTranslate,
+    translatedLanguages,
+    translationStatus,
+    translatingToLanguage,
+    disabled,
+    className,
+}: TranslateMenuProps) {
     const [isOpen, setIsOpen] = React.useState(false);
     const menuRef = React.useRef<HTMLDivElement>(null);
+
+    const isTranslating = translationStatus === "Pending" || translationStatus === "Translating";
 
     // Close on click outside
     React.useEffect(() => {
@@ -42,9 +54,18 @@ export function TranslateMenu({ onTranslate, disabled, className }: TranslateMen
     }, [isOpen]);
 
     const handleSelect = (code: string) => {
-        onTranslate?.(code);
+        if (translatedLanguages.includes(code) || isTranslating) return;
+        onTranslate(code);
         setIsOpen(false);
     };
+
+    const getStatusText = () => {
+        if (translationStatus === "Failed") return "Translation failed";
+        if (translatedLanguages.length > 0) return `${translatedLanguages.length} translated`;
+        return null;
+    };
+
+    const statusText = getStatusText();
 
     return (
         <div ref={menuRef} className={cn("relative", className)}>
@@ -65,16 +86,24 @@ export function TranslateMenu({ onTranslate, disabled, className }: TranslateMen
                 aria-haspopup="true"
             >
                 <div className="flex items-center gap-2">
-                    <Language className="h-4 w-4 text-muted-foreground" />
+                    {isTranslating ? (
+                        <RefreshDouble className="h-4 w-4 text-primary animate-spin" />
+                    ) : (
+                        <Language className="h-4 w-4 text-muted-foreground" />
+                    )}
                     <span>Translate</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <span className={cn(
-                        "text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded",
-                        "bg-primary/10 text-primary"
-                    )}>
-                        Soon
-                    </span>
+                    {statusText && (
+                        <span className={cn(
+                            "text-[10px] font-medium px-1.5 py-0.5 rounded",
+                            translationStatus === "Failed"
+                                ? "bg-destructive/10 text-destructive"
+                                : "bg-success/10 text-success"
+                        )}>
+                            {statusText}
+                        </span>
+                    )}
                     <NavArrowDown
                         className={cn(
                             "h-4 w-4 text-muted-foreground transition-transform duration-200",
@@ -95,31 +124,49 @@ export function TranslateMenu({ onTranslate, disabled, className }: TranslateMen
                     )}
                     role="menu"
                 >
-                    {/* Coming soon notice */}
-                    <div className="px-3 py-2 border-b border-border">
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Sparks className="h-3 w-3" />
-                            <span>Translation feature coming soon</span>
+                    {/* In-progress notice */}
+                    {isTranslating && translatingToLanguage && (
+                        <div className="px-3 py-2 border-b border-border">
+                            <div className="flex items-center gap-2 text-xs text-info">
+                                <RefreshDouble className="h-3 w-3 animate-spin" />
+                                <span>Translating to {languages.find(l => l.code === translatingToLanguage)?.name}...</span>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
-                    {/* Language options (disabled) */}
-                    {languages.map((lang) => (
-                        <button
-                            key={lang.code}
-                            onClick={() => handleSelect(lang.code)}
-                            disabled
-                            className={cn(
-                                "w-full flex items-center gap-3 px-3 py-2",
-                                "text-left opacity-50 cursor-not-allowed"
-                            )}
-                            role="menuitem"
-                        >
-                            <span className="text-sm text-foreground">{lang.name}</span>
-                        </button>
-                    ))}
+                    {/* Language options */}
+                    {languages.map((lang) => {
+                        const isCompleted = translatedLanguages.includes(lang.code);
+                        const isInProgress = translatingToLanguage === lang.code;
+
+                        return (
+                            <button
+                                key={lang.code}
+                                onClick={() => handleSelect(lang.code)}
+                                disabled={isCompleted || isTranslating}
+                                className={cn(
+                                    "w-full flex items-center justify-between gap-3 px-3 py-2",
+                                    "text-left transition-colors",
+                                    isCompleted && "bg-success/5",
+                                    !isCompleted && !isTranslating && "hover:bg-muted cursor-pointer",
+                                    (isCompleted || isTranslating) && "cursor-default"
+                                )}
+                                role="menuitem"
+                            >
+                                <span className={cn(
+                                    "text-sm",
+                                    isCompleted ? "text-success font-medium" : "text-foreground"
+                                )}>
+                                    {lang.name}
+                                </span>
+                                {isCompleted && <Check className="h-4 w-4 text-success" />}
+                                {isInProgress && <RefreshDouble className="h-4 w-4 text-info animate-spin" />}
+                            </button>
+                        );
+                    })}
                 </div>
             )}
         </div>
     );
 }
+

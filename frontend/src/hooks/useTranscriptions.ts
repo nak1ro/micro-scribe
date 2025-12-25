@@ -215,12 +215,24 @@ function hasActiveJobsFromList(items: TranscriptionListItem[]): boolean {
     );
 }
 
-// Hook for fetching a single transcription job's details
+// Hook for fetching a single transcription job's details with automatic polling when needed
 export function useTranscriptionJob(jobId: string) {
     return useQuery({
         queryKey: ["transcriptions", "job", jobId],
         queryFn: () => transcriptionApi.getJob(jobId),
         enabled: !!jobId,
+        // Poll every 2 seconds when translation or transcription is in progress
+        refetchInterval: (query) => {
+            const data = query.state.data;
+            if (!data) return false;
+
+            const isTranslating = data.translationStatus === "Pending"
+                || data.translationStatus === "Translating";
+            const isProcessing = data.status === TranscriptionJobStatus.Processing
+                || data.status === TranscriptionJobStatus.Pending;
+
+            return (isTranslating || isProcessing) ? 2000 : false;
+        },
     });
 }
 

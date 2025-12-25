@@ -15,6 +15,7 @@ import { ActionsSidebar } from "./ActionsSidebar";
 import { useAudioSync } from "@/features/transcription/hooks/useAudioSync";
 import { handleExport as exportFile } from "@/features/transcription/utils/exportUtils";
 import { getProcessingStepText } from "@/features/transcription/utils";
+import { transcriptionApi } from "@/services/transcription";
 import type { TranscriptionData, ExportFormat } from "@/features/transcription/types";
 
 interface TranscriptionViewerNewProps {
@@ -32,7 +33,7 @@ export function TranscriptionViewerNew({
     const router = useRouter();
 
     // Fetch data if jobId is provided
-    const { data: job, isLoading, error } = useTranscriptionJob(jobId || "");
+    const { data: job, isLoading, error, refetch } = useTranscriptionJob(jobId || "");
 
     // Use provided data, mapped job data, or mock data (only as fallback if no jobId/data)
     const data: TranscriptionData | undefined = React.useMemo(() => {
@@ -46,7 +47,9 @@ export function TranscriptionViewerNew({
                 processingStep: job.processingStep,
                 durationSeconds: job.durationSeconds || 0,
                 sourceLanguage: job.sourceLanguage || "en",
-                targetLanguage: job.targetLanguage,
+                translatedLanguages: job.translatedLanguages || [],
+                translationStatus: job.translationStatus,
+                translatingToLanguage: job.translatingToLanguage,
                 enableSpeakerDiarization: job.enableSpeakerDiarization,
                 speakers: job.speakers || [],
                 segments: job.segments.map((s) => ({
@@ -55,7 +58,7 @@ export function TranscriptionViewerNew({
                     startSeconds: s.startSeconds,
                     endSeconds: s.endSeconds,
                     speaker: s.speaker,
-                    translatedText: s.translatedText,
+                    translations: s.translations || {},
                     isEdited: s.isEdited
                 })),
                 audioUrl: job.presignedUrl
@@ -69,6 +72,7 @@ export function TranscriptionViewerNew({
     const [showTimecodes, setShowTimecodes] = React.useState(true);
     const [showSpeakers, setShowSpeakers] = React.useState(true);
     const [copied, setCopied] = React.useState(false);
+    const [displayLanguage, setDisplayLanguage] = React.useState<string | null>(null);
 
     // Audio sync hook
     const {
@@ -126,6 +130,22 @@ export function TranscriptionViewerNew({
 
     const handleSkipForward = () => {
         seekTo(Math.min(duration, currentTime + 10));
+    };
+
+    const handleTranslate = async (targetLanguage: string) => {
+        if (!data?.id) return;
+        try {
+            await transcriptionApi.translateJob(data.id, targetLanguage);
+            // Immediately refetch to pick up the new translationStatus and start polling
+            await refetch();
+        } catch (error: unknown) {
+            // Extract useful error info from Axios errors
+            const axiosError = error as { response?: { data?: { detail?: string; message?: string }; status?: number } };
+            const message = axiosError.response?.data?.detail
+                || axiosError.response?.data?.message
+                || `Request failed with status ${axiosError.response?.status}`;
+            console.error("Failed to start translation:", message, error);
+        }
     };
 
     // Loading state - skeleton UI
@@ -267,6 +287,13 @@ export function TranscriptionViewerNew({
                         onToggleSpeakers={setShowSpeakers}
                         hasSpeakers={hasSpeakers}
                         onExport={handleExport}
+                        onTranslate={handleTranslate}
+                        translatedLanguages={data.translatedLanguages}
+                        translationStatus={data.translationStatus}
+                        translatingToLanguage={data.translatingToLanguage}
+                        sourceLanguage={data.sourceLanguage}
+                        displayLanguage={displayLanguage}
+                        onDisplayLanguageChange={setDisplayLanguage}
                         onEdit={handleEdit}
                     />
                 }
@@ -293,6 +320,7 @@ export function TranscriptionViewerNew({
                     activeSegmentIndex={activeSegmentIndex}
                     showTimecodes={showTimecodes}
                     showSpeakers={showSpeakers}
+                    displayLanguage={displayLanguage}
                     onSegmentClick={seekToSegment}
                 />
             </ViewerLayout>

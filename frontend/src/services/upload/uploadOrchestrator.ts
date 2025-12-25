@@ -123,7 +123,6 @@ export async function orchestrateUpload(
         quality: options?.quality ?? TranscriptionQuality.Balanced,
         sourceLanguage: options?.sourceLanguage || null,
         enableSpeakerDiarization: options?.enableSpeakerDiarization ?? false,
-        targetLanguage: options?.targetLanguage || null,
     });
 
     return job;
