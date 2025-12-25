@@ -101,7 +101,12 @@ export function ActionsSidebar({
                 </h3>
 
                 {/* Export */}
-                <ExportMenu onExport={onExport} disabled={disabled} />
+                <ExportMenu
+                    onExport={onExport}
+                    displayLanguage={displayLanguage}
+                    sourceLanguage={sourceLanguage}
+                    disabled={disabled}
+                />
 
                 {/* Language (translate + view) */}
                 <LanguageMenu

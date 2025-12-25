@@ -13,35 +13,43 @@ const formatTimestamp = (seconds: number, separator: string = ","): string => {
     return `${hh}:${mm}:${ss}${separator}${ms}`;
 };
 
+// Helper to get text in the selected language
+const getSegmentText = (segment: ViewerSegment, displayLanguage: string | null): string => {
+    if (displayLanguage && segment.translations?.[displayLanguage]) {
+        return segment.translations[displayLanguage];
+    }
+    return segment.text;
+};
+
 // plain text export
-const exportToTxt = (data: TranscriptionData): Blob => {
+const exportToTxt = (data: TranscriptionData, displayLanguage: string | null): Blob => {
     const lines = data.segments.map(s => {
         const time = `[${formatTimestamp(s.startSeconds, ".")}]`;
         const speaker = s.speaker ? `${s.speaker}: ` : "";
-        return `${time} ${speaker}${s.text}`;
+        return `${time} ${speaker}${getSegmentText(s, displayLanguage)}`;
     });
     return new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
 };
 
 // SRT export
-const exportToSrt = (data: TranscriptionData): Blob => {
+const exportToSrt = (data: TranscriptionData, displayLanguage: string | null): Blob => {
     const content = data.segments.map((s, index) => {
         const start = formatTimestamp(s.startSeconds, ",");
         const end = formatTimestamp(s.endSeconds, ",");
         const speaker = s.speaker ? `${s.speaker}: ` : "";
-        return `${index + 1}\n${start} --> ${end}\n${speaker}${s.text}\n`;
+        return `${index + 1}\n${start} --> ${end}\n${speaker}${getSegmentText(s, displayLanguage)}\n`;
     }).join("\n");
     return new Blob([content], { type: "text/plain;charset=utf-8" });
 };
 
 // CSV export
-const exportToCsv = (data: TranscriptionData): Blob => {
+const exportToCsv = (data: TranscriptionData, displayLanguage: string | null): Blob => {
     const headers = ["Start Time", "End Time", "Speaker", "Text"];
     const rows = data.segments.map(s => [
         formatTimestamp(s.startSeconds, "."),
         formatTimestamp(s.endSeconds, "."),
         s.speaker || "",
-        `"${s.text.replace(/"/g, '""')}"` // Escape quotes
+        `"${getSegmentText(s, displayLanguage).replace(/"/g, '""')}"` // Escape quotes
     ]);
 
     const csvContent = [
@@ -53,7 +61,7 @@ const exportToCsv = (data: TranscriptionData): Blob => {
 };
 
 // DOCX export
-const exportToDocx = async (data: TranscriptionData): Promise<Blob> => {
+const exportToDocx = async (data: TranscriptionData, displayLanguage: string | null): Promise<Blob> => {
     const doc = new Document({
         sections: [{
             properties: {},
@@ -82,7 +90,7 @@ const exportToDocx = async (data: TranscriptionData): Promise<Blob> => {
                                     size: 24, // 12pt
                                 }),
                                 new TextRun({
-                                    text: s.text,
+                                    text: getSegmentText(s, displayLanguage),
                                     size: 24, // 12pt
                                 }),
                             ],
@@ -97,7 +105,11 @@ const exportToDocx = async (data: TranscriptionData): Promise<Blob> => {
     return await Packer.toBlob(doc);
 };
 
-export const handleExport = async (format: ExportFormat, data: TranscriptionData) => {
+export const handleExport = async (
+    format: ExportFormat,
+    data: TranscriptionData,
+    displayLanguage: string | null = null
+) => {
     const filename = data.fileName.replace(/\.[^/.]+$/, ""); // Remove extension
     let blob: Blob | null = null;
     let extension = "";
@@ -105,19 +117,19 @@ export const handleExport = async (format: ExportFormat, data: TranscriptionData
     try {
         switch (format) {
             case "txt":
-                blob = exportToTxt(data);
+                blob = exportToTxt(data, displayLanguage);
                 extension = "txt";
                 break;
             case "srt":
-                blob = exportToSrt(data);
+                blob = exportToSrt(data, displayLanguage);
                 extension = "srt";
                 break;
             case "csv":
-                blob = exportToCsv(data);
+                blob = exportToCsv(data, displayLanguage);
                 extension = "csv";
                 break;
             case "docx":
-                blob = await exportToDocx(data);
+                blob = await exportToDocx(data, displayLanguage);
                 extension = "docx";
                 break;
             case "mp3":
@@ -140,3 +152,4 @@ export const handleExport = async (format: ExportFormat, data: TranscriptionData
         throw error;
     }
 };
+

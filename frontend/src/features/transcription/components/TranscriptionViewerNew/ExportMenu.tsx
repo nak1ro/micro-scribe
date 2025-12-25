@@ -3,10 +3,13 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { NavArrowDown, Page, TextBox, MediaVideo, Table2Columns, MusicDoubleNote } from "iconoir-react";
+import { getLanguageName } from "@/lib/utils";
 import type { ExportFormat, ExportOption } from "@/features/transcription/types";
 
 interface ExportMenuProps {
     onExport: (format: ExportFormat) => void;
+    displayLanguage: string | null;
+    sourceLanguage: string;
     disabled?: boolean;
     className?: string;
 }
@@ -52,7 +55,7 @@ const iconMap = {
     Music: MusicDoubleNote,
 };
 
-export function ExportMenu({ onExport, disabled, className }: ExportMenuProps) {
+export function ExportMenu({ onExport, displayLanguage, sourceLanguage, disabled, className }: ExportMenuProps) {
     const [isOpen, setIsOpen] = React.useState(false);
     const menuRef = React.useRef<HTMLDivElement>(null);
 
@@ -124,6 +127,12 @@ export function ExportMenu({ onExport, disabled, className }: ExportMenuProps) {
                     )}
                     role="menu"
                 >
+                    {/* Language hint */}
+                    <div className="px-3 py-2 border-b border-border mb-1">
+                        <span className="text-[11px] text-muted-foreground">
+                            Exporting in {getLanguageName(displayLanguage || sourceLanguage)}
+                        </span>
+                    </div>
                     {exportOptions.map((option) => {
                         const Icon = iconMap[option.icon as keyof typeof iconMap];
                         return (

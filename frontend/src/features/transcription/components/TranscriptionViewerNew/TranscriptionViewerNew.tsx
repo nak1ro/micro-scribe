@@ -122,7 +122,13 @@ export function TranscriptionViewerNew({
 
     const handleCopy = async () => {
         if (!data) return;
-        const text = data.segments.map(seg => seg.text).join(" ");
+        // Copy text in the currently displayed language
+        const text = data.segments.map(seg => {
+            if (displayLanguage && seg.translations?.[displayLanguage]) {
+                return seg.translations[displayLanguage];
+            }
+            return seg.text;
+        }).join(" ");
         await navigator.clipboard.writeText(text);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
@@ -132,7 +138,8 @@ export function TranscriptionViewerNew({
         if (!data) return;
 
         try {
-            await exportFile(format, data);
+            // Export in the currently displayed language
+            await exportFile(format, data, displayLanguage);
         } catch (error) {
             console.error("Export failed:", error);
             // TODO: Add toast notification here
