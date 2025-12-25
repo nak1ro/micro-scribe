@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import * as React from "react";
+import { useSignalREvents } from "@/hooks/useSignalREvents";
 
 function makeQueryClient() {
     return new QueryClient({
@@ -33,6 +34,12 @@ function getQueryClient() {
     return browserQueryClient;
 }
 
+// Component that initializes SignalR event handlers (must be inside QueryClientProvider)
+function SignalREventsInitializer() {
+    useSignalREvents();
+    return null;
+}
+
 interface QueryProviderProps {
     children: React.ReactNode;
 }
@@ -42,8 +49,10 @@ export function QueryProvider({ children }: QueryProviderProps) {
 
     return (
         <QueryClientProvider client={queryClient}>
+            <SignalREventsInitializer />
             {children}
             <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
     );
 }
+

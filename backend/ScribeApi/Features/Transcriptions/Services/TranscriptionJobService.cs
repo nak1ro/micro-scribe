@@ -1,4 +1,5 @@
 using System.Data;
+using AutoMapper;
 using Hangfire;
 using Hangfire.States;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ using ScribeApi.Core.Domain.Plans;
 using ScribeApi.Core.Exceptions;
 using ScribeApi.Features.Transcriptions.Contracts;
 using ScribeApi.Features.Webhooks.Contracts;
+using ScribeApi.Core.Interfaces;
 using ScribeApi.Infrastructure.BackgroundJobs;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
@@ -21,6 +23,8 @@ public class TranscriptionJobService : ITranscriptionJobService
     private readonly IPlanGuard _planGuard;
     private readonly IBackgroundJobClient _backgroundJobClient;
     private readonly IWebhookService _webhookService;
+    private readonly IFileStorageService _storageService;
+    private readonly IMapper _mapper;
     private readonly ILogger<TranscriptionJobService> _logger;
 
     public TranscriptionJobService(
@@ -30,6 +34,8 @@ public class TranscriptionJobService : ITranscriptionJobService
         IPlanGuard planGuard,
         IBackgroundJobClient backgroundJobClient,
         IWebhookService webhookService,
+        IFileStorageService storageService,
+        IMapper mapper,
         ILogger<TranscriptionJobService> logger)
     {
         _context = context;
@@ -38,6 +44,8 @@ public class TranscriptionJobService : ITranscriptionJobService
         _planGuard = planGuard;
         _backgroundJobClient = backgroundJobClient;
         _webhookService = webhookService;
+        _storageService = storageService;
+        _mapper = mapper;
         _logger = logger;
     }
 
@@ -260,5 +268,35 @@ public class TranscriptionJobService : ITranscriptionJobService
             runner => runner.RunAsync(jobId, CancellationToken.None),
             new EnqueuedState(queue));
         _logger.LogDebug("Enqueued job {JobId} to queue '{Queue}'", jobId, queue);
+    }
+
+    public async Task<TranscriptionJobDetailResponse?> GetJobDetailsAsync(Guid jobId, string userId, CancellationToken ct)
+    {
+        var job = await _queries.GetJobWithSegmentsAsync(jobId, ct);
+
+        if (job == null || job.UserId != userId)
+            return null;
+
+        var response = _mapper.Map<TranscriptionJobDetailResponse>(job);
+
+        // Generate Presigned URL if MediaFile exists
+        if (job.MediaFile != null && !string.IsNullOrEmpty(job.MediaFile.StorageObjectKey))
+        {
+            try 
+            {
+                var url = await _storageService.GenerateDownloadUrlAsync(
+                    job.MediaFile.StorageObjectKey, 
+                    TimeSpan.FromMinutes(15), 
+                    ct);
+                
+                response.PresignedUrl = url;
+            }
+            catch (NotSupportedException) 
+            { 
+               // Ignore for local storage
+            }
+        }
+
+        return response;
     }
 }

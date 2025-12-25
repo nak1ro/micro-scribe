@@ -4,6 +4,7 @@ import React, { createContext, useEffect, useState, useCallback, ReactNode, FC }
 import { UserResponse, LoginRequest, RegisterRequest } from '@/types/api/auth';
 import { authApi } from '@/services/auth/api';
 import { UNAUTHORIZED_EVENT } from '@/services/api';
+import { signalRService } from '@/services/signalR';
 
 interface AuthContextType {
     user: UserResponse | null;
@@ -42,9 +43,21 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
         refreshUser();
     }, [refreshUser]);
 
+    // Connect/disconnect SignalR based on user state
+    useEffect(() => {
+        if (user && !isLoading) {
+            signalRService.connect().catch((err) => {
+                console.error("[Auth] Failed to connect SignalR:", err);
+            });
+        } else if (!user && !isLoading) {
+            signalRService.disconnect();
+        }
+    }, [user, isLoading]);
+
     useEffect(() => {
         const handleUnauthorized = () => {
             setUser(null);
+            signalRService.disconnect();
         };
 
         if (typeof window !== 'undefined') {
@@ -70,10 +83,10 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
 
     const logout = async () => {
         try {
+            await signalRService.disconnect();
             await authApi.logout();
         } finally {
             setUser(null);
-            // Optional: Redirect to login page? Usually handled by protected route components.
         }
     };
 

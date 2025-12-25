@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useQuery, useMutation, useQueryClient, useQueries } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { transcriptionApi } from "@/services/transcription/api";
 import { TranscriptionJobStatus } from "@/types/api/transcription";
 import type { TranscriptionJobListItem } from "@/types/api/transcription";
@@ -29,9 +29,6 @@ const transcriptionsKeys = {
     all: ["transcriptions"] as const,
     jobs: (page: number, pageSize: number) => [...transcriptionsKeys.all, "jobs", page, pageSize] as const,
 };
-
-// Polling interval when jobs are in progress (3 seconds)
-const POLLING_INTERVAL_MS = 3000;
 
 // Map job status enum to UI status string
 function mapJobStatus(status: TranscriptionJobStatus): TranscriptionListItem["status"] {
@@ -82,7 +79,7 @@ export function useTranscriptions(
     // Local state for optimistic items (uploads in progress)
     const [optimisticItems, setOptimisticItems] = React.useState<TranscriptionListItem[]>([]);
 
-    // 1. Fetch the list (initial load + manual refetch)
+    // Fetch the list - SignalR handles real-time status updates via cache manipulation
     const listQuery = useQuery({
         queryKey: transcriptionsKeys.jobs(page, pageSize),
         queryFn: () => transcriptionApi.listJobs({ page, pageSize }),
@@ -91,76 +88,12 @@ export function useTranscriptions(
     const serverItems = listQuery.data?.items.map(mapJobToListItem) ?? [];
 
     // Merge optimistic items with server items (optimistic at top, filter out duplicates)
-    const initialItems = React.useMemo(() => {
+    const items = React.useMemo(() => {
         const serverIds = new Set(serverItems.map(item => item.id));
         // Remove optimistic items that now exist on server
         const activeOptimistic = optimisticItems.filter(item => !serverIds.has(item.id));
         return [...activeOptimistic, ...serverItems];
     }, [serverItems, optimisticItems]);
-
-    // 2. Identify active jobs that need polling
-    const activeJobs = initialItems.filter(
-        (job) => job.status === "pending" || job.status === "processing"
-    );
-
-    // 3. Setup individual polling for active jobs
-    // using useQueries to handle dynamic number of hooks
-    const jobQueries = useQueries({ // @ts-ignore - useQueries typings can be tricky with dynamic arrays
-        queries: activeJobs.map((job) => ({
-            queryKey: ["transcriptions", "job", job.id],
-            queryFn: () => transcriptionApi.getJob(job.id),
-            refetchInterval: (query: any) => {
-                const data = query.state.data;
-                // Stop polling if completed/failed/cancelled
-                if (data && (
-                    data.status === TranscriptionJobStatus.Completed ||
-                    data.status === TranscriptionJobStatus.Failed ||
-                    data.status === TranscriptionJobStatus.Cancelled
-                )) {
-                    return false;
-                }
-                return POLLING_INTERVAL_MS;
-            },
-        })),
-    });
-
-    // 4. When a job transitions to completed, refetch the list to get preview text
-    React.useEffect(() => {
-        const completedJob = jobQueries.find((q) => {
-            const data = q.data;
-            return data && (
-                data.status === TranscriptionJobStatus.Completed ||
-                data.status === TranscriptionJobStatus.Failed ||
-                data.status === TranscriptionJobStatus.Cancelled
-            );
-        });
-
-        if (completedJob) {
-            // Refetch the list to get updated data including preview
-            listQuery.refetch();
-        }
-    }, [jobQueries, listQuery]);
-
-    // 5. Merge polling results into the list
-    const items = React.useMemo(() => {
-        if (!initialItems.length) return [];
-
-        return initialItems.map((item) => {
-            // Find if there's an active poll for this item
-            const pollResult = jobQueries.find((q) => q.data?.jobId === item.id);
-
-            if (pollResult?.data) {
-                // Merge the latest status from polling
-                return {
-                    ...item,
-                    status: mapJobStatus(pollResult.data.status),
-                    duration: pollResult.data.durationSeconds,
-                    // We could also update other fields if needed
-                };
-            }
-            return item;
-        });
-    }, [initialItems, jobQueries]);
 
     // Delete mutation (cancels the job)
     const deleteMutation = useMutation({
@@ -216,24 +149,13 @@ function hasActiveJobsFromList(items: TranscriptionListItem[]): boolean {
     );
 }
 
-// Hook for fetching a single transcription job's details with automatic polling when needed
+// Hook for fetching a single transcription job's details
+// SignalR handles real-time updates via cache invalidation
 export function useTranscriptionJob(jobId: string) {
     return useQuery({
         queryKey: ["transcriptions", "job", jobId],
         queryFn: () => transcriptionApi.getJob(jobId),
         enabled: !!jobId,
-        // Poll every 2 seconds when translation or transcription is in progress
-        refetchInterval: (query) => {
-            const data = query.state.data;
-            if (!data) return false;
-
-            const isTranslating = data.translationStatus === "Pending"
-                || data.translationStatus === "Translating";
-            const isProcessing = data.status === TranscriptionJobStatus.Processing
-                || data.status === TranscriptionJobStatus.Pending;
-
-            return (isTranslating || isProcessing) ? 2000 : false;
-        },
     });
 }
 

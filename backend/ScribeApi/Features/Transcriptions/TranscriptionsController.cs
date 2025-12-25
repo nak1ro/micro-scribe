@@ -22,7 +22,6 @@ public class TranscriptionsController : ControllerBase
     private readonly ITranscriptExportService _exportService;
     private readonly ITranscriptEditService _editService;
     private readonly IJobTranslationService _translationService;
-    private readonly IFileStorageService _storageService;
     private readonly IMapper _mapper;
 
     public TranscriptionsController(
@@ -31,7 +30,6 @@ public class TranscriptionsController : ControllerBase
         ITranscriptExportService exportService,
         ITranscriptEditService editService,
         IJobTranslationService translationService,
-        IFileStorageService storageService,
         IMapper mapper)
     {
         _jobService = jobService;
@@ -39,7 +37,6 @@ public class TranscriptionsController : ControllerBase
         _exportService = exportService;
         _editService = editService;
         _translationService = translationService;
-        _storageService = storageService;
         _mapper = mapper;
     }
 
@@ -54,20 +51,7 @@ public class TranscriptionsController : ControllerBase
 
         var (items, totalCount) = await _queries.GetUserJobsAsync(userId, page, pageSize, ct);
 
-        var listItems = items.Select(j => new TranscriptionJobListItem
-        {
-            JobId = j.Id,
-            OriginalFileName = j.MediaFile?.OriginalFileName ?? "Unknown",
-            Status = j.Status,
-            Quality = j.Quality,
-            SourceLanguage = j.SourceLanguage,
-            DurationSeconds = j.MediaFile?.DurationSeconds,
-            TranscriptPreview = !string.IsNullOrEmpty(j.Transcript) 
-                ? (j.Transcript.Length > 150 ? j.Transcript.Substring(0, 150) + "..." : j.Transcript)
-                : null,
-            CreatedAtUtc = j.CreatedAtUtc,
-            CompletedAtUtc = j.CompletedAtUtc
-        }).ToList();
+        var listItems = _mapper.Map<List<TranscriptionJobListItem>>(items);
 
         var response = new PagedResponse<TranscriptionJobListItem>(
             listItems, page, pageSize, totalCount);
@@ -107,30 +91,10 @@ public class TranscriptionsController : ControllerBase
         var userId = User.GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        var job = await _queries.GetJobWithSegmentsAsync(jobId, ct);
+        var response = await _jobService.GetJobDetailsAsync(jobId, userId, ct);
 
-        if (job == null || job.UserId != userId)
+        if (response == null)
             return NotFound();
-
-        var response = _mapper.Map<TranscriptionJobDetailResponse>(job);
-
-        // Generate Presigned URL if MediaFile exists
-        if (job.MediaFile != null && !string.IsNullOrEmpty(job.MediaFile.StorageObjectKey))
-        {
-            try 
-            {
-                var url = await _storageService.GenerateDownloadUrlAsync(
-                    job.MediaFile.StorageObjectKey, 
-                    TimeSpan.FromMinutes(15), 
-                    ct);
-                
-                response.PresignedUrl = url;
-            }
-            catch (NotSupportedException) 
-            { 
-               // Ignore for local storage
-            }
-        }
 
         return Ok(response);
     }

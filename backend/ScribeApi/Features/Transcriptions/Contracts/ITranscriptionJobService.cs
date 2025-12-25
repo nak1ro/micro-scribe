@@ -8,5 +8,7 @@ namespace ScribeApi.Features.Transcriptions.Contracts
             CancellationToken ct);
 
         Task CancelJobAsync(Guid jobId, string userId, CancellationToken ct);
+
+        Task<TranscriptionJobDetailResponse?> GetJobDetailsAsync(Guid jobId, string userId, CancellationToken ct);
     }
 }
