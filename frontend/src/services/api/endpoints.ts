@@ -35,6 +35,9 @@ export const API_ENDPOINTS = {
         TRANSLATE: (jobId: string) => `/transcriptions/${jobId}/translate`,
         UPDATE_SEGMENT: (jobId: string, segmentId: string) => `/transcriptions/${jobId}/segments/${segmentId}`,
         REVERT_SEGMENT: (jobId: string, segmentId: string) => `/transcriptions/${jobId}/segments/${segmentId}/revert`,
+        // Analysis
+        ANALYSIS: (jobId: string) => `/transcriptions/${jobId}/analysis`,
+        ANALYSIS_TRANSLATE: (jobId: string) => `/transcriptions/${jobId}/analysis/translate`,
     },
     USAGE: {
         ME: '/usage/me',

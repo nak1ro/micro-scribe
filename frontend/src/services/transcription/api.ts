@@ -12,6 +12,7 @@ import {
     CompleteUploadRequest,
     UploadSessionStatusResponse,
 } from '@/types/api/transcription';
+import type { TranscriptionAnalysisDto, AnalysisType } from '@/types/api/analysis';
 
 export const transcriptionApi = {
     listMedia: async (params?: PaginationParams): Promise<PagedResponse<MediaFileResponse>> => {
@@ -99,5 +100,29 @@ export const transcriptionApi = {
         await apiClient.post(API_ENDPOINTS.TRANSCRIPTIONS.TRANSLATE(jobId), {
             targetLanguage,
         });
+    },
+
+    // Analysis
+    getAnalysis: async (jobId: string): Promise<TranscriptionAnalysisDto[]> => {
+        const response = await apiClient.get<TranscriptionAnalysisDto[]>(
+            API_ENDPOINTS.TRANSCRIPTIONS.ANALYSIS(jobId)
+        );
+        return response.data;
+    },
+
+    generateAnalysis: async (jobId: string, types: (AnalysisType | "All")[]): Promise<TranscriptionAnalysisDto[]> => {
+        const response = await apiClient.post<TranscriptionAnalysisDto[]>(
+            API_ENDPOINTS.TRANSCRIPTIONS.ANALYSIS(jobId),
+            { types }
+        );
+        return response.data;
+    },
+
+    translateAnalysis: async (jobId: string, targetLanguage: string): Promise<TranscriptionAnalysisDto[]> => {
+        const response = await apiClient.post<TranscriptionAnalysisDto[]>(
+            API_ENDPOINTS.TRANSCRIPTIONS.ANALYSIS_TRANSLATE(jobId),
+            { targetLanguage }
+        );
+        return response.data;
     },
 };

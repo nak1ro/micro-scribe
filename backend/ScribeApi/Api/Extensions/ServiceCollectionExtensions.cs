@@ -35,6 +35,7 @@ using ScribeApi.Infrastructure.BackgroundJobs;
 using ScribeApi.Infrastructure.Email;
 using ScribeApi.Infrastructure.Transcription;
 using FfmpegMediaService = ScribeApi.Infrastructure.MediaProcessing.FfmpegMediaService;
+using ScribeApi.Infrastructure.AI;
 
 namespace ScribeApi.Api.Extensions;
 
@@ -138,6 +139,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IMediaQueries, MediaQueries>();
         services.AddScoped<ITranscriptionJobService, TranscriptionJobService>();
         services.AddScoped<ITranscriptionJobQueries, TranscriptionJobQueries>();
+        services.AddScoped<IAnalysisService, AnalysisService>();
         services.AddScoped<ITranscriptExportService, TranscriptExportService>();
         services.AddScoped<ITranscriptEditService, TranscriptEditService>();
         services.AddScoped<IUploadService, UploadService>();
@@ -147,6 +149,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<WebhookDeliveryJob>();
         services.AddHttpClient<WebhookDeliveryJob>();
         services.Configure<OpenAiSettings>(configuration.GetSection("OpenAi"));
+        services.AddHttpClient<IGenerativeAiService, OpenAiGenerativeAiService>();
+
         services.Configure<WhisperXSettings>(configuration.GetSection("WhisperX"));
 
         // Transcription provider - configurable via Transcription:Provider (OpenAi or WhisperX)

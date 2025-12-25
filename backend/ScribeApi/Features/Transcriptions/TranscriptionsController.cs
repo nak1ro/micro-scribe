@@ -22,6 +22,7 @@ public class TranscriptionsController : ControllerBase
     private readonly ITranscriptExportService _exportService;
     private readonly ITranscriptEditService _editService;
     private readonly IJobTranslationService _translationService;
+    private readonly IAnalysisService _analysisService;
     private readonly IMapper _mapper;
 
     public TranscriptionsController(
@@ -30,6 +31,7 @@ public class TranscriptionsController : ControllerBase
         ITranscriptExportService exportService,
         ITranscriptEditService editService,
         IJobTranslationService translationService,
+        IAnalysisService analysisService,
         IMapper mapper)
     {
         _jobService = jobService;
@@ -37,6 +39,7 @@ public class TranscriptionsController : ControllerBase
         _exportService = exportService;
         _editService = editService;
         _translationService = translationService;
+        _analysisService = analysisService;
         _mapper = mapper;
     }
 
@@ -154,5 +157,46 @@ public class TranscriptionsController : ControllerBase
         await _translationService.EnqueueTranslationAsync(jobId, userId, request.TargetLanguage, ct);
 
         return Accepted();
+    }
+
+    [HttpPost("{jobId:guid}/analysis")]
+    public async Task<ActionResult<List<TranscriptionAnalysisDto>>> GenerateAnalysis(
+        Guid jobId,
+        [FromBody] GenerateAnalysisRequest request,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var result = await _analysisService.GenerateAnalysisAsync(jobId, userId, request, ct);
+
+        return Ok(result);
+    }
+
+    [HttpPost("{jobId:guid}/analysis/translate")]
+    public async Task<ActionResult<List<TranscriptionAnalysisDto>>> TranslateAnalysis(
+        Guid jobId,
+        [FromBody] TranslateAnalysisRequest request,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var result = await _analysisService.TranslateAnalysisAsync(jobId, userId, request, ct);
+
+        return Ok(result);
+    }
+
+    [HttpGet("{jobId:guid}/analysis")]
+    public async Task<ActionResult<List<TranscriptionAnalysisDto>>> GetAnalysis(
+        Guid jobId,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var result = await _analysisService.GetAnalysesAsync(jobId, userId, ct);
+
+        return Ok(result);
     }
 }

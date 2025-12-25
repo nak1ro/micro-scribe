@@ -11,6 +11,11 @@ export { AudioPlayer } from "./AudioPlayer";
 export { ActionsSidebar } from "./ActionsSidebar";
 export { ExportMenu } from "./ExportMenu";
 export { LanguageMenu } from "./LanguageMenu";
+export { AnalysisMenu } from "./AnalysisMenu";
+export { TLDRCard } from "./TLDRCard";
+export { TopicsBadges } from "./TopicsBadges";
+export { ActionItemsView } from "./ActionItemsView";
+export { MeetingMinutesView } from "./MeetingMinutesView";
 
 // Hooks
 export { useAudioSync } from "@/features/transcription/hooks/useAudioSync";

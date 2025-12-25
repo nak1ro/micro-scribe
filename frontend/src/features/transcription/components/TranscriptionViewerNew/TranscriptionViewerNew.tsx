@@ -6,17 +6,21 @@ import { cn } from "@/lib/utils";
 import { RefreshDouble, WarningCircle } from "iconoir-react";
 import { Button } from "@/components/ui";
 import { useTranscriptionJob } from "@/hooks/useTranscriptions";
+import { useAnalysis } from "@/hooks/useAnalysis";
 
 import { ViewerHeader } from "./ViewerHeader";
 import { ViewerLayout } from "./ViewerLayout";
 import { TranscriptContent } from "./TranscriptContent";
 import { AudioPlayer } from "./AudioPlayer";
 import { ActionsSidebar } from "./ActionsSidebar";
+import { ActionItemsView } from "./ActionItemsView";
+import { MeetingMinutesView } from "./MeetingMinutesView";
 import { useAudioSync } from "@/features/transcription/hooks/useAudioSync";
 import { handleExport as exportFile } from "@/features/transcription/utils/exportUtils";
 import { getProcessingStepText } from "@/features/transcription/utils";
 import { transcriptionApi } from "@/services/transcription";
 import type { TranscriptionData, ExportFormat } from "@/features/transcription/types";
+import type { AnalysisType } from "@/types/api/analysis";
 
 interface TranscriptionViewerNewProps {
     // For now, use mock data. Later, this will accept jobId and fetch real data
@@ -114,6 +118,25 @@ export function TranscriptionViewerNew({
         data?.segments.some(seg => seg.speaker !== null) || false,
         [data?.segments]
     );
+
+    // Analysis hook
+    const {
+        analyses,
+        isGenerating: isAnalysisGenerating,
+        generatingTypes: generatingAnalysisTypes,
+        generate: generateAnalysis,
+        generateAll: generateAllAnalysis,
+        getAnalysisByType,
+    } = useAnalysis({ jobId: jobId || "", enabled: !!jobId && data?.status === "completed" });
+
+    // Active analysis view state ("transcript" or AnalysisType)
+    const [currentAnalysisView, setCurrentAnalysisView] = React.useState<string>("transcript");
+
+    // Handler to switch analysis view
+    const handleSelectAnalysisView = (view: "transcript" | AnalysisType) => {
+        console.log("[TranscriptionViewerNew] Switching to view:", view);
+        setCurrentAnalysisView(view);
+    };
 
     // Handlers
     const handleBack = () => {
@@ -321,6 +344,13 @@ export function TranscriptionViewerNew({
                         sourceLanguage={data.sourceLanguage}
                         displayLanguage={displayLanguage}
                         onDisplayLanguageChange={setDisplayLanguage}
+                        analyses={analyses}
+                        isAnalysisGenerating={isAnalysisGenerating}
+                        generatingAnalysisTypes={generatingAnalysisTypes}
+                        onGenerateAnalysis={generateAnalysis}
+                        onGenerateAllAnalysis={generateAllAnalysis}
+                        onSelectAnalysisView={handleSelectAnalysisView}
+                        currentAnalysisView={currentAnalysisView}
                         onEdit={handleEdit}
                     />
                 }
@@ -340,16 +370,30 @@ export function TranscriptionViewerNew({
                 {/* Header */}
                 <ViewerHeader data={data} onBack={handleBack} />
 
-                {/* Transcript content */}
-                <TranscriptContent
-                    segments={data.segments}
-                    speakers={data.speakers}
-                    activeSegmentIndex={activeSegmentIndex}
-                    showTimecodes={showTimecodes}
-                    showSpeakers={showSpeakers}
-                    displayLanguage={displayLanguage}
-                    onSegmentClick={seekToSegment}
-                />
+                {/* Content: Transcript or Analysis View */}
+                {currentAnalysisView === "ActionItems" ? (
+                    <ActionItemsView
+                        actionItemsAnalysis={getAnalysisByType("ActionItems")}
+                        displayLanguage={displayLanguage}
+                        onBack={() => setCurrentAnalysisView("transcript")}
+                    />
+                ) : currentAnalysisView === "MeetingMinutes" ? (
+                    <MeetingMinutesView
+                        minutesAnalysis={getAnalysisByType("MeetingMinutes")}
+                        displayLanguage={displayLanguage}
+                        onBack={() => setCurrentAnalysisView("transcript")}
+                    />
+                ) : (
+                    <TranscriptContent
+                        segments={data.segments}
+                        speakers={data.speakers}
+                        activeSegmentIndex={activeSegmentIndex}
+                        showTimecodes={showTimecodes}
+                        showSpeakers={showSpeakers}
+                        displayLanguage={displayLanguage}
+                        onSegmentClick={seekToSegment}
+                    />
+                )}
             </ViewerLayout>
         </div>
     );

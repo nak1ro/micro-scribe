@@ -80,4 +80,5 @@ public class TranscriptionJob
     public required MediaFile MediaFile { get; set; }
     public List<TranscriptSegment> Segments { get; set; } = new();
     public ICollection<TranscriptChapter> Chapters { get; set; } = new List<TranscriptChapter>();
+    public ICollection<TranscriptionAnalysis> Analyses { get; set; } = new List<TranscriptionAnalysis>();
 }

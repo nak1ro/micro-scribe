@@ -6,7 +6,9 @@ import { Copy, Check, Clock, Group, EditPencil, Settings } from "iconoir-react";
 import { Button } from "@/components/ui";
 import { ExportMenu } from "./ExportMenu";
 import { LanguageMenu } from "./LanguageMenu";
+import { AnalysisMenu } from "./AnalysisMenu";
 import type { ExportFormat } from "@/features/transcription/types";
+import type { TranscriptionAnalysisDto, AnalysisType } from "@/types/api/analysis";
 
 interface ActionsSidebarProps {
     // Copy action
@@ -30,6 +32,14 @@ interface ActionsSidebarProps {
     sourceLanguage: string;
     displayLanguage: string | null;
     onDisplayLanguageChange: (lang: string | null) => void;
+    // Analysis
+    analyses: TranscriptionAnalysisDto[];
+    isAnalysisGenerating: boolean;
+    generatingAnalysisTypes: AnalysisType[];
+    onGenerateAnalysis: (types: AnalysisType[]) => void;
+    onGenerateAllAnalysis: () => void;
+    onSelectAnalysisView: (view: "transcript" | AnalysisType) => void;
+    currentAnalysisView: string;
     // Edit
     onEdit?: () => void;
     // Status
@@ -88,6 +98,13 @@ export function ActionsSidebar({
     sourceLanguage,
     displayLanguage,
     onDisplayLanguageChange,
+    analyses,
+    isAnalysisGenerating,
+    generatingAnalysisTypes,
+    onGenerateAnalysis,
+    onGenerateAllAnalysis,
+    onSelectAnalysisView,
+    currentAnalysisView,
     onEdit,
     disabled,
     className,
@@ -120,6 +137,17 @@ export function ActionsSidebar({
                     disabled={disabled}
                 />
 
+                {/* AI Analysis */}
+                <AnalysisMenu
+                    analyses={analyses}
+                    isGenerating={isAnalysisGenerating}
+                    generatingTypes={generatingAnalysisTypes}
+                    onGenerate={onGenerateAnalysis}
+                    onGenerateAll={onGenerateAllAnalysis}
+                    onSelectView={onSelectAnalysisView}
+                    currentView={currentAnalysisView}
+                    disabled={disabled}
+                />
                 {/* Copy */}
                 {/* Copy */}
                 <button

@@ -2,6 +2,7 @@ using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using ScribeApi.Core.Interfaces;
 using ScribeApi.Infrastructure.Persistence;
+using ScribeApi.Features.Transcriptions.Contracts;
 
 namespace ScribeApi.Infrastructure.BackgroundJobs;
 
@@ -11,17 +12,20 @@ public class TranslationJobRunner
     private readonly AppDbContext _context;
     private readonly ITranslationService _translationService;
     private readonly IJobNotificationService _notificationService;
+    private readonly IAnalysisService _analysisService; // Injected
     private readonly ILogger<TranslationJobRunner> _logger;
 
     public TranslationJobRunner(
         AppDbContext context,
         ITranslationService translationService,
         IJobNotificationService notificationService,
+        IAnalysisService analysisService,
         ILogger<TranslationJobRunner> logger)
     {
         _context = context;
         _translationService = translationService;
         _notificationService = notificationService;
+        _analysisService = analysisService;
         _logger = logger;
     }
 
@@ -87,7 +91,23 @@ public class TranslationJobRunner
             // Clear translation status
             job.TranslationStatus = null;
             job.TranslatingToLanguage = null;
+            job.TranslatingToLanguage = null;
             await _context.SaveChangesAsync(ct);
+
+            // Auto-translate any existing AI Analysis
+            try 
+            {
+                await _analysisService.TranslateAnalysisAsync(
+                    jobId, 
+                    userId, 
+                    new ScribeApi.Features.Transcriptions.Contracts.TranslateAnalysisRequest(targetLanguage), 
+                    ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Auto-translation of analysis failed for job {JobId}. Continuing.", jobId);
+                // Don't fail the whole job just because analysis sync failed
+            }
 
             _logger.LogInformation("Translation completed for job {JobId} to {Language}, {Count} segments",
                 jobId, targetLanguage, translatedTexts.Count);
