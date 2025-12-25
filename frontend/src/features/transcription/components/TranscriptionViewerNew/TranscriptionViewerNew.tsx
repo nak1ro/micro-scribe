@@ -14,6 +14,7 @@ import { AudioPlayer } from "./AudioPlayer";
 import { ActionsSidebar } from "./ActionsSidebar";
 import { useAudioSync } from "@/features/transcription/hooks/useAudioSync";
 import { handleExport as exportFile } from "@/features/transcription/utils/exportUtils";
+import { getProcessingStepText } from "@/features/transcription/utils";
 import type { TranscriptionData, ExportFormat } from "@/features/transcription/types";
 
 interface TranscriptionViewerNewProps {
@@ -42,6 +43,7 @@ export function TranscriptionViewerNew({
                 id: job.jobId,
                 fileName: job.originalFileName,
                 status: job.status.toLowerCase() as TranscriptionData["status"],
+                processingStep: job.processingStep,
                 durationSeconds: job.durationSeconds || 0,
                 sourceLanguage: job.sourceLanguage || "en",
                 targetLanguage: job.targetLanguage,
@@ -195,6 +197,7 @@ export function TranscriptionViewerNew({
 
     // Pending/Processing state
     if (data.status === "pending" || data.status === "processing") {
+        const stepText = getProcessingStepText(data.status, data.processingStep);
         return (
             <div className="flex flex-col h-screen bg-background">
                 <ViewerHeader data={data} onBack={handleBack} />
@@ -202,7 +205,7 @@ export function TranscriptionViewerNew({
                     <RefreshDouble className="h-10 w-10 text-primary animate-spin" />
                     <div className="text-center">
                         <p className="font-semibold text-foreground mb-1">
-                            Transcription in progress
+                            {stepText}
                         </p>
                         <p className="text-sm text-muted-foreground">
                             This may take a few minutes depending on the file length.

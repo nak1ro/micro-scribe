@@ -8,8 +8,7 @@ namespace ScribeApi.Features.Transcriptions.Contracts
         Guid? UploadSessionId,
         TranscriptionQuality Quality = TranscriptionQuality.Balanced,
         string? SourceLanguage = null,
-        bool EnableSpeakerDiarization = false,
-        string? TargetLanguage = null
+        bool EnableSpeakerDiarization = false
     );
 
     // Request to translate an existing job
@@ -42,7 +41,7 @@ namespace ScribeApi.Features.Transcriptions.Contracts
         public string? ProcessingStep { get; init; }
         public TranscriptionQuality Quality { get; init; }
         public string? SourceLanguage { get; init; }
-        public string? TargetLanguage { get; init; }
+        public List<string> TranslatedLanguages { get; init; } = new();  // Languages available in translations
         public string? Transcript { get; init; }
         public string? ErrorMessage { get; init; }
         public double? DurationSeconds { get; init; }
@@ -53,6 +52,8 @@ namespace ScribeApi.Features.Transcriptions.Contracts
         public DateTime? StartedAtUtc { get; init; }
         public DateTime? CompletedAtUtc { get; init; }
         public string? PresignedUrl { get; set; }
+        public string? TranslationStatus { get; init; }       // "Pending", "Translating", "Failed", null
+        public string? TranslatingToLanguage { get; init; }   // Current language being translated
     }
 
     // Segment DTO with timestamps
@@ -63,7 +64,7 @@ namespace ScribeApi.Features.Transcriptions.Contracts
         public double StartSeconds { get; init; }
         public double EndSeconds { get; init; }
         public string? Speaker { get; init; }
-        public string? TranslatedText { get; init; }
+        public Dictionary<string, string> Translations { get; init; } = new();
         public bool IsEdited { get; init; }
         public string? OriginalText { get; init; }
     }

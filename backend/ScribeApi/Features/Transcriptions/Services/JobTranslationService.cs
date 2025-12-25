@@ -1,87 +1,64 @@
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using ScribeApi.Core.Exceptions;
-using ScribeApi.Core.Interfaces;
+using ScribeApi.Infrastructure.BackgroundJobs;
 using ScribeApi.Infrastructure.Persistence;
+using ScribeApi.Infrastructure.Persistence.Entities;
 
 namespace ScribeApi.Features.Transcriptions.Services;
 
 // Interface for job-level translation operations
 public interface IJobTranslationService
 {
-    Task TranslateJobAsync(Guid jobId, string userId, string targetLanguage, CancellationToken ct);
+    Task EnqueueTranslationAsync(Guid jobId, string userId, string targetLanguage, CancellationToken ct);
 }
 
-// Service for translating transcription jobs (can be used during job or on-demand)
+// Service layer between controller and background job - validates and enqueues
 public class JobTranslationService : IJobTranslationService
 {
     private readonly AppDbContext _context;
-    private readonly ITranslationService _translationService;
+    private readonly IBackgroundJobClient _backgroundJobs;
     private readonly ILogger<JobTranslationService> _logger;
 
     public JobTranslationService(
         AppDbContext context,
-        ITranslationService translationService,
+        IBackgroundJobClient backgroundJobs,
         ILogger<JobTranslationService> logger)
     {
         _context = context;
-        _translationService = translationService;
+        _backgroundJobs = backgroundJobs;
         _logger = logger;
     }
 
-    public async Task TranslateJobAsync(Guid jobId, string userId, string targetLanguage, CancellationToken ct)
+    public async Task EnqueueTranslationAsync(Guid jobId, string userId, string targetLanguage, CancellationToken ct)
     {
         var job = await _context.TranscriptionJobs
-            .Include(j => j.Segments)
             .FirstOrDefaultAsync(j => j.Id == jobId && j.UserId == userId, ct);
 
         if (job == null)
             throw new NotFoundException("Transcription job not found.");
 
-        if (job.Status != Infrastructure.Persistence.Entities.TranscriptionJobStatus.Completed)
+        if (job.Status != TranscriptionJobStatus.Completed)
             throw new ValidationException("Cannot translate: job is not completed.");
 
-        var sourceLanguage = job.SourceLanguage;
-        if (string.IsNullOrWhiteSpace(sourceLanguage))
+        if (string.IsNullOrWhiteSpace(job.SourceLanguage))
             throw new ValidationException("Cannot translate: source language is unknown.");
 
-        if (sourceLanguage.Equals(targetLanguage, StringComparison.OrdinalIgnoreCase))
+        if (job.SourceLanguage.Equals(targetLanguage, StringComparison.OrdinalIgnoreCase))
             throw new ValidationException("Source and target languages are the same.");
 
-        _logger.LogInformation("Translating job {JobId} from {Source} to {Target}",
-            jobId, sourceLanguage, targetLanguage);
+        if (job.TranslationStatus == "Translating")
+            throw new ValidationException("A translation is already in progress.");
 
-        // Extract texts from segments
-        var textsToTranslate = job.Segments
-            .OrderBy(s => s.StartSeconds)
-            .Select(s => s.Text)
-            .ToList();
-
-        if (textsToTranslate.Count == 0)
-        {
-            _logger.LogWarning("Job {JobId} has no segments to translate", jobId);
-            return;
-        }
-
-        // Call translation service
-        var translatedTexts = await _translationService.TranslateAsync(
-            textsToTranslate,
-            sourceLanguage,
-            targetLanguage,
-            ct);
-
-        // Update segments with translated text
-        var orderedSegments = job.Segments.OrderBy(s => s.StartSeconds).ToList();
-        for (int i = 0; i < orderedSegments.Count && i < translatedTexts.Count; i++)
-        {
-            orderedSegments[i].TranslatedText = translatedTexts[i];
-        }
-
-        // Update job target language
-        job.TargetLanguage = targetLanguage;
-
+        // Mark as pending
+        job.TranslationStatus = "Pending";
+        job.TranslatingToLanguage = targetLanguage;
         await _context.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Successfully translated {Count} segments for job {JobId}",
-            translatedTexts.Count, jobId);
+        // Enqueue background job
+        _backgroundJobs.Enqueue<TranslationJobRunner>(
+            x => x.RunAsync(jobId, userId, targetLanguage, CancellationToken.None));
+
+        _logger.LogInformation("Enqueued translation job {JobId} to {Language}", jobId, targetLanguage);
     }
 }

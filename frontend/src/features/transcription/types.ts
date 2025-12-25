@@ -41,6 +41,7 @@ export interface TranscriptionData {
     id: string;
     fileName: string;
     status: "pending" | "processing" | "completed" | "failed";
+    processingStep: string | null;
     durationSeconds: number;
     sourceLanguage: string;
     targetLanguage: string | null;

@@ -19,3 +19,46 @@ export function hasSpeakerChanged(
     if (!currentSpeaker || !previousSpeaker) return false;
     return currentSpeaker !== previousSpeaker;
 }
+
+// Get user-friendly text for processing step
+export function getProcessingStepText(
+    status: string,
+    processingStep: string | null
+): string {
+    const statusLower = status.toLowerCase();
+
+    if (statusLower === "pending") {
+        return "Queued";
+    }
+
+    if (statusLower === "processing") {
+        switch (processingStep) {
+            case "Queued":
+                return "Starting...";
+            case "Normalizing":
+                return "Preparing audio...";
+            case "Transcribing":
+                return "Transcribing...";
+            case "SpeakerDiarization":
+                return "Identifying speakers...";
+            case "Translating":
+                return "Translating...";
+            default:
+                return processingStep || "Processing...";
+        }
+    }
+
+    if (statusLower === "completed") {
+        return "Done!";
+    }
+
+    if (statusLower === "failed") {
+        return "Failed";
+    }
+
+    if (statusLower === "cancelled") {
+        return "Cancelled";
+    }
+
+    return status;
+}

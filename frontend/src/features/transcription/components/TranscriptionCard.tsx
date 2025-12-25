@@ -14,6 +14,7 @@ import {
 } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { getProcessingStepText } from "@/features/transcription/utils";
 import type { TranscriptionListItem, TranscriptionStatus } from "@/types/models/transcription";
 
 interface TranscriptionCardProps {
@@ -57,6 +58,9 @@ export function TranscriptionCard({
         e.stopPropagation();
         onSelect?.(item.id);
     };
+
+    // Get processing step text for preview
+    const processingText = getProcessingStepText(item.status, item.processingStep ?? null);
 
     return (
         <div
@@ -145,13 +149,13 @@ export function TranscriptionCard({
                 </p>
             ) : (
                 <p className="text-sm text-muted-foreground/50 italic mb-4 h-[72px]">
-                    {item.status === "completed" ? "No preview available" : "Processing..."}
+                    {item.status === "completed" ? "No preview available" : processingText}
                 </p>
             )}
 
             {/* Footer: Status + Metadata */}
             <div className="flex items-center justify-between mt-auto pt-3 border-t border-border/50">
-                <StatusBadge status={item.status} />
+                <StatusBadge status={item.status} processingStep={item.processingStep} />
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     {item.duration && (
                         <span>{formatDuration(item.duration)}</span>
@@ -165,46 +169,45 @@ export function TranscriptionCard({
 }
 
 // Status Badge Component
-function StatusBadge({ status }: { status: TranscriptionStatus }) {
+interface StatusBadgeProps {
+    status: TranscriptionStatus;
+    processingStep?: string | null;
+}
+
+function StatusBadge({ status, processingStep }: StatusBadgeProps) {
     const config: Record<TranscriptionStatus, {
-        label: string;
         icon: React.ComponentType<{ className?: string }>;
         className: string;
     }> = {
         uploading: {
-            label: "Uploading",
             icon: RefreshDouble,
             className: "bg-primary/10 text-primary",
         },
         pending: {
-            label: "Pending",
             icon: Clock,
             className: "bg-warning/10 text-warning",
         },
         processing: {
-            label: "Processing",
             icon: RefreshDouble,
             className: "bg-info/10 text-info",
         },
         completed: {
-            label: "Completed",
             icon: CheckCircle,
             className: "bg-success/10 text-success",
         },
         failed: {
-            label: "Failed",
             icon: XmarkCircle,
             className: "bg-destructive/10 text-destructive",
         },
         cancelled: {
-            label: "Cancelled",
             icon: Prohibition,
             className: "bg-muted text-muted-foreground",
         },
     };
 
-    const { label, icon: Icon, className } = config[status];
+    const { icon: Icon, className } = config[status];
     const isAnimated = status === "processing" || status === "uploading";
+    const label = getProcessingStepText(status, processingStep ?? null);
 
     return (
         <span className={cn(
@@ -216,3 +219,4 @@ function StatusBadge({ status }: { status: TranscriptionStatus }) {
         </span>
     );
 }
+

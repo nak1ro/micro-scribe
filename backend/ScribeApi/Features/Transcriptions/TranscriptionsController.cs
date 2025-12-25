@@ -188,8 +188,8 @@ public class TranscriptionsController : ControllerBase
         var userId = User.GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        await _translationService.TranslateJobAsync(jobId, userId, request.TargetLanguage, ct);
+        await _translationService.EnqueueTranslationAsync(jobId, userId, request.TargetLanguage, ct);
 
-        return NoContent();
+        return Accepted();
     }
 }

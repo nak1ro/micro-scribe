@@ -45,9 +45,6 @@ public class TranscriptionJob
     // Detected or requested language code (source language)
     public string? SourceLanguage { get; set; }
 
-    // Target language for translation (null = no translation)
-    public string? TargetLanguage { get; set; }
-
     // Duration of processed audio in seconds
     public double? DurationSeconds { get; set; }
 
@@ -65,6 +62,12 @@ public class TranscriptionJob
 
     // Current processing step (Normalizing, Transcribing, Diarizing, Translating)
     public string? ProcessingStep { get; set; }
+
+    // Translation status (null, "Pending", "Translating", "Completed", "Failed")
+    public string? TranslationStatus { get; set; }
+
+    // Language currently being translated (e.g., "ru")
+    public string? TranslatingToLanguage { get; set; }
 
     // Whether speaker diarization is enabled for this job
     public bool EnableSpeakerDiarization { get; set; }

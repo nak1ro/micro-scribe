@@ -137,6 +137,7 @@ export interface TranscriptionJobDetailResponse {
     mediaFileId: string;
     originalFileName: string;
     status: TranscriptionJobStatus;
+    processingStep: string | null;
     quality: TranscriptionQuality;
     sourceLanguage: string | null;
     targetLanguage: string | null;

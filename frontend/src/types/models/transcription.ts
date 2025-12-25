@@ -15,6 +15,7 @@ export interface TranscriptionListItem {
     fileName: string;
     uploadDate: string;
     status: TranscriptionStatus;
+    processingStep?: string | null;
     duration: number | null;
     language: string | null;
     preview: string | null;
