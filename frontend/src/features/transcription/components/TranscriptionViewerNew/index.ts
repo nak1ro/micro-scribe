@@ -10,7 +10,7 @@ export { TranscriptSegment } from "./TranscriptSegment";
 export { AudioPlayer } from "./AudioPlayer";
 export { ActionsSidebar } from "./ActionsSidebar";
 export { ExportMenu } from "./ExportMenu";
-export { TranslateMenu } from "./TranslateMenu";
+export { LanguageMenu } from "./LanguageMenu";
 
 // Hooks
 export { useAudioSync } from "@/features/transcription/hooks/useAudioSync";

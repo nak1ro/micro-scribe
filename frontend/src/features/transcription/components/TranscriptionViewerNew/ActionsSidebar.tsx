@@ -5,8 +5,7 @@ import { cn } from "@/lib/utils";
 import { Copy, Check, Clock, Group, EditPencil, Settings } from "iconoir-react";
 import { Button } from "@/components/ui";
 import { ExportMenu } from "./ExportMenu";
-import { TranslateMenu } from "./TranslateMenu";
-import { LanguageSwitcher } from "./LanguageSwitcher";
+import { LanguageMenu } from "./LanguageMenu";
 import type { ExportFormat } from "@/features/transcription/types";
 
 interface ActionsSidebarProps {
@@ -104,12 +103,15 @@ export function ActionsSidebar({
                 {/* Export */}
                 <ExportMenu onExport={onExport} disabled={disabled} />
 
-                {/* Translate */}
-                <TranslateMenu
-                    onTranslate={onTranslate}
+                {/* Language (translate + view) */}
+                <LanguageMenu
+                    sourceLanguage={sourceLanguage}
                     translatedLanguages={translatedLanguages}
                     translationStatus={translationStatus}
                     translatingToLanguage={translatingToLanguage}
+                    displayLanguage={displayLanguage}
+                    onDisplayLanguageChange={onDisplayLanguageChange}
+                    onTranslate={onTranslate}
                     disabled={disabled}
                 />
 
@@ -146,20 +148,6 @@ export function ActionsSidebar({
 
             {/* Divider */}
             <div className="h-px bg-border my-8" />
-
-            {/* Language Switcher - only show if translations exist */}
-            {translatedLanguages.length > 0 && (
-                <>
-                    <LanguageSwitcher
-                        sourceLanguage={sourceLanguage}
-                        translatedLanguages={translatedLanguages}
-                        selectedLanguage={displayLanguage}
-                        onSelect={onDisplayLanguageChange}
-                        disabled={disabled}
-                    />
-                    <div className="h-px bg-border my-8" />
-                </>
-            )}
 
             {/* Settings section */}
             <div className="space-y-6">

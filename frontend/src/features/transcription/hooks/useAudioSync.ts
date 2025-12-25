@@ -32,15 +32,26 @@ export function useAudioSync({ segments, audioUrl }: UseAudioSyncOptions): UseAu
 
     // Find segment index for a given time
     const findSegmentIndexAtTime = React.useCallback((time: number): number => {
+        // Check if time is within any segment
         for (let i = 0; i < segments.length; i++) {
             if (time >= segments[i].startSeconds && time <= segments[i].endSeconds) {
                 return i;
             }
         }
+
         // If past all segments, return last
         if (segments.length > 0 && time > segments[segments.length - 1].endSeconds) {
             return segments.length - 1;
         }
+
+        // If time is in a gap between segments, find the closest previous segment
+        for (let i = segments.length - 1; i >= 0; i--) {
+            if (time > segments[i].endSeconds) {
+                return i; // Return the segment we just passed
+            }
+        }
+
+        // Before the first segment starts
         return 0;
     }, [segments]);
 

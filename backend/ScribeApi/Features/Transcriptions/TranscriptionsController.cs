@@ -15,7 +15,6 @@ namespace ScribeApi.Features.Transcriptions;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-[EnableRateLimiting(RateLimitingExtensions.TranscriptionPolicy)]
 public class TranscriptionsController : ControllerBase
 {
     private readonly ITranscriptionJobService _jobService;

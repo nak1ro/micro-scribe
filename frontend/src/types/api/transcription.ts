@@ -123,6 +123,7 @@ export interface TranscriptionJobListItem {
     jobId: string;
     originalFileName: string;
     status: TranscriptionJobStatus;
+    processingStep: string | null;
     quality: TranscriptionQuality;
     sourceLanguage: string | null;
     durationSeconds: number | null;

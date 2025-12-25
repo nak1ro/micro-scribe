@@ -36,10 +36,12 @@ export function TranscriptContent({
         return map;
     }, [speakers]);
 
-    // Auto-scroll to keep active segment centered
+    // Auto-scroll to keep active segment visible
     React.useEffect(() => {
         const activeRef = segmentRefs.current.get(activeSegmentIndex);
-        if (activeRef && containerRef.current) {
+
+        if (activeRef) {
+            // Scroll to center the active segment
             activeRef.scrollIntoView({
                 behavior: "smooth",
                 block: "center"

@@ -58,6 +58,7 @@ function mapJobToListItem(job: TranscriptionJobListItem): TranscriptionListItem 
         fileName: job.originalFileName,
         uploadDate: job.createdAtUtc,
         status: mapJobStatus(job.status),
+        processingStep: job.processingStep,
         duration: job.durationSeconds,
         language: job.sourceLanguage,
         preview: job.transcriptPreview,

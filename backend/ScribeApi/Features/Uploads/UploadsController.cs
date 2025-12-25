@@ -11,7 +11,6 @@ namespace ScribeApi.Features.Uploads;
 [Authorize]
 [ApiController]
 [Route("api/uploads/sessions")]
-[EnableRateLimiting(RateLimitingExtensions.UploadPolicy)]
 public class UploadsController : ControllerBase
 {
     private readonly IUploadService _uploadService;

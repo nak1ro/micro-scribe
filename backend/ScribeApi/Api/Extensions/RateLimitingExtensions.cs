@@ -26,13 +26,17 @@ public static class RateLimitingExtensions
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-            // Global rate limiter partitioned by user
+            // Global rate limiter partitioned by user (skips GET requests for polling)
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
             {
                 var settings = context.RequestServices
                     .GetRequiredService<IOptions<RateLimitingSettings>>().Value;
 
                 if (!settings.EnableRateLimiting)
+                    return RateLimitPartition.GetNoLimiter(string.Empty);
+
+                // Skip rate limiting for GET requests (allow polling)
+                if (context.Request.Method == HttpMethods.Get)
                     return RateLimitPartition.GetNoLimiter(string.Empty);
 
                 var (partitionKey, isPro) = GetPartitionInfo(context);

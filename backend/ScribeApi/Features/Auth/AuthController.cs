@@ -9,7 +9,6 @@ namespace ScribeApi.Features.Auth;
 
 [ApiController]
 [Route("api/[controller]")]
-[EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
