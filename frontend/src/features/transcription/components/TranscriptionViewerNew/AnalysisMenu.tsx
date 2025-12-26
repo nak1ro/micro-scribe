@@ -19,9 +19,9 @@ interface AnalysisMenuProps {
 
 // Analysis types we support
 const ANALYSIS_TYPES: { type: AnalysisType; label: string; hasView: boolean }[] = [
-    { type: "ShortSummary", label: "TL;DR Summary", hasView: false },
-    { type: "Topics", label: "Topics/Tags", hasView: false },
-    { type: "Sentiment", label: "Sentiment Analysis", hasView: false },
+    { type: "ShortSummary", label: "TL;DR Summary", hasView: true },
+    { type: "Topics", label: "Topics/Tags", hasView: true },
+    { type: "Sentiment", label: "Sentiment Analysis", hasView: true },
     { type: "ActionItems", label: "Action Items", hasView: true },
     { type: "MeetingMinutes", label: "Meeting Minutes", hasView: true },
 ];

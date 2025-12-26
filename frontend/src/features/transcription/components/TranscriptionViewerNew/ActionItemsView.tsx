@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { ArrowLeft } from "iconoir-react";
-import type { TranscriptionAnalysisDto } from "@/types/api/analysis";
+import { ArrowLeft, Square, CheckSquare } from "iconoir-react";
+import type { TranscriptionAnalysisDto, ActionItemsContent, ActionItemContent } from "@/types/api/analysis";
+import { parseAnalysisContent } from "@/types/api/analysis";
 
 interface ActionItemsViewProps {
     actionItemsAnalysis: TranscriptionAnalysisDto | undefined;
@@ -18,15 +19,42 @@ export function ActionItemsView({
     onBack,
     className,
 }: ActionItemsViewProps) {
-    // Get content in the appropriate language
-    const content = React.useMemo((): string => {
-        if (!actionItemsAnalysis) return "";
+    // Local state for completion (not persisted)
+    const [completed, setCompleted] = React.useState<Set<number>>(new Set());
 
+    // Get action items in the appropriate language
+    const actionItems = React.useMemo((): ActionItemContent[] => {
+        if (!actionItemsAnalysis) return [];
+
+        let content = actionItemsAnalysis.content;
         if (displayLanguage && actionItemsAnalysis.translations[displayLanguage]) {
-            return actionItemsAnalysis.translations[displayLanguage];
+            content = actionItemsAnalysis.translations[displayLanguage];
         }
-        return actionItemsAnalysis.content;
+
+        const parsed = parseAnalysisContent<ActionItemsContent>(content);
+        return parsed?.actionItems ?? [];
     }, [actionItemsAnalysis, displayLanguage]);
+
+    const toggleComplete = (index: number) => {
+        setCompleted(prev => {
+            const next = new Set(prev);
+            if (next.has(index)) {
+                next.delete(index);
+            } else {
+                next.add(index);
+            }
+            return next;
+        });
+    };
+
+    const getPriorityColor = (priority: string) => {
+        switch (priority) {
+            case "High": return "bg-destructive/10 text-destructive";
+            case "Medium": return "bg-warning/10 text-warning";
+            case "Low": return "bg-success/10 text-success";
+            default: return "bg-muted text-muted-foreground";
+        }
+    };
 
     if (!actionItemsAnalysis) {
         return (
@@ -49,61 +77,69 @@ export function ActionItemsView({
                 </button>
                 <div>
                     <h2 className="text-lg font-semibold text-foreground">📋 Action Items</h2>
+                    <p className="text-xs text-muted-foreground">
+                        {actionItems.length} items • {completed.size} completed
+                    </p>
                 </div>
             </div>
 
-            {/* Content - render markdown as formatted text */}
-            <div className="flex-1 overflow-y-auto px-4 py-6">
-                <div className="max-w-3xl mx-auto prose prose-sm dark:prose-invert">
-                    {content.split('\n').map((line, idx) => {
-                        // Handle markdown headings
-                        if (line.startsWith('# ')) {
-                            return <h1 key={idx} className="text-xl font-bold text-foreground mb-4">{line.slice(2)}</h1>;
-                        }
-                        if (line.startsWith('## ')) {
-                            return <h2 key={idx} className="text-lg font-semibold text-foreground mb-3">{line.slice(3)}</h2>;
-                        }
+            {/* Action items list */}
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+                <div className="max-w-3xl mx-auto space-y-2">
+                    {actionItems.map((item, idx) => {
+                        const isComplete = completed.has(idx);
 
-                        // Handle checkbox items
-                        if (line.match(/^- \[[ x]\] /)) {
-                            const isChecked = line.includes('[x]');
-                            const text = line.replace(/^- \[[ x]\] /, '');
-                            return (
-                                <div key={idx} className="flex items-start gap-2 py-1">
-                                    <span className={cn(
-                                        "mt-0.5",
-                                        isChecked ? "text-success" : "text-muted-foreground"
-                                    )}>
-                                        {isChecked ? "☑" : "☐"}
-                                    </span>
-                                    <span className={cn(
+                        return (
+                            <div
+                                key={idx}
+                                className={cn(
+                                    "flex items-start gap-3 p-3 rounded-lg border border-border",
+                                    "hover:bg-muted/50 transition-colors",
+                                    isComplete && "bg-muted/30 opacity-70"
+                                )}
+                            >
+                                <button
+                                    onClick={() => toggleComplete(idx)}
+                                    className="mt-0.5 shrink-0"
+                                    aria-label={isComplete ? "Mark incomplete" : "Mark complete"}
+                                >
+                                    {isComplete ? (
+                                        <CheckSquare className="h-5 w-5 text-success" />
+                                    ) : (
+                                        <Square className="h-5 w-5 text-muted-foreground hover:text-primary" />
+                                    )}
+                                </button>
+
+                                <div className="flex-1 min-w-0">
+                                    <p className={cn(
                                         "text-sm text-foreground",
-                                        isChecked && "line-through opacity-70"
+                                        isComplete && "line-through"
                                     )}>
-                                        {text.replace(/\*\*/g, '')}
-                                    </span>
+                                        {item.task}
+                                    </p>
+
+                                    <div className="flex flex-wrap gap-2 mt-1.5">
+                                        {item.owner && (
+                                            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                                                👤 {item.owner}
+                                            </span>
+                                        )}
+                                        {item.priority && (
+                                            <span className={cn("text-xs px-2 py-0.5 rounded-full", getPriorityColor(item.priority))}>
+                                                {item.priority}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
-                            );
-                        }
-
-                        // Handle indented details
-                        if (line.match(/^\s+- \*\*/)) {
-                            const text = line.trim().replace(/^- /, '').replace(/\*\*/g, '');
-                            const [label, value] = text.split(': ');
-                            return (
-                                <div key={idx} className="ml-6 text-xs text-muted-foreground py-0.5">
-                                    <span className="font-medium">{label}:</span> {value}
-                                </div>
-                            );
-                        }
-
-                        // Regular text
-                        if (line.trim()) {
-                            return <p key={idx} className="text-sm text-muted-foreground mb-2">{line}</p>;
-                        }
-
-                        return null;
+                            </div>
+                        );
                     })}
+
+                    {actionItems.length === 0 && (
+                        <p className="text-center text-muted-foreground py-8">
+                            No action items found in this transcription.
+                        </p>
+                    )}
                 </div>
             </div>
         </div>

@@ -15,6 +15,7 @@ import { AudioPlayer } from "./AudioPlayer";
 import { ActionsSidebar } from "./ActionsSidebar";
 import { ActionItemsView } from "./ActionItemsView";
 import { MeetingMinutesView } from "./MeetingMinutesView";
+import { AnalysisContentView } from "./AnalysisContentView";
 import { useAudioSync } from "@/features/transcription/hooks/useAudioSync";
 import { handleExport as exportFile } from "@/features/transcription/utils/exportUtils";
 import { getProcessingStepText } from "@/features/transcription/utils";
@@ -380,6 +381,13 @@ export function TranscriptionViewerNew({
                 ) : currentAnalysisView === "MeetingMinutes" ? (
                     <MeetingMinutesView
                         minutesAnalysis={getAnalysisByType("MeetingMinutes")}
+                        displayLanguage={displayLanguage}
+                        onBack={() => setCurrentAnalysisView("transcript")}
+                    />
+                ) : ["ShortSummary", "LongSummary", "Topics", "Sentiment"].includes(currentAnalysisView) ? (
+                    <AnalysisContentView
+                        analysis={getAnalysisByType(currentAnalysisView as AnalysisType)}
+                        analysisType={currentAnalysisView}
                         displayLanguage={displayLanguage}
                         onBack={() => setCurrentAnalysisView("transcript")}
                     />

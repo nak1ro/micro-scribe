@@ -2,20 +2,23 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import type { TranscriptionAnalysisDto } from "@/types/api/analysis";
+import type { TranscriptionAnalysisDto, TopicsContent } from "@/types/api/analysis";
+import { parseAnalysisContent } from "@/types/api/analysis";
 
 interface TopicsBadgesProps {
     topicsAnalysis: TranscriptionAnalysisDto | undefined;
     displayLanguage: string | null;
+    onTopicClick?: (topic: string) => void;
     className?: string;
 }
 
 export function TopicsBadges({
     topicsAnalysis,
     displayLanguage,
+    onTopicClick,
     className,
 }: TopicsBadgesProps) {
-    // Get topics in the appropriate language
+    // Get topics in appropriate language
     const topics = React.useMemo(() => {
         if (!topicsAnalysis) return [];
 
@@ -24,35 +27,29 @@ export function TopicsBadges({
             content = topicsAnalysis.translations[displayLanguage];
         }
 
-        // Parse JSON array
-        try {
-            const parsed = JSON.parse(content);
-            return Array.isArray(parsed) ? parsed : [];
-        } catch {
-            // If not valid JSON, try splitting by comma
-            return content.split(",").map(t => t.trim()).filter(Boolean);
-        }
+        const parsed = parseAnalysisContent<TopicsContent>(content);
+        return parsed?.topics ?? [];
     }, [topicsAnalysis, displayLanguage]);
 
-    if (!topics.length) {
+    if (!topicsAnalysis || topics.length === 0) {
         return null;
     }
 
     return (
         <div className={cn("flex flex-wrap gap-1.5", className)}>
             {topics.map((topic, idx) => (
-                <span
+                <button
                     key={idx}
+                    onClick={() => onTopicClick?.(topic)}
                     className={cn(
-                        "inline-flex items-center gap-1",
-                        "text-xs font-medium px-2 py-0.5 rounded-full",
+                        "px-2 py-0.5 rounded-full text-xs font-medium",
                         "bg-primary/10 text-primary",
-                        "hover:bg-primary/20 transition-colors cursor-default"
+                        "hover:bg-primary/20 transition-colors",
+                        !onTopicClick && "cursor-default"
                     )}
                 >
-                    <span className="text-[10px]">#</span>
-                    {topic}
-                </span>
+                    #{topic}
+                </button>
             ))}
         </div>
     );

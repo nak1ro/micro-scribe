@@ -3,21 +3,18 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { NavArrowDown, NavArrowUp, EmojiSatisfied, EmojiSad } from "iconoir-react";
-import type { TranscriptionAnalysisDto, SentimentResult } from "@/types/api/analysis";
+import type { TranscriptionAnalysisDto, ShortSummaryContent, SentimentContent } from "@/types/api/analysis";
 import { parseAnalysisContent } from "@/types/api/analysis";
 
 interface TLDRCardProps {
     summaryAnalysis: TranscriptionAnalysisDto | undefined;
     sentimentAnalysis: TranscriptionAnalysisDto | undefined;
     displayLanguage: string | null;
-    isVisible: boolean;
-    onToggle: () => void;
     className?: string;
 }
 
-// Get sentiment icon and color
-function getSentimentDisplay(tone: string | undefined) {
-    switch (tone) {
+function getSentimentDisplay(sentiment: string | undefined) {
+    switch (sentiment) {
         case "Positive":
             return { Icon: EmojiSatisfied, color: "text-success", bg: "bg-success/10" };
         case "Negative":
@@ -31,49 +28,55 @@ export function TLDRCard({
     summaryAnalysis,
     sentimentAnalysis,
     displayLanguage,
-    isVisible,
-    onToggle,
     className,
 }: TLDRCardProps) {
-    // Get summary text in the appropriate language
+    const [isExpanded, setIsExpanded] = React.useState(true);
+
+    // Get summary text in appropriate language
     const summaryText = React.useMemo(() => {
         if (!summaryAnalysis) return null;
 
+        let content = summaryAnalysis.content;
         if (displayLanguage && summaryAnalysis.translations[displayLanguage]) {
-            return summaryAnalysis.translations[displayLanguage];
+            content = summaryAnalysis.translations[displayLanguage];
         }
-        return summaryAnalysis.content;
+
+        const parsed = parseAnalysisContent<ShortSummaryContent>(content);
+        return parsed?.summary ?? null;
     }, [summaryAnalysis, displayLanguage]);
 
-    // Parse sentiment
+    // Get sentiment
     const sentiment = React.useMemo(() => {
         if (!sentimentAnalysis) return null;
-        return parseAnalysisContent<SentimentResult>(sentimentAnalysis.content);
-    }, [sentimentAnalysis]);
 
-    const sentimentDisplay = getSentimentDisplay(sentiment?.tone);
+        let content = sentimentAnalysis.content;
+        if (displayLanguage && sentimentAnalysis.translations[displayLanguage]) {
+            content = sentimentAnalysis.translations[displayLanguage];
+        }
 
-    if (!summaryAnalysis) {
+        return parseAnalysisContent<SentimentContent>(content);
+    }, [sentimentAnalysis, displayLanguage]);
+
+    const sentimentDisplay = getSentimentDisplay(sentiment?.sentiment);
+
+    if (!summaryAnalysis && !sentimentAnalysis) {
         return null;
     }
 
     return (
-        <div className={cn("border border-border rounded-lg bg-card/50", className)}>
-            {/* Header - always visible */}
+        <div className={cn(
+            "rounded-lg border border-border bg-card",
+            className
+        )}>
+            {/* Header */}
             <button
-                onClick={onToggle}
-                className={cn(
-                    "w-full flex items-center justify-between px-4 py-3",
-                    "text-left hover:bg-muted/50 transition-colors",
-                    "rounded-t-lg",
-                    !isVisible && "rounded-b-lg"
-                )}
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
             >
                 <div className="flex items-center gap-3">
-                    <span className="text-lg">🚀</span>
-                    <span className="text-sm font-medium text-foreground">TL;DR</span>
+                    <span className="text-lg">💡</span>
+                    <span className="font-medium text-foreground">TL;DR</span>
 
-                    {/* Sentiment badge */}
                     {sentiment && (
                         <div className={cn(
                             "flex items-center gap-1 px-2 py-0.5 rounded-full",
@@ -85,37 +88,34 @@ export function TLDRCard({
                                 <span className={cn("text-xs", sentimentDisplay.color)}>😐</span>
                             )}
                             <span className={cn("text-xs font-medium", sentimentDisplay.color)}>
-                                {sentiment.tone}
+                                {sentiment.sentiment}
                             </span>
                         </div>
                     )}
                 </div>
 
-                {isVisible ? (
+                {isExpanded ? (
                     <NavArrowUp className="h-4 w-4 text-muted-foreground" />
                 ) : (
                     <NavArrowDown className="h-4 w-4 text-muted-foreground" />
                 )}
             </button>
 
-            {/* Content - collapsible */}
-            {isVisible && (
-                <div className="px-4 pb-4 pt-1">
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                        {summaryText}
-                    </p>
+            {/* Content */}
+            {isExpanded && (
+                <div className="px-4 pb-4 space-y-3">
+                    {summaryText && (
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                            {summaryText}
+                        </p>
+                    )}
 
-                    {/* Emotions */}
-                    {sentiment?.emotions && sentiment.emotions.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-3">
-                            {sentiment.emotions.map((emotion, idx) => (
-                                <span
-                                    key={idx}
-                                    className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground"
-                                >
-                                    {emotion}
-                                </span>
-                            ))}
+                    {sentiment?.explanation && (
+                        <div className="pt-2 border-t border-border">
+                            <p className="text-xs text-muted-foreground">
+                                <span className="font-medium">Sentiment: </span>
+                                {sentiment.explanation}
+                            </p>
                         </div>
                     )}
                 </div>

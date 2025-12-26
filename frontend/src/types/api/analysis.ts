@@ -1,4 +1,4 @@
-// Analysis API types
+// API types for transcription analysis
 
 export type AnalysisType =
     | "ShortSummary"
@@ -11,7 +11,7 @@ export type AnalysisType =
 export interface TranscriptionAnalysisDto {
     id: string;
     analysisType: AnalysisType;
-    content: string;
+    content: string; // JSON string
     translations: Record<string, string>;
     createdAtUtc: string;
 }
@@ -24,25 +24,48 @@ export interface TranslateAnalysisRequest {
     targetLanguage: string;
 }
 
-// Parsed content types (for JSON content fields)
-export interface ActionItem {
-    task: string;
-    assignee: string | null;
-    deadline: string | null;
+// Parsed content types based on actual backend formats
+
+export interface ShortSummaryContent {
+    summary: string;
 }
 
-export interface MeetingMinutes {
+export interface LongSummarySection {
+    title: string;
+    content: string;
+}
+
+export interface LongSummaryContent {
+    sections: LongSummarySection[];
+}
+
+export interface ActionItemContent {
+    task: string;
+    owner: string | null;
+    priority: "High" | "Medium" | "Low";
+}
+
+export interface ActionItemsContent {
+    actionItems: ActionItemContent[];
+}
+
+export interface MeetingMinutesContent {
     keyTopics: string[];
     decisions: string[];
     openQuestions: string[];
 }
 
-export interface SentimentResult {
-    tone: "Positive" | "Neutral" | "Negative";
-    emotions: string[];
+export interface TopicsContent {
+    topics: string[];
 }
 
-// Helper to parse content based on analysis type
+export interface SentimentContent {
+    sentiment: "Positive" | "Neutral" | "Negative";
+    confidenceScore: number;
+    explanation: string;
+}
+
+// Helper to parse analysis content
 export function parseAnalysisContent<T>(content: string): T | null {
     try {
         return JSON.parse(content) as T;

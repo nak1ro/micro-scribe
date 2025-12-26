@@ -42,26 +42,38 @@ public class AnalysisService : IAnalysisService
         GenerateAnalysisRequest request, 
         CancellationToken ct)
     {
-        var job = await _context.TranscriptionJobs
-            .Include(j => j.Analyses)
-            .FirstOrDefaultAsync(j => j.Id == jobId && j.UserId == userId, ct);
+        // Load job data for reading (untracked to avoid concurrency issues)
+        var jobData = await _context.TranscriptionJobs
+            .AsNoTracking()
+            .Where(j => j.Id == jobId && j.UserId == userId)
+            .Select(j => new 
+            {
+                j.Id,
+                j.Transcript,
+                j.SourceLanguage,
+                j.Segments
+            })
+            .FirstOrDefaultAsync(ct);
 
-        if (job == null) throw new NotFoundException($"Job {jobId} not found");
-        if (string.IsNullOrEmpty(job.Transcript)) throw new ValidationException("Job has no transcript to analyze");
+        if (jobData == null) throw new NotFoundException($"Job {jobId} not found");
+        if (string.IsNullOrEmpty(jobData.Transcript)) throw new ValidationException("Job has no transcript to analyze");
+
+        // Load existing analyses separately (tracked for updates)
+        var existingAnalyses = await _context.TranscriptionAnalyses
+            .Where(a => a.TranscriptionJobId == jobId)
+            .ToListAsync(ct);
 
         // Expand "All"
         var typesToProcess = request.Types.Contains("All") 
             ? AllTypes 
             : request.Types.Intersect(AllTypes).ToList();
 
-        var sourceLanguage = job.SourceLanguage ?? "English";
+        var sourceLanguage = jobData.SourceLanguage ?? "English";
         
         // Detect additional languages from segments
         var distinctLanguages = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { sourceLanguage };
         
-        // Check first few segments to find established translations
-        // (We don't need to check all of them, usually first one has keys)
-        var sampleSegment = job.Segments.FirstOrDefault();
+        var sampleSegment = jobData.Segments.FirstOrDefault();
         if (sampleSegment != null)
         {
             foreach (var key in sampleSegment.Translations.Keys)
@@ -72,7 +84,7 @@ public class AnalysisService : IAnalysisService
 
         foreach (var type in typesToProcess)
         {
-            var existing = job.Analyses.FirstOrDefault(a => a.AnalysisType == type);
+            var existing = existingAnalyses.FirstOrDefault(a => a.AnalysisType == type);
             
             // Parallelize generation for all languages
             var generationTasks = distinctLanguages.Select(async lang => 
@@ -82,26 +94,24 @@ public class AnalysisService : IAnalysisService
 
                 try 
                 {
-                    // Use the source transcript for generation context
-                    // (We ask LLM to output in 'lang', but processing 'job.Transcript')
-                    var text = await _aiService.GenerateTextAsync(prompt, job.Transcript, ct);
+                    var text = await _aiService.GenerateTextAsync(prompt, jobData.Transcript, ct);
+                    text = CleanAiOutput(text); 
                     return (Lang: lang, Text: text);
                 }
                 catch (Exception)
                 {
-                    return (Lang: lang, Text: string.Empty); // Swallow error for individual lang to not fail batch
+                    return (Lang: lang, Text: string.Empty);
                 }
             });
 
             var results = await Task.WhenAll(generationTasks);
             
-            // Process results
             var sourceContent = results.FirstOrDefault(x => x.Lang.Equals(sourceLanguage, StringComparison.OrdinalIgnoreCase)).Text;
             var translations = results
                 .Where(x => !x.Lang.Equals(sourceLanguage, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(x.Text))
                 .ToDictionary(k => k.Lang, v => v.Text);
 
-            if (string.IsNullOrEmpty(sourceContent)) continue; // Failed to generate source
+            if (string.IsNullOrEmpty(sourceContent)) continue;
 
             if (existing != null)
             {
@@ -121,12 +131,12 @@ public class AnalysisService : IAnalysisService
                     Translations = translations
                 };
                 _context.TranscriptionAnalyses.Add(analysis);
-                job.Analyses.Add(analysis);
+                existingAnalyses.Add(analysis);
             }
         }
 
         await _context.SaveChangesAsync(ct);
-        return MapToDtos(job.Analyses);
+        return MapToDtos(existingAnalyses);
     }
 
     public async Task<List<TranscriptionAnalysisDto>> TranslateAnalysisAsync(
@@ -152,6 +162,7 @@ public class AnalysisService : IAnalysisService
             
             // We pass empty context because the content to translate is in the prompt
             var translatedContent = await _aiService.GenerateTextAsync(prompt, "", ct);
+            translatedContent = CleanAiOutput(translatedContent);
             
             analysis.Translations[targetLang] = translatedContent;
             analysis.LastUpdatedAtUtc = DateTime.UtcNow;
@@ -184,6 +195,16 @@ public class AnalysisService : IAnalysisService
             "Sentiment" => AiPrompts.Sentiment(language),
             _ => string.Empty
         };
+    }
+
+    private string CleanAiOutput(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+        
+        // Remove Markdown code blocks if present
+        text = text.Replace("```json", "").Replace("```", "");
+        
+        return text.Trim();
     }
 
     private List<TranscriptionAnalysisDto> MapToDtos(IEnumerable<TranscriptionAnalysis> entities)
