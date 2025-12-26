@@ -82,6 +82,17 @@ export function TranscriptionViewerNew({
     // Track the language being translated to auto-switch when complete
     const prevTranslatingRef = React.useRef<string | null>(null);
 
+    // Analysis hook (placed before translation effect so refetch is available)
+    const {
+        analyses,
+        isGenerating: isAnalysisGenerating,
+        generatingTypes: generatingAnalysisTypes,
+        generate: generateAnalysis,
+        generateAll: generateAllAnalysis,
+        getAnalysisByType,
+        refetch: refetchAnalysis,
+    } = useAnalysis({ jobId: jobId || "", enabled: !!jobId && data?.status === "completed" });
+
     // Auto-switch to translated language when translation completes
     React.useEffect(() => {
         if (!data) return;
@@ -93,11 +104,13 @@ export function TranscriptionViewerNew({
         if (wasTranslating && !nowTranslating) {
             if (data.translatedLanguages.includes(wasTranslating)) {
                 setDisplayLanguage(wasTranslating);
+                // Refetch analysis to get translated versions
+                refetchAnalysis();
             }
         }
 
         prevTranslatingRef.current = nowTranslating;
-    }, [data?.translatingToLanguage, data?.translatedLanguages]);
+    }, [data?.translatingToLanguage, data?.translatedLanguages, refetchAnalysis]);
 
     // Audio sync hook
     const {
@@ -119,16 +132,6 @@ export function TranscriptionViewerNew({
         data?.segments.some(seg => seg.speaker !== null) || false,
         [data?.segments]
     );
-
-    // Analysis hook
-    const {
-        analyses,
-        isGenerating: isAnalysisGenerating,
-        generatingTypes: generatingAnalysisTypes,
-        generate: generateAnalysis,
-        generateAll: generateAllAnalysis,
-        getAnalysisByType,
-    } = useAnalysis({ jobId: jobId || "", enabled: !!jobId && data?.status === "completed" });
 
     // Active analysis view state ("transcript" or AnalysisType)
     const [currentAnalysisView, setCurrentAnalysisView] = React.useState<string>("transcript");

@@ -94,19 +94,15 @@ public class TranslationJobRunner
             job.TranslatingToLanguage = null;
             await _context.SaveChangesAsync(ct);
 
-            // Auto-translate any existing AI Analysis
+            // Auto-translate any existing AI Analysis using Azure
             try 
             {
-                await _analysisService.TranslateAnalysisAsync(
-                    jobId, 
-                    userId, 
-                    new ScribeApi.Features.Transcriptions.Contracts.TranslateAnalysisRequest(targetLanguage), 
-                    ct);
+                await _analysisService.TranslateAnalysisWithAzureAsync(
+                    jobId, userId, sourceLanguage, targetLanguage, ct);
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Auto-translation of analysis failed for job {JobId}. Continuing.", jobId);
-                // Don't fail the whole job just because analysis sync failed
             }
 
             _logger.LogInformation("Translation completed for job {JobId} to {Language}, {Count} segments",

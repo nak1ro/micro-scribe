@@ -1,3 +1,4 @@
+using System.Text.Json;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using ScribeApi.Core.Exceptions;
@@ -13,7 +14,9 @@ public class AnalysisService : IAnalysisService
 {
     private readonly AppDbContext _context;
     private readonly IGenerativeAiService _aiService;
+    private readonly ITranslationService _translationService;
     private readonly IMapper _mapper;
+    private readonly ILogger<AnalysisService> _logger;
     
     // Available analysis types
     private static readonly List<string> AllTypes = new()
@@ -29,11 +32,15 @@ public class AnalysisService : IAnalysisService
     public AnalysisService(
         AppDbContext context,
         IGenerativeAiService aiService,
-        IMapper mapper)
+        ITranslationService translationService,
+        IMapper mapper,
+        ILogger<AnalysisService> logger)
     {
         _context = context;
         _aiService = aiService;
+        _translationService = translationService;
         _mapper = mapper;
+        _logger = logger;
     }
 
     public async Task<List<TranscriptionAnalysisDto>> GenerateAnalysisAsync(
@@ -172,6 +179,37 @@ public class AnalysisService : IAnalysisService
         return MapToDtos(job.Analyses);
     }
 
+    public async Task<List<TranscriptionAnalysisDto>> TranslateAnalysisWithAzureAsync(
+        Guid jobId,
+        string userId,
+        string sourceLanguage,
+        string targetLanguage,
+        CancellationToken ct)
+    {
+        var analyses = await _context.TranscriptionAnalyses
+            .Where(a => a.TranscriptionJobId == jobId)
+            .ToListAsync(ct);
+
+        if (analyses.Count == 0) return new List<TranscriptionAnalysisDto>();
+
+        foreach (var analysis in analyses)
+        {
+            if (analysis.Translations.ContainsKey(targetLanguage)) continue;
+
+            var translatedContent = await TranslateJsonContentAsync(
+                analysis.Content, sourceLanguage, targetLanguage, ct);
+
+            analysis.Translations[targetLanguage] = translatedContent;
+            analysis.LastUpdatedAtUtc = DateTime.UtcNow;
+            
+            // Force EF Core to detect JSONB dictionary changes
+            _context.Entry(analysis).Property(a => a.Translations).IsModified = true;
+        }
+
+        await _context.SaveChangesAsync(ct);
+        return MapToDtos(analyses);
+    }
+
     public async Task<List<TranscriptionAnalysisDto>> GetAnalysesAsync(Guid jobId, string userId, CancellationToken ct)
     {
          var job = await _context.TranscriptionJobs
@@ -209,7 +247,6 @@ public class AnalysisService : IAnalysisService
 
     private List<TranscriptionAnalysisDto> MapToDtos(IEnumerable<TranscriptionAnalysis> entities)
     {
-        // Manual mapping or use AutoMapper if configured
         return entities.Select(e => new TranscriptionAnalysisDto
         {
             Id = e.Id,
@@ -218,5 +255,138 @@ public class AnalysisService : IAnalysisService
             Translations = e.Translations,
             CreatedAtUtc = e.CreatedAtUtc
         }).ToList();
+    }
+
+    private async Task<string> TranslateJsonContentAsync(
+        string jsonContent,
+        string sourceLanguage,
+        string targetLanguage,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(jsonContent)) return jsonContent;
+
+        try
+        {
+            var (texts, paths) = ExtractTranslatableTexts(jsonContent);
+            if (texts.Count == 0) return jsonContent;
+
+            _logger.LogInformation("Translating {Count} texts from {Source} to {Target}", 
+                texts.Count, sourceLanguage, targetLanguage);
+
+            var translatedTexts = await _translationService.TranslateAsync(
+                texts, sourceLanguage, targetLanguage, ct);
+
+            return ReconstructJsonWithTranslations(jsonContent, paths, translatedTexts);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to translate JSON content from {Source} to {Target}", 
+                sourceLanguage, targetLanguage);
+            throw;
+        }
+    }
+
+    private (List<string> texts, List<string> paths) ExtractTranslatableTexts(string json)
+    {
+        var texts = new List<string>();
+        var paths = new List<string>();
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            ExtractStringsRecursive(doc.RootElement, "", texts, paths);
+        }
+        catch
+        {
+            // If not valid JSON, treat entire content as translatable
+            texts.Add(json);
+            paths.Add("$root");
+        }
+
+        return (texts, paths);
+    }
+
+    private void ExtractStringsRecursive(JsonElement element, string path, List<string> texts, List<string> paths)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.String:
+                var value = element.GetString();
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    texts.Add(value);
+                    paths.Add(path);
+                }
+                break;
+            case JsonValueKind.Object:
+                foreach (var prop in element.EnumerateObject())
+                {
+                    ExtractStringsRecursive(prop.Value, $"{path}.{prop.Name}", texts, paths);
+                }
+                break;
+            case JsonValueKind.Array:
+                int index = 0;
+                foreach (var item in element.EnumerateArray())
+                {
+                    ExtractStringsRecursive(item, $"{path}[{index}]", texts, paths);
+                    index++;
+                }
+                break;
+        }
+    }
+
+    private string ReconstructJsonWithTranslations(string originalJson, List<string> paths, List<string> translations)
+    {
+        if (paths.Count == 1 && paths[0] == "$root")
+        {
+            return translations.Count > 0 ? translations[0] : originalJson;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(originalJson);
+            var pathToTranslation = new Dictionary<string, string>();
+            for (int i = 0; i < paths.Count && i < translations.Count; i++)
+            {
+                pathToTranslation[paths[i]] = translations[i];
+            }
+
+            return RebuildJsonWithTranslations(doc.RootElement, "", pathToTranslation);
+        }
+        catch
+        {
+            return originalJson;
+        }
+    }
+
+    private string RebuildJsonWithTranslations(JsonElement element, string path, Dictionary<string, string> translations)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.String:
+                var translatedValue = translations.TryGetValue(path, out var t) ? t : element.GetString();
+                return JsonSerializer.Serialize(translatedValue);
+            case JsonValueKind.Object:
+                var objParts = new List<string>();
+                foreach (var prop in element.EnumerateObject())
+                {
+                    var propPath = $"{path}.{prop.Name}";
+                    var rebuilt = RebuildJsonWithTranslations(prop.Value, propPath, translations);
+                    objParts.Add($"\"{prop.Name}\":{rebuilt}");
+                }
+                return "{" + string.Join(",", objParts) + "}";
+            case JsonValueKind.Array:
+                var arrParts = new List<string>();
+                int index = 0;
+                foreach (var item in element.EnumerateArray())
+                {
+                    var itemPath = $"{path}[{index}]";
+                    arrParts.Add(RebuildJsonWithTranslations(item, itemPath, translations));
+                    index++;
+                }
+                return "[" + string.Join(",", arrParts) + "]";
+            default:
+                return element.GetRawText();
+        }
     }
 }

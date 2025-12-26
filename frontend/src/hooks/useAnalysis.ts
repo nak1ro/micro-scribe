@@ -25,6 +25,7 @@ interface UseAnalysisReturn {
     generate: (types: AnalysisType[]) => void;
     generateAll: () => void;
     getAnalysisByType: (type: AnalysisType) => TranscriptionAnalysisDto | undefined;
+    refetch: () => void;
 }
 
 export function useAnalysis({ jobId, enabled = true }: UseAnalysisOptions): UseAnalysisReturn {
@@ -96,5 +97,6 @@ export function useAnalysis({ jobId, enabled = true }: UseAnalysisOptions): UseA
         generate,
         generateAll,
         getAnalysisByType,
+        refetch: query.refetch,
     };
 }
