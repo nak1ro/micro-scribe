@@ -88,6 +88,10 @@ export const transcriptionApi = {
         await apiClient.post(API_ENDPOINTS.TRANSCRIPTIONS.CANCEL(jobId));
     },
 
+    deleteJob: async (jobId: string): Promise<void> => {
+        await apiClient.delete(API_ENDPOINTS.TRANSCRIPTIONS.DELETE(jobId));
+    },
+
     exportTranscript: async (jobId: string, format?: number): Promise<Blob> => {
         const response = await apiClient.get(API_ENDPOINTS.TRANSCRIPTIONS.EXPORT(jobId), {
             params: { format },

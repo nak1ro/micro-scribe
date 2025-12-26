@@ -95,9 +95,9 @@ export function useTranscriptions(
         return [...activeOptimistic, ...serverItems];
     }, [serverItems, optimisticItems]);
 
-    // Delete mutation (cancels the job)
+    // Delete mutation (permanently deletes the job)
     const deleteMutation = useMutation({
-        mutationFn: (id: string) => transcriptionApi.cancelJob(id),
+        mutationFn: (id: string) => transcriptionApi.deleteJob(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: transcriptionsKeys.all });
         },

@@ -92,6 +92,7 @@ public class AnalysisService : IAnalysisService
         foreach (var type in typesToProcess)
         {
             var existing = existingAnalyses.FirstOrDefault(a => a.AnalysisType == type);
+            if (existing != null) continue; // Skip already generated analyses
             
             // Parallelize generation for all languages
             var generationTasks = distinctLanguages.Select(async lang => 
@@ -120,26 +121,16 @@ public class AnalysisService : IAnalysisService
 
             if (string.IsNullOrEmpty(sourceContent)) continue;
 
-            if (existing != null)
+            var analysis = new TranscriptionAnalysis
             {
-                existing.Content = sourceContent;
-                existing.ModelUsed = "gpt-4o-mini";
-                existing.LastUpdatedAtUtc = DateTime.UtcNow;
-                existing.Translations = translations; 
-            }
-            else
-            {
-                var analysis = new TranscriptionAnalysis
-                {
-                    TranscriptionJobId = jobId,
-                    AnalysisType = type,
-                    Content = sourceContent,
-                    ModelUsed = "gpt-4o-mini",
-                    Translations = translations
-                };
-                _context.TranscriptionAnalyses.Add(analysis);
-                existingAnalyses.Add(analysis);
-            }
+                TranscriptionJobId = jobId,
+                AnalysisType = type,
+                Content = sourceContent,
+                ModelUsed = "gpt-4o-mini",
+                Translations = translations
+            };
+            _context.TranscriptionAnalyses.Add(analysis);
+            existingAnalyses.Add(analysis);
         }
 
         await _context.SaveChangesAsync(ct);

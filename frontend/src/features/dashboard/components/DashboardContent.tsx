@@ -4,6 +4,8 @@ import * as React from "react";
 import { Search, ArrowUpDown, Check, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TranscriptionList } from "@/features/transcription";
+import { DeleteConfirmationModal } from "@/features/transcription/components/DeleteConfirmationModal";
+import { ExportModal } from "@/features/transcription/components/ExportModal";
 import { FolderPills } from "../../folder/components/FolderPills";
 import { useAddToFolder } from "@/hooks";
 import type { TranscriptionListItem } from "@/types/models/transcription";
@@ -37,11 +39,37 @@ export function DashboardContent({
     const [sortBy, setSortBy] = React.useState<SortOption>("timeAdded");
     const [sortDirection, setSortDirection] = React.useState<SortDirection>("desc");
 
-    const handleDelete = async (id: string) => {
-        try {
-            await onDelete(id);
-        } catch (err) {
-            console.error("Failed to delete:", err);
+    // Delete modal state
+    const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
+    const [itemToDelete, setItemToDelete] = React.useState<TranscriptionListItem | null>(null);
+
+    // Export modal state
+    const [exportModalOpen, setExportModalOpen] = React.useState(false);
+    const [itemToExport, setItemToExport] = React.useState<TranscriptionListItem | null>(null);
+
+    // Open delete confirmation modal
+    const handleDeleteClick = (id: string) => {
+        const item = items.find((i) => i.id === id);
+        if (item) {
+            setItemToDelete(item);
+            setDeleteModalOpen(true);
+        }
+    };
+
+    // Confirm delete action
+    const handleConfirmDelete = async () => {
+        if (!itemToDelete) return;
+        await onDelete(itemToDelete.id);
+        setDeleteModalOpen(false);
+        setItemToDelete(null);
+    };
+
+    // Open export modal
+    const handleDownloadClick = (id: string) => {
+        const item = items.find((i) => i.id === id);
+        if (item && item.status === "completed") {
+            setItemToExport(item);
+            setExportModalOpen(true);
         }
     };
 
@@ -56,7 +84,10 @@ export function DashboardContent({
     };
 
     const handleBulkDownload = (ids: string[]) => {
-        ids.forEach((id) => onDownload?.(id));
+        // Open export modal for first item (bulk export not fully supported yet)
+        if (ids.length > 0) {
+            handleDownloadClick(ids[0]);
+        }
     };
 
     const handleBulkShare = (ids: string[]) => {
@@ -133,16 +164,39 @@ export function DashboardContent({
                 <TranscriptionList
                     items={filteredAndSortedItems}
                     isLoading={isLoading}
-                    onDownload={onDownload}
-                    onDelete={handleDelete}
+                    onDownload={handleDownloadClick}
+                    onDelete={handleDeleteClick}
                     onShare={onShare}
                     onNewClick={onOpenModal}
                     onBulkDelete={handleBulkDelete}
-                    onBulkDownload={onDownload ? handleBulkDownload : undefined}
+                    onBulkDownload={handleBulkDownload}
                     onBulkShare={onShare ? handleBulkShare : undefined}
                     onMoveToFolder={handleMoveToFolder}
                 />
             </div>
+
+            {/* Delete Confirmation Modal */}
+            <DeleteConfirmationModal
+                isOpen={deleteModalOpen}
+                onClose={() => {
+                    setDeleteModalOpen(false);
+                    setItemToDelete(null);
+                }}
+                onConfirm={handleConfirmDelete}
+                fileName={itemToDelete?.fileName || ""}
+            />
+
+            {/* Export Modal */}
+            {itemToExport && (
+                <ExportModal
+                    isOpen={exportModalOpen}
+                    onClose={() => {
+                        setExportModalOpen(false);
+                        setItemToExport(null);
+                    }}
+                    jobId={itemToExport.id}
+                />
+            )}
         </>
     );
 }

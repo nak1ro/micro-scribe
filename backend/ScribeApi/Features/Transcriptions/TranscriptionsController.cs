@@ -88,6 +88,18 @@ public class TranscriptionsController : ControllerBase
         return NoContent();
     }
 
+    [HttpDelete("{jobId:guid}")]
+    [SkipTransaction]
+    public async Task<IActionResult> DeleteJob(Guid jobId, CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        await _jobService.DeleteJobAsync(jobId, userId, ct);
+
+        return NoContent();
+    }
+
     [HttpGet("{jobId:guid}")]
     public async Task<ActionResult<TranscriptionJobDetailResponse>> GetJob(Guid jobId, CancellationToken ct)
     {

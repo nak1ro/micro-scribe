@@ -38,6 +38,7 @@ export const API_ENDPOINTS = {
         // Analysis
         ANALYSIS: (jobId: string) => `/transcriptions/${jobId}/analysis`,
         ANALYSIS_TRANSLATE: (jobId: string) => `/transcriptions/${jobId}/analysis/translate`,
+        DELETE: (jobId: string) => `/transcriptions/${jobId}`,
     },
     USAGE: {
         ME: '/usage/me',

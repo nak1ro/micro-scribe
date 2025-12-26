@@ -222,15 +222,15 @@ export function TranscriptionViewerNew({
                                 <div className="h-4 w-16 rounded bg-muted animate-pulse" />
                                 <div className="h-4 w-20 rounded bg-muted animate-pulse" />
                             </div>
-                            {/* Text lines skeleton */}
+                            {/* Text lines skeleton - deterministic widths to avoid hydration mismatch */}
                             <div className="space-y-2 pl-0">
                                 <div
                                     className="h-4 rounded bg-muted animate-pulse"
-                                    style={{ width: `${70 + Math.random() * 25}%` }}
+                                    style={{ width: `${70 + ((i * 13) % 25)}%` }}
                                 />
                                 <div
                                     className="h-4 rounded bg-muted animate-pulse"
-                                    style={{ width: `${50 + Math.random() * 40}%` }}
+                                    style={{ width: `${50 + ((i * 17) % 40)}%` }}
                                 />
                             </div>
                         </div>

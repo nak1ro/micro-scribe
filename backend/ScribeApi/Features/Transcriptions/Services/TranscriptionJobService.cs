@@ -261,6 +261,71 @@ public class TranscriptionJobService : ITranscriptionJobService
         }
     }
 
+    public async Task DeleteJobAsync(Guid jobId, string userId, CancellationToken ct)
+    {
+        var job = await _context.TranscriptionJobs
+            .Include(j => j.MediaFile)
+            .FirstOrDefaultAsync(j => j.Id == jobId && j.UserId == userId, ct);
+
+        if (job == null) throw new NotFoundException($"Transcription job {jobId} not found.");
+
+        // Cancel Hangfire job if still running
+        if (job.Status is TranscriptionJobStatus.Pending or TranscriptionJobStatus.Processing)
+        {
+            _logger.LogInformation("Job {JobId} is {Status}. Attempting to cancel background job.", jobId, job.Status);
+        }
+
+        // Delete S3 files
+        await DeleteStorageFilesAsync(job.MediaFile, ct);
+
+        // Delete job (cascades to analyses via FK)
+        _context.TranscriptionJobs.Remove(job);
+        
+        // Delete media file
+        _context.MediaFiles.Remove(job.MediaFile);
+
+        await _context.SaveChangesAsync(ct);
+
+        _logger.LogInformation("Deleted job {JobId} and associated files.", jobId);
+
+        // Trigger webhook
+        await _webhookService.EnqueueAsync(userId, WebhookEvents.JobCancelled, new
+        {
+            jobId = job.Id,
+            mediaFileId = job.MediaFileId,
+            status = "Deleted"
+        }, ct);
+    }
+
+    private async Task DeleteStorageFilesAsync(MediaFile mediaFile, CancellationToken ct)
+    {
+        if (!string.IsNullOrEmpty(mediaFile.StorageObjectKey))
+        {
+            try
+            {
+                await _storageService.DeleteAsync(mediaFile.StorageObjectKey, ct);
+                _logger.LogInformation("Deleted original file: {Key}", mediaFile.StorageObjectKey);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete original file: {Key}", mediaFile.StorageObjectKey);
+            }
+        }
+
+        if (!string.IsNullOrEmpty(mediaFile.NormalizedAudioObjectKey))
+        {
+            try
+            {
+                await _storageService.DeleteAsync(mediaFile.NormalizedAudioObjectKey, ct);
+                _logger.LogInformation("Deleted normalized audio: {Key}", mediaFile.NormalizedAudioObjectKey);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete normalized audio: {Key}", mediaFile.NormalizedAudioObjectKey);
+            }
+        }
+    }
+
     private void EnqueueBackgroundJob(Guid jobId, PlanDefinition plan)
     {
         var queue = _planResolver.GetQueueName(plan);
