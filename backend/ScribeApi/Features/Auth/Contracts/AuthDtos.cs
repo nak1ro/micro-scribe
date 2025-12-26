@@ -8,6 +8,9 @@ public record LoginRequestDto(string Email, string Password, bool RememberMe = f
 
 public record ForgotPasswordRequestDto(string Email);
 
+public record ResendEmailConfirmationRequestDto(string Email);
+
+
 public record ResetPasswordRequestDto(string Email, string Token, string NewPassword, string ConfirmNewPassword);
 
 public record ChangePasswordRequestDto(string CurrentPassword, string NewPassword, string ConfirmNewPassword);

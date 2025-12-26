@@ -1,5 +1,7 @@
+using System.Text;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
 using ScribeApi.Core.Exceptions;
 using ScribeApi.Core.Interfaces;
 using ScribeApi.Features.Auth.Contracts;
@@ -17,10 +19,11 @@ public class AuthService : IAuthService
     private readonly IEmailService _emailService;
     private readonly IOAuthService _oauthService;
     private readonly IAuthQueries _authQueries;
+    private readonly ILogger<AuthService> _logger;
 
     public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager,
         AppDbContext context, IMapper mapper, IEmailService emailService,
-        IOAuthService oauthService, IAuthQueries authQueries)
+        IOAuthService oauthService, IAuthQueries authQueries, ILogger<AuthService> logger)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -29,6 +32,7 @@ public class AuthService : IAuthService
         _emailService = emailService;
         _oauthService = oauthService;
         _authQueries = authQueries;
+        _logger = logger;
     }
 
     public async Task<UserDto> RegisterAsync(RegisterRequestDto request, CancellationToken cancellationToken = default)
@@ -45,25 +49,35 @@ public class AuthService : IAuthService
             Email = request.Email
         };
 
-        var result = await _userManager.CreateAsync(user, request.Password);
-        if (!result.Succeeded)
+        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        try
         {
-            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            throw new ValidationException($"Registration failed: {errors}");
+            var result = await _userManager.CreateAsync(user, request.Password);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                throw new ValidationException($"Registration failed: {errors}");
+            }
+    
+            await _userManager.AddToRoleAsync(user, AuthConstants.Roles.User);
+    
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+            
+            await _emailService.SendEmailConfirmationAsync(user.Email, encodedToken, cancellationToken);
+            
+            await transaction.CommitAsync(cancellationToken);
+            
+            // Auto-login
+            await _signInManager.SignInAsync(user, isPersistent: true);
+    
+            return await MapUserDtoAsync(user);
         }
-
-        await _userManager.AddToRoleAsync(user, "User");
-
-        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-        user.EmailConfirmationToken = token;
-        await _userManager.UpdateAsync(user);
-
-        await _emailService.SendEmailConfirmationAsync(user.Email, token, cancellationToken);
-        
-        // Auto-login
-        await _signInManager.SignInAsync(user, isPersistent: true);
-
-        return await MapUserDtoAsync(user);
+        catch (Exception)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 
     public async Task<UserDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
@@ -74,9 +88,16 @@ public class AuthService : IAuthService
             throw new AuthenticationException("Invalid email or password.");
         }
 
-        var result = await _signInManager.PasswordSignInAsync(user, request.Password, request.RememberMe, lockoutOnFailure: false);
+        var result = await _signInManager.PasswordSignInAsync(user, request.Password, request.RememberMe, lockoutOnFailure: true);
         if (!result.Succeeded)
         {
+            if (result.IsLockedOut)
+            {
+                _logger.LogWarning("User account locked out: {Email}", request.Email);
+                throw new AuthenticationException("Account is locked out. Please try again later.");
+            }
+            
+            _logger.LogWarning("Invalid login attempt for user: {Email}", request.Email);
             throw new AuthenticationException("Invalid email or password.");
         }
 
@@ -154,14 +175,42 @@ public class AuthService : IAuthService
             throw new NotFoundException("User not found.");
         }
 
-        var result = await _userManager.ConfirmEmailAsync(user, token);
+         string decodedToken;
+         try
+         {
+             decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
+         }
+         catch (Exception)
+         {
+             throw new ValidationException("Invalid token format.");
+         }
+
+        var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
         if (!result.Succeeded)
         {
             throw new ValidationException("Email confirmation failed.");
         }
+    }
 
-        user.EmailConfirmationToken = null;
-        await _userManager.UpdateAsync(user);
+    public async Task ResendEmailConfirmationAsync(string email, CancellationToken cancellationToken = default)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
+        {
+            // Do not reveal if user exists
+            return;
+        }
+
+        if (user.EmailConfirmed)
+        {
+            // Already confirmed
+            return;
+        }
+        
+        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        
+        await _emailService.SendEmailConfirmationAsync(user.Email!, encodedToken, cancellationToken);
     }
 
     public async Task<UserDto> ExternalLoginAsync(ExternalAuthRequestDto request, CancellationToken cancellationToken = default)
@@ -234,7 +283,7 @@ public class AuthService : IAuthService
             throw new ValidationException($"Failed to create user: {errors}");
         }
 
-        await _userManager.AddToRoleAsync(user, "User");
+        await _userManager.AddToRoleAsync(user, AuthConstants.Roles.User);
         return user;
     }
 

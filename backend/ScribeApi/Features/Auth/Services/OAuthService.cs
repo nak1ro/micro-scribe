@@ -9,7 +9,7 @@ namespace ScribeApi.Features.Auth.Services;
 
 public class OAuthService : IOAuthService
 {
-    private const string GoogleProvider = "google";
+    private const string GoogleProvider = AuthConstants.Providers.Google;
     private const string GoogleTokenUrl = "https://oauth2.googleapis.com/token";
     private const string GrantTypeAuthorizationCode = "authorization_code";
     

@@ -18,6 +18,7 @@ public class AuthController : ControllerBase
         _authService = authService;
     }
 
+    [EnableRateLimiting("fixed")]
     [HttpPost("register")]
     public async Task<ActionResult<UserDto>> Register(RegisterRequestDto request, CancellationToken cancellationToken)
     {
@@ -26,6 +27,7 @@ public class AuthController : ControllerBase
         return CreatedAtAction(nameof(Me), response);
     }
 
+    [EnableRateLimiting("fixed")]
     [HttpPost("login")]
     public async Task<ActionResult<UserDto>> Login(LoginRequestDto request, CancellationToken cancellationToken)
     {
@@ -41,6 +43,7 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Logged out successfully." });
     }
 
+    [EnableRateLimiting("fixed")]
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword(ForgotPasswordRequestDto request, CancellationToken cancellationToken)
     {
@@ -48,6 +51,7 @@ public class AuthController : ControllerBase
         return Ok(new { message = "If the email exists, a password reset link has been sent." });
     }
 
+    [EnableRateLimiting("fixed")]
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword(ResetPasswordRequestDto request, CancellationToken cancellationToken)
     {
@@ -71,6 +75,14 @@ public class AuthController : ControllerBase
     {
         await _authService.ConfirmEmailAsync(userId, token, cancellationToken);
         return Ok(new { message = "Email confirmed successfully." });
+    }
+
+    [EnableRateLimiting("fixed")]
+    [HttpPost("resend-confirmation")]
+    public async Task<IActionResult> ResendEmailConfirmation(ResendEmailConfirmationRequestDto request, CancellationToken cancellationToken)
+    {
+        await _authService.ResendEmailConfirmationAsync(request.Email, cancellationToken);
+        return Ok(new { message = "If the email exists and is not confirmed, a new confirmation link has been sent." });
     }
 
     [HttpPost("external-login")]
