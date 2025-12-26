@@ -135,6 +135,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<TransactionFilter>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IExternalAuthService, ExternalAuthService>();
         services.AddScoped<IOAuthService, OAuthService>();
         services.AddScoped<IAuthQueries, AuthQueries>();
         services.AddScoped<IMediaService, MediaService>();
