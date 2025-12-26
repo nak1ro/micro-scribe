@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useParams } from "next/navigation";
-import { TranscriptionViewerNew } from "@/features/transcription/components/TranscriptionViewerNew";
+import { TranscriptionViewerNew } from "@/features/transcription/viewer";
 
 export default function TranscriptionDetailPage() {
     const params = useParams();

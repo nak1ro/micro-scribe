@@ -11,9 +11,6 @@ namespace ScribeApi.Features.Transcriptions.Contracts
         bool EnableSpeakerDiarization = false
     );
 
-    // Request to translate an existing job
-    public record TranslateJobRequest(string TargetLanguage);
-
     // Response after job creation
     public class TranscriptionJobResponse
     {
@@ -93,17 +90,5 @@ namespace ScribeApi.Features.Transcriptions.Contracts
         public string? TranscriptPreview { get; init; }
         public DateTime CreatedAtUtc { get; init; }
         public DateTime? CompletedAtUtc { get; init; }
-    }
-
-    public record GenerateAnalysisRequest(List<string> Types);
-    public record TranslateAnalysisRequest(string TargetLanguage);
-
-    public class TranscriptionAnalysisDto
-    {
-        public Guid Id { get; init; }
-        public string AnalysisType { get; init; } = string.Empty;
-        public string Content { get; init; } = string.Empty;
-        public Dictionary<string, string> Translations { get; init; } = new();
-        public DateTime CreatedAtUtc { get; init; }
     }
 }

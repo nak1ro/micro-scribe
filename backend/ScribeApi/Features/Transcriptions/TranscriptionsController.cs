@@ -4,11 +4,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using ScribeApi.Api.Extensions;
 using ScribeApi.Features.Media.Contracts;
+using ScribeApi.Features.Analysis.Contracts;
+using ScribeApi.Features.Translation.Contracts;
 using ScribeApi.Features.Transcriptions.Contracts;
-using ScribeApi.Features.Transcriptions.Services;
+using ScribeApi.Features.Transcriptions.Editor;
+using ScribeApi.Features.Transcriptions.Export;
 using ScribeApi.Shared.Extensions;
 using ScribeApi.Api.Filters;
-using ScribeApi.Core.Interfaces;
 
 namespace ScribeApi.Features.Transcriptions;
 

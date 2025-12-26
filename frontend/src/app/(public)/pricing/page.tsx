@@ -1,4 +1,4 @@
-import { PricingPage } from "@/features/pricing";
+import { PricingPage } from "@/features/marketing/pricing";
 
 export default function PricingRoute() {
     return <PricingPage />;

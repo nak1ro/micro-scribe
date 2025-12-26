@@ -2,7 +2,7 @@ using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using ScribeApi.Core.Interfaces;
 using ScribeApi.Infrastructure.Persistence;
-using ScribeApi.Features.Transcriptions.Contracts;
+using ScribeApi.Features.Analysis.Contracts;
 
 namespace ScribeApi.Infrastructure.BackgroundJobs;
 
@@ -12,7 +12,7 @@ public class TranslationJobRunner
     private readonly AppDbContext _context;
     private readonly ITranslationService _translationService;
     private readonly IJobNotificationService _notificationService;
-    private readonly IAnalysisService _analysisService; // Injected
+    private readonly IAnalysisService _analysisService;
     private readonly ILogger<TranslationJobRunner> _logger;
 
     public TranslationJobRunner(

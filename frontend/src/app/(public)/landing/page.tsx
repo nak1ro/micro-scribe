@@ -11,7 +11,7 @@ import {
     FinalCTASection,
     LandingBackground,
     TestimonialsSection,
-} from "@/features/landing";
+} from "@/features/marketing/landing";
 
 export default function LandingPage() {
     return (

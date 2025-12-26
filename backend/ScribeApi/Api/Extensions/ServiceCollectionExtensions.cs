@@ -17,9 +17,15 @@ using ScribeApi.Features.Auth.Services;
 using ScribeApi.Features.Media;
 using ScribeApi.Features.Media.Contracts;
 using ScribeApi.Features.Media.Services;
-using ScribeApi.Features.Uploads; // Added
+using ScribeApi.Features.Uploads;
 using ScribeApi.Features.Transcriptions.Contracts;
-using ScribeApi.Features.Transcriptions.Services;
+using ScribeApi.Features.Transcriptions.Jobs;
+using ScribeApi.Features.Transcriptions.Export;
+using ScribeApi.Features.Transcriptions.Editor;
+using ScribeApi.Features.Analysis.Contracts;
+using ScribeApi.Features.Analysis.Services;
+using ScribeApi.Features.Translation.Contracts;
+using ScribeApi.Features.Translation.Services;
 using ScribeApi.Features.Uploads.Contracts;
 using ScribeApi.Features.Uploads.Services;
 using ScribeApi.Features.Webhooks.Contracts;
@@ -84,7 +90,6 @@ public static class ServiceCollectionExtensions
             options.UseNpgsql(dataSource));
 
         // Identity
-        // Identity
         services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
                 options.Password.RequireDigit = true;
@@ -134,14 +139,19 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAuthQueries, AuthQueries>();
         services.AddScoped<IMediaService, MediaService>();
         services.AddScoped<IMediaQueries, MediaQueries>();
+        
+        // Transcription services (new sub-folder namespaces)
         services.AddScoped<ITranscriptionJobService, TranscriptionJobService>();
         services.AddScoped<ITranscriptionJobQueries, TranscriptionJobQueries>();
-        services.AddScoped<IMediaQueries, MediaQueries>();
-        services.AddScoped<ITranscriptionJobService, TranscriptionJobService>();
-        services.AddScoped<ITranscriptionJobQueries, TranscriptionJobQueries>();
-        services.AddScoped<IAnalysisService, AnalysisService>();
         services.AddScoped<ITranscriptExportService, TranscriptExportService>();
         services.AddScoped<ITranscriptEditService, TranscriptEditService>();
+        
+        // Analysis feature (new top-level feature)
+        services.AddScoped<IAnalysisService, AnalysisService>();
+        
+        // Translation feature (new top-level feature)
+        services.AddScoped<IJobTranslationService, JobTranslationService>();
+        
         services.AddScoped<IUploadService, UploadService>();
         services.AddScoped<IWebhookService, WebhookService>();
         services.AddScoped<IUsageService, UsageService>();
@@ -180,7 +190,6 @@ public static class ServiceCollectionExtensions
         // Translation services
         services.Configure<TranslationSettings>(configuration.GetSection("Translation"));
         services.AddHttpClient<ITranslationService, Infrastructure.Translation.AzureTranslationService>();
-        services.AddScoped<IJobTranslationService, JobTranslationService>();
 
         // Hangfire
         services.AddHangfireServices(configuration);

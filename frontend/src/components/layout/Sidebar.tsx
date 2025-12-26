@@ -30,7 +30,7 @@ import { useUsage } from "@/hooks/useUsage";
 import { useFolders, useDeleteFolder, FOLDER_COLORS } from "@/hooks";
 import { PlanType } from "@/types/api/usage";
 import { FolderColor } from "@/types/models/folder";
-import { FolderModal } from "@/features/folder";
+import { FolderModal } from "@/features/workspace/folders";
 
 interface SidebarProps {
     onNewTranscription?: () => void;
