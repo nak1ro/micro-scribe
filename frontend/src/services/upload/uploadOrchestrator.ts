@@ -85,13 +85,25 @@ export async function orchestrateUpload(
 
     // Backend decides single vs multipart based on its threshold (returns uploadId for multipart)
     // Frontend follows that decision, not its own size comparison
-    if (!session.uploadId && session.uploadUrl) {
-        // Single-file upload (backend returned presigned PUT URL, no multipart ID)
-        await uploadSingleFile(fileToUpload, session.uploadUrl, contentType, config, signal);
-        onProgress?.(100);
-    } else if (session.uploadId) {
-        // Multipart upload (backend initiated multipart and returned uploadId)
-        parts = await uploadChunked(fileToUpload, session, config, signal, onProgress);
+    if (session.uploadId || session.uploadUrl) {
+        // Multipart upload (S3 with ID, or Azure purely via SAS URL)
+        // 1. If uploadId exists -> S3 Multipart.
+        // 2. If !uploadId:
+        //    a. If file < chunkSize -> Single PUT (Azure or S3).
+        //    b. If file > chunkSize -> Azure Block Upload (implied).
+
+        if (session.uploadId) {
+            parts = await uploadChunked(fileToUpload, session, config, signal, onProgress);
+        } else {
+            // No ID. Check size.
+            if (fileToUpload.size <= config.chunkSize) {
+                await uploadSingleFile(fileToUpload, session.uploadUrl!, contentType, config, signal);
+                onProgress?.(100);
+            } else {
+                // Large file, no uploadId -> Assume Azure Block Upload
+                parts = await uploadChunked(fileToUpload, session, config, signal, onProgress);
+            }
+        }
     } else {
         throw new Error("Invalid session: neither uploadUrl nor uploadId provided");
     }
@@ -186,21 +198,32 @@ async function uploadChunked(
         const chunk = file.slice(start, end);
         const partNumber = i + 1;
 
-        const chunkUrl = buildChunkUrl(session, partNumber);
-        const eTag = await uploadChunkWithRetry(chunk, chunkUrl, partNumber, config, signal);
+        // Azure logic: Generate BlockID if not S3 (no uploadId)
+        let blockId: string | undefined;
+        if (!session.uploadId) {
+            blockId = generateBlockId(partNumber);
+        }
 
-        parts.push({ partNumber, eTag });
+        const chunkUrl = buildChunkUrl(session, partNumber, blockId);
+        const { eTag } = await uploadChunkWithRetry(chunk, chunkUrl, partNumber, config, signal, blockId);
+
+        parts.push({ partNumber, eTag, blockId });
         onProgress?.(Math.round(((i + 1) / totalChunks) * 100));
     }
 
     return parts;
 }
 
-function buildChunkUrl(session: UploadSessionResponse, partNumber: number): string {
+function buildChunkUrl(session: UploadSessionResponse, partNumber: number, blockId?: string): string {
     if (session.uploadId && session.uploadUrl) {
         const url = new URL(session.uploadUrl);
         url.searchParams.set("partNumber", String(partNumber));
         url.searchParams.set("uploadId", session.uploadId);
+        return url.toString();
+    } else if (session.uploadUrl && blockId) {
+        const url = new URL(session.uploadUrl);
+        url.searchParams.set("comp", "block");
+        url.searchParams.set("blockid", blockId);
         return url.toString();
     }
     return session.uploadUrl || "";
@@ -211,8 +234,9 @@ async function uploadChunkWithRetry(
     url: string,
     partNumber: number,
     config: UploadConfig,
-    signal?: AbortSignal
-): Promise<string> {
+    signal?: AbortSignal,
+    blockId?: string
+): Promise<{ eTag?: string }> {
     const response = await fetchWithRetry(
         url,
         { method: "PUT", body: chunk, signal },
@@ -220,12 +244,20 @@ async function uploadChunkWithRetry(
         config.retryBaseDelayMs
     );
 
-    const eTag = response.headers.get("ETag");
-    if (!eTag) {
+    const eTag = response.headers.get("ETag") || undefined;
+
+    // For S3, ETag is required. For Azure, it's optional but we check logic.
+    // If request was S3 (no blockId), ETag is mandatory.
+    if (!blockId && !eTag) {
         throw new Error(`No ETag returned for part ${partNumber}`);
     }
 
-    return eTag;
+    return { eTag };
+}
+
+function generateBlockId(index: number): string {
+    const id = String(index).padStart(6, "0");
+    return btoa(id);
 }
 
 async function fetchWithRetry(

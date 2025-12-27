@@ -211,6 +211,11 @@ public static class ServiceCollectionExtensions
 
             services.AddScoped<IFileStorageService, S3MediaStorageService>();
         }
+        else if (storageProvider.Equals("Azure", StringComparison.OrdinalIgnoreCase))
+        {
+            services.Configure<AzureBlobSettings>(configuration.GetSection("Storage:AzureBlob"));
+            services.AddScoped<IFileStorageService, AzureBlobStorageService>();
+        }
         else
         {
             services.AddScoped<IFileStorageService, LocalFileStorageService>();

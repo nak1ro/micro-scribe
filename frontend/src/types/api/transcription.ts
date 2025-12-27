@@ -63,7 +63,8 @@ export interface CompleteUploadRequest {
 
 export interface PartETagDto {
     partNumber: number;
-    eTag: string;
+    eTag?: string;
+    blockId?: string;
 }
 
 export interface UploadSessionStatusResponse {
