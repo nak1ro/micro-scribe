@@ -1,3 +1,7 @@
+from app.core.boot import apply_fixes, HAS_OMEGACONF
+# Apply fixes before any other logic that might trigger torch operations
+apply_fixes()
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
