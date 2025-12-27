@@ -177,9 +177,6 @@ namespace ScribeApi.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
-                    b.Property<string>("EmailConfirmationToken")
-                        .HasColumnType("text");
-
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
 
@@ -302,6 +299,57 @@ namespace ScribeApi.Migrations
                     b.ToTable("ExternalLogins");
                 });
 
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.Folder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("Folders");
+                });
+
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.FolderTranscriptionJob", b =>
+                {
+                    b.Property<Guid>("FolderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TranscriptionJobId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AddedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("FolderId", "TranscriptionJobId");
+
+                    b.HasIndex("TranscriptionJobId");
+
+                    b.ToTable("FolderTranscriptionJobs");
+                });
+
             modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.MediaFile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -397,11 +445,6 @@ namespace ScribeApi.Migrations
                     b.Property<DateTime>("CurrentPeriodStartUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Plan")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -465,6 +508,45 @@ namespace ScribeApi.Migrations
                     b.ToTable("TranscriptChapters", (string)null);
                 });
 
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.TranscriptionAnalysis", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AnalysisType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastUpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ModelUsed")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("TranscriptionJobId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Dictionary<string, string>>("Translations")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TranscriptionJobId", "AnalysisType")
+                        .IsUnique();
+
+                    b.ToTable("TranscriptionAnalyses", (string)null);
+                });
+
             modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.TranscriptionJob", b =>
                 {
                     b.Property<Guid>("Id")
@@ -482,6 +564,9 @@ namespace ScribeApi.Migrations
                     b.Property<double?>("DurationSeconds")
                         .HasColumnType("double precision");
 
+                    b.Property<bool>("EnableSpeakerDiarization")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("ErrorMessage")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
@@ -489,12 +574,11 @@ namespace ScribeApi.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("LanguageCode")
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
-
                     b.Property<Guid>("MediaFileId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("ProcessingStep")
+                        .HasColumnType("text");
 
                     b.Property<string>("Quality")
                         .IsRequired()
@@ -502,6 +586,14 @@ namespace ScribeApi.Migrations
                         .HasColumnType("character varying(20)");
 
                     b.Property<List<TranscriptSegment>>("Segments")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("SourceLanguage")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<List<TranscriptionSpeaker>>("Speakers")
                         .IsRequired()
                         .HasColumnType("jsonb");
 
@@ -517,6 +609,12 @@ namespace ScribeApi.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Transcript")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TranslatingToLanguage")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TranslationStatus")
                         .HasColumnType("text");
 
                     b.Property<string>("UserId")
@@ -799,6 +897,36 @@ namespace ScribeApi.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.Folder", b =>
+                {
+                    b.HasOne("ScribeApi.Infrastructure.Persistence.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.FolderTranscriptionJob", b =>
+                {
+                    b.HasOne("ScribeApi.Infrastructure.Persistence.Entities.Folder", "Folder")
+                        .WithMany("FolderTranscriptionJobs")
+                        .HasForeignKey("FolderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ScribeApi.Infrastructure.Persistence.Entities.TranscriptionJob", "TranscriptionJob")
+                        .WithMany()
+                        .HasForeignKey("TranscriptionJobId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Folder");
+
+                    b.Navigation("TranscriptionJob");
+                });
+
             modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.MediaFile", b =>
                 {
                     b.HasOne("ScribeApi.Infrastructure.Persistence.Entities.ApplicationUser", "User")
@@ -825,6 +953,17 @@ namespace ScribeApi.Migrations
                 {
                     b.HasOne("ScribeApi.Infrastructure.Persistence.Entities.TranscriptionJob", "TranscriptionJob")
                         .WithMany("Chapters")
+                        .HasForeignKey("TranscriptionJobId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TranscriptionJob");
+                });
+
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.TranscriptionAnalysis", b =>
+                {
+                    b.HasOne("ScribeApi.Infrastructure.Persistence.Entities.TranscriptionJob", "TranscriptionJob")
+                        .WithMany("Analyses")
                         .HasForeignKey("TranscriptionJobId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -900,6 +1039,11 @@ namespace ScribeApi.Migrations
                     b.Navigation("TranscriptionJobs");
                 });
 
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.Folder", b =>
+                {
+                    b.Navigation("FolderTranscriptionJobs");
+                });
+
             modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.MediaFile", b =>
                 {
                     b.Navigation("TranscriptionJobs");
@@ -907,6 +1051,8 @@ namespace ScribeApi.Migrations
 
             modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.TranscriptionJob", b =>
                 {
+                    b.Navigation("Analyses");
+
                     b.Navigation("Chapters");
                 });
 

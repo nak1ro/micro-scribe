@@ -29,5 +29,6 @@ public interface ITranscriptionProvider
         string fileName,
         TranscriptionQuality quality,
         string? languageHint,
+        bool enableSpeakerDiarization,
         CancellationToken ct);
 }

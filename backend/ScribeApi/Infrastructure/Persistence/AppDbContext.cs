@@ -19,6 +19,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<UploadSession> UploadSessions => Set<UploadSession>();
     public DbSet<WebhookSubscription> WebhookSubscriptions => Set<WebhookSubscription>();
     public DbSet<WebhookDelivery> WebhookDeliveries => Set<WebhookDelivery>();
+    public DbSet<Folder> Folders => Set<Folder>();
+    public DbSet<FolderTranscriptionJob> FolderTranscriptionJobs => Set<FolderTranscriptionJob>();
+    public DbSet<TranscriptionAnalysis> TranscriptionAnalyses => Set<TranscriptionAnalysis>();
 
     public DbSet<ExternalLogin> ExternalLogins => Set<ExternalLogin>();
 

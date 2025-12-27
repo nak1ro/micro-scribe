@@ -42,8 +42,8 @@ public class TranscriptionJob
     // Error message if job failed
     public string? ErrorMessage { get; set; }
 
-    // Detected or requested language code
-    public string? LanguageCode { get; set; }
+    // Detected or requested language code (source language)
+    public string? SourceLanguage { get; set; }
 
     // Duration of processed audio in seconds
     public double? DurationSeconds { get; set; }
@@ -60,9 +60,25 @@ public class TranscriptionJob
     // Soft delete flag
     public bool IsDeleted { get; set; }
 
+    // Current processing step (Normalizing, Transcribing, Diarizing, Translating)
+    public string? ProcessingStep { get; set; }
+
+    // Translation status (null, "Pending", "Translating", "Completed", "Failed")
+    public string? TranslationStatus { get; set; }
+
+    // Language currently being translated (e.g., "ru")
+    public string? TranslatingToLanguage { get; set; }
+
+    // Whether speaker diarization is enabled for this job
+    public bool EnableSpeakerDiarization { get; set; }
+
+    // Speaker metadata (stored as JSONB)
+    public List<TranscriptionSpeaker> Speakers { get; set; } = new();
+
     // Nav
     public required ApplicationUser User { get; set; }
     public required MediaFile MediaFile { get; set; }
     public List<TranscriptSegment> Segments { get; set; } = new();
     public ICollection<TranscriptChapter> Chapters { get; set; } = new List<TranscriptChapter>();
+    public ICollection<TranscriptionAnalysis> Analyses { get; set; } = new List<TranscriptionAnalysis>();
 }

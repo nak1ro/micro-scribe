@@ -1,13 +1,18 @@
-// Components
-export { TranscriptionEmptyState } from "./components/TranscriptionEmptyState";
-export { TranscriptionItem } from "./components/TranscriptionItem";
-export { TranscriptionList } from "./components/TranscriptionList";
-export { CreateTranscriptionModal, type TranscriptionFormData } from "./components/CreateTranscriptionModal";
-export { TranscriptionViewer } from "./components/TranscriptionViewer/TranscriptionViewer";
+// transcription domain - core product feature
 
-// Types - re-exported from central location
+// Sub-features
+export * from './list';
+export * from './create';
+export * from './viewer';
+export * from './export';
+export * from './analysis';
+
+// Shared types - re-exported from central location
 export type {
     TranscriptionListItem,
     TranscriptionStatus,
     TranscriptionFilters,
 } from "@/types/models/transcription";
+
+// Feature-specific types
+export * from './types';

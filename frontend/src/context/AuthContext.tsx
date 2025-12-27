@@ -4,12 +4,14 @@ import React, { createContext, useEffect, useState, useCallback, ReactNode, FC }
 import { UserResponse, LoginRequest, RegisterRequest } from '@/types/api/auth';
 import { authApi } from '@/services/auth/api';
 import { UNAUTHORIZED_EVENT } from '@/services/api';
+import { signalRService } from '@/services/signalR';
 
 interface AuthContextType {
     user: UserResponse | null;
     isLoading: boolean;
     isAuthenticated: boolean;
     login: (data: LoginRequest) => Promise<void>;
+    loginWithOAuth: (provider: string, code: string) => Promise<void>;
     register: (data: RegisterRequest) => Promise<void>;
     logout: () => Promise<void>;
     refreshUser: () => Promise<void>;
@@ -42,9 +44,21 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
         refreshUser();
     }, [refreshUser]);
 
+    // Connect/disconnect SignalR based on user state
+    useEffect(() => {
+        if (user && !isLoading) {
+            signalRService.connect().catch((err) => {
+                console.error("[Auth] Failed to connect SignalR:", err);
+            });
+        } else if (!user && !isLoading) {
+            signalRService.disconnect();
+        }
+    }, [user, isLoading]);
+
     useEffect(() => {
         const handleUnauthorized = () => {
             setUser(null);
+            signalRService.disconnect();
         };
 
         if (typeof window !== 'undefined') {
@@ -63,6 +77,11 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
         setUser(userData);
     };
 
+    const loginWithOAuth = async (provider: string, code: string) => {
+        const userData = await authApi.oauthCallback({ provider, code });
+        setUser(userData);
+    };
+
     const register = async (data: RegisterRequest) => {
         const userData = await authApi.register(data);
         setUser(userData);
@@ -70,10 +89,10 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
 
     const logout = async () => {
         try {
+            await signalRService.disconnect();
             await authApi.logout();
         } finally {
             setUser(null);
-            // Optional: Redirect to login page? Usually handled by protected route components.
         }
     };
 
@@ -82,6 +101,7 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
         isLoading,
         isAuthenticated: !!user,
         login,
+        loginWithOAuth,
         register,
         logout,
         refreshUser,

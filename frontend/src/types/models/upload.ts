@@ -5,6 +5,7 @@ export type UploadStatus =
     | "idle"
     | "initiating"
     | "uploading"
+    | "extracting"
     | "completing"
     | "validating"
     | "creating-job"
@@ -16,14 +17,16 @@ export type UploadStatus =
 export type UploadStage =
     | "initiating"
     | "uploading"
+    | "extracting"
     | "completing"
     | "validating"
     | "creating-job";
 
 // Options passed when starting an upload
 export interface UploadOptions {
-    languageCode?: string;
+    sourceLanguage?: string;
     quality?: number;
+    enableSpeakerDiarization?: boolean;
 }
 
 // Configuration for the upload orchestrator

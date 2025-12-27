@@ -3,10 +3,11 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Menu, X, Mic2, LayoutDashboard, CreditCard, User, LogOut } from "lucide-react";
+import { Menu, X, Mic2, LayoutDashboard, CreditCard, User, LogOut, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { useTheme } from "next-themes";
 import { useAuth } from "@/hooks/useAuth";
 
 
@@ -41,7 +42,7 @@ export function Header() {
                         >
                             <Mic2 className="h-7 w-7 text-primary" />
                             <span className="hidden sm:block text-lg font-semibold">
-                                MicroScribe
+                                ScribeRocket
                             </span>
                         </Link>
 
@@ -65,20 +66,28 @@ export function Header() {
                         </nav>
                     </div>
 
-                    {/* Right: Theme toggle + Auth buttons or User menu */}
+                    {/* Right: Dashboard + Auth buttons or User menu */}
                     <div className="flex items-center gap-2">
-                        <ThemeToggle />
                         {isLoading ? (
                             <div className="h-9 w-9 rounded-full bg-muted animate-pulse" />
                         ) : isAuthenticated && user ? (
-                            <UserMenu
-                                user={{
-                                    name: user.email.split("@")[0],
-                                    email: user.email,
-                                }}
-                            />
+                            <>
+                                <Link href="/dashboard" className="hidden sm:block">
+                                    <Button variant="ghost" size="md" className="gap-2">
+                                        <LayoutDashboard className="h-4 w-4" />
+                                        Dashboard
+                                    </Button>
+                                </Link>
+                                <UserMenu
+                                    user={{
+                                        name: user.email.split("@")[0],
+                                        email: user.email,
+                                    }}
+                                />
+                            </>
                         ) : (
                             <>
+                                <ThemeToggle />
                                 <Link href="/auth?mode=login" className="hidden sm:block">
                                     <Button variant="ghost" size="md" className="text-base px-5">
                                         Log in
@@ -204,15 +213,13 @@ function UserMenu({ user }: UserMenuProps) {
                         <p className="text-xs text-muted-foreground">{user.email}</p>
                     </div>
                     <div className="p-1">
-                        <DropdownLink href="/dashboard" icon={LayoutDashboard}>
-                            Dashboard
-                        </DropdownLink>
                         <DropdownLink href="/dashboard/subscription" icon={CreditCard}>
                             Manage Subscription
                         </DropdownLink>
                         <DropdownLink href="/dashboard/account" icon={User}>
                             Account
                         </DropdownLink>
+                        <ThemeMenuButton />
                     </div>
                     <div className="p-1 border-t border-border">
                         <button
@@ -253,6 +260,45 @@ function DropdownLink({
             {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
             {children}
         </Link>
+    );
+}
+
+// Theme toggle button styled like dropdown menu items
+function ThemeMenuButton() {
+    const { resolvedTheme, setTheme } = useTheme();
+    const [mounted, setMounted] = React.useState(false);
+
+    React.useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!mounted) {
+        return (
+            <div className="flex items-center gap-2 px-3 py-2 text-sm rounded-md text-foreground">
+                <Sun className="h-4 w-4 text-muted-foreground" />
+                Theme
+            </div>
+        );
+    }
+
+    const isDark = resolvedTheme === "dark";
+
+    return (
+        <button
+            type="button"
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            className={cn(
+                "flex items-center gap-2 w-full px-3 py-2 text-left text-sm rounded-md",
+                "text-foreground hover:bg-accent transition-colors"
+            )}
+        >
+            {isDark ? (
+                <Sun className="h-4 w-4 text-muted-foreground" />
+            ) : (
+                <Moon className="h-4 w-4 text-muted-foreground" />
+            )}
+            {isDark ? "Light mode" : "Dark mode"}
+        </button>
     );
 }
 

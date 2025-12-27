@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using ScribeApi.Api.Extensions;
 using ScribeApi.Features.Auth.Contracts;
 using ScribeApi.Shared.Extensions;
 
@@ -10,12 +12,15 @@ namespace ScribeApi.Features.Auth;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly IExternalAuthService _externalAuthService;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, IExternalAuthService externalAuthService)
     {
         _authService = authService;
+        _externalAuthService = externalAuthService;
     }
 
+    [EnableRateLimiting("fixed")]
     [HttpPost("register")]
     public async Task<ActionResult<UserDto>> Register(RegisterRequestDto request, CancellationToken cancellationToken)
     {
@@ -24,6 +29,7 @@ public class AuthController : ControllerBase
         return CreatedAtAction(nameof(Me), response);
     }
 
+    [EnableRateLimiting("fixed")]
     [HttpPost("login")]
     public async Task<ActionResult<UserDto>> Login(LoginRequestDto request, CancellationToken cancellationToken)
     {
@@ -39,6 +45,7 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Logged out successfully." });
     }
 
+    [EnableRateLimiting("fixed")]
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword(ForgotPasswordRequestDto request, CancellationToken cancellationToken)
     {
@@ -46,6 +53,7 @@ public class AuthController : ControllerBase
         return Ok(new { message = "If the email exists, a password reset link has been sent." });
     }
 
+    [EnableRateLimiting("fixed")]
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword(ResetPasswordRequestDto request, CancellationToken cancellationToken)
     {
@@ -71,17 +79,25 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Email confirmed successfully." });
     }
 
+    [EnableRateLimiting("fixed")]
+    [HttpPost("resend-confirmation")]
+    public async Task<IActionResult> ResendEmailConfirmation(ResendEmailConfirmationRequestDto request, CancellationToken cancellationToken)
+    {
+        await _authService.ResendEmailConfirmationAsync(request.Email, cancellationToken);
+        return Ok(new { message = "If the email exists and is not confirmed, a new confirmation link has been sent." });
+    }
+
     [HttpPost("external-login")]
     public async Task<ActionResult<UserDto>> ExternalLogin(ExternalAuthRequestDto request, CancellationToken cancellationToken)
     {
-        var response = await _authService.ExternalLoginAsync(request, cancellationToken);
+        var response = await _externalAuthService.ExternalLoginAsync(request, cancellationToken);
         return Ok(response);
     }
 
     [HttpPost("oauth/callback")]
     public async Task<ActionResult<UserDto>> OAuthCallback(OAuthCallbackRequestDto request, CancellationToken cancellationToken)
     {
-        var response = await _authService.OAuthCallbackAsync(request, cancellationToken);
+        var response = await _externalAuthService.OAuthCallbackAsync(request, cancellationToken);
         return Ok(response);
     }
 
@@ -92,7 +108,7 @@ public class AuthController : ControllerBase
         var userId = User.GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        await _authService.LinkExternalAccountAsync(userId, request, cancellationToken);
+        await _externalAuthService.LinkExternalAccountAsync(userId, request, cancellationToken);
         return Ok(new { message = "External account linked successfully." });
     }
 
@@ -103,7 +119,7 @@ public class AuthController : ControllerBase
         var userId = User.GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        var accounts = await _authService.GetLinkedAccountsAsync(userId, cancellationToken);
+        var accounts = await _externalAuthService.GetLinkedAccountsAsync(userId, cancellationToken);
         return Ok(accounts);
     }
 
@@ -114,7 +130,7 @@ public class AuthController : ControllerBase
         var userId = User.GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        await _authService.UnlinkExternalAccountAsync(userId, provider, cancellationToken);
+        await _externalAuthService.UnlinkExternalAccountAsync(userId, provider, cancellationToken);
         return Ok(new { message = $"{provider} account unlinked successfully." });
     }
 

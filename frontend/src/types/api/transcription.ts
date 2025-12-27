@@ -63,7 +63,8 @@ export interface CompleteUploadRequest {
 
 export interface PartETagDto {
     partNumber: number;
-    eTag: string;
+    eTag?: string;
+    blockId?: string;
 }
 
 export interface UploadSessionStatusResponse {
@@ -107,7 +108,8 @@ export interface CreateTranscriptionJobRequest {
     mediaFileId?: string;
     uploadSessionId?: string;
     quality?: TranscriptionQuality;
-    languageCode?: string | null;
+    sourceLanguage?: string | null;
+    enableSpeakerDiarization?: boolean;
 }
 
 export interface TranscriptionJobResponse {
@@ -122,9 +124,11 @@ export interface TranscriptionJobListItem {
     jobId: string;
     originalFileName: string;
     status: TranscriptionJobStatus;
+    processingStep: string | null;
     quality: TranscriptionQuality;
-    languageCode: string | null;
+    sourceLanguage: string | null;
     durationSeconds: number | null;
+    transcriptPreview: string | null;
     createdAtUtc: string;
     completedAtUtc: string | null;
 }
@@ -134,12 +138,18 @@ export interface TranscriptionJobDetailResponse {
     mediaFileId: string;
     originalFileName: string;
     status: TranscriptionJobStatus;
+    processingStep: string | null;
     quality: TranscriptionQuality;
-    languageCode: string | null;
+    sourceLanguage: string | null;
+    translatedLanguages: string[];
+    translationStatus: string | null;
+    translatingToLanguage: string | null;
     transcript: string | null;
     errorMessage: string | null;
     durationSeconds: number | null;
     segments: TranscriptSegmentDto[];
+    enableSpeakerDiarization: boolean;
+    speakers: TranscriptionSpeakerDto[];
     presignedUrl: string | null;
     createdAtUtc: string;
     startedAtUtc: string | null;
@@ -152,6 +162,7 @@ export interface TranscriptSegmentDto {
     startSeconds: number;
     endSeconds: number;
     speaker: string | null;
+    translations: Record<string, string>;
     isEdited: boolean;
     originalText: string | null;
 }
@@ -166,4 +177,16 @@ export enum ExportFormat {
     Vtt = 2,
     Docx = 3,
     Pdf = 4,
+}
+
+// Speaker metadata for diarization
+export interface TranscriptionSpeakerDto {
+    id: string;
+    displayName: string | null;
+    color: string | null;
+}
+
+// Request for on-demand translation
+export interface TranslateJobRequest {
+    targetLanguage: string;
 }

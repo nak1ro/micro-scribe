@@ -95,9 +95,38 @@ public partial class FfmpegMediaService : IFfmpegMediaService
             _logger.LogInformation("Audio duration: {Duration}s, Threshold: {Threshold}s", 
                 duration.TotalSeconds, chunkThreshold.TotalSeconds);
 
+            // DetectionLogic: If it's a pre-normalized MP3 from our frontend, we can skip processing
+            var isMp3 = inputPath.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase);
+
             // If under threshold, use single-file conversion
             if (duration <= chunkThreshold)
             {
+                // Optimization: If it's already an MP3 and short enough, just return it as a single chunk
+                // We trust the frontend normalization (16kHz, mono, 64kbps) 
+                if (isMp3)
+                {
+                    _logger.LogInformation("Skipping conversion for pre-normalized MP3: {Path}", inputPath);
+                    // Use original path as the chunk. Since inputPath might be temp download, 
+                    // we need to make sure we treat it correctly. 
+                    // However, AudioChunk expects a "storage key" or remote URL usually, 
+                    // but here we are returning what UploadAudioAsync returns which is a storage key.
+                    // If we skip upload, we need to return the ORIGINAL storage key.
+                    
+                    // The caller `PrepareAudioChunksAsync` in `TranscriptionJobRunner` passes the `StorageObjectKey`.
+                    // So `inputPath` here is likely the *original storage key* if `PrepareInputFileAsync` didn't download it?
+                    // Wait, `PrepareInputFileAsync` returns a temp path.
+                    // But `ConvertAndChunkAudioAsync` takes `inputPath` (storage key usually) as first arg.
+                    // Let's re-verify `inputPath` usage.
+                    
+                    // `ConvertAndChunkAudioAsync` calls `PrepareInputFileAsync(inputPath)`.
+                    // If `inputPath` is a URL/S3 key, `PrepareInputFileAsync` downloads it to `tempInputPath`.
+                    // So `inputPath` IS the storage key.
+                    
+                    return new AudioChunkResult(
+                        [new AudioChunk(inputPath, TimeSpan.Zero)],
+                        duration);
+                }
+
                 var singleResult = await ConvertToAudioAsync(inputPath, ct);
                 return new AudioChunkResult(
                     [new AudioChunk(singleResult.AudioPath, TimeSpan.Zero)],
@@ -137,10 +166,19 @@ public partial class FfmpegMediaService : IFfmpegMediaService
         var outputPattern = Path.Combine(outputDir, "chunk_%03d.mp3");
         
         // FFmpeg segment muxer splits audio into chunks
-        var args = $"-y -i \"{inputPath}\" -vn -ar 16000 -ac 1 -c:a libmp3lame -b:a 64k " +
+        // Optimize: If input is already MP3, use stream copy (-c copy) to avoid re-encoding
+        // This makes splitting large files instant (IO-bound) instead of CPU-bound.
+        var isMp3 = inputPath.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase);
+        
+        var conversionArgs = isMp3 
+            ? "-c copy" 
+            : "-vn -ar 16000 -ac 1 -c:a libmp3lame -b:a 64k";
+            
+        var args = $"-y -i \"{inputPath}\" {conversionArgs} " +
                    $"-f segment -segment_time {(int)chunkDuration.TotalSeconds} \"{outputPattern}\"";
 
-        _logger.LogInformation("Splitting audio into {Duration}s chunks", chunkDuration.TotalSeconds);
+        _logger.LogInformation("Splitting audio into {Duration}s chunks (Smart Copy: {IsSmartCopy})", 
+            chunkDuration.TotalSeconds, isMp3);
         
         await RunFfmpegCommandAsync(args, enforceSuccess: true, ct);
 

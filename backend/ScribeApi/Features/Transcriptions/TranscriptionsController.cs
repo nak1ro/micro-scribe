@@ -1,12 +1,16 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using ScribeApi.Api.Extensions;
 using ScribeApi.Features.Media.Contracts;
+using ScribeApi.Features.Analysis.Contracts;
+using ScribeApi.Features.Translation.Contracts;
 using ScribeApi.Features.Transcriptions.Contracts;
-using ScribeApi.Features.Transcriptions.Services;
+using ScribeApi.Features.Transcriptions.Editor;
+using ScribeApi.Features.Transcriptions.Export;
 using ScribeApi.Shared.Extensions;
 using ScribeApi.Api.Filters;
-using ScribeApi.Core.Interfaces;
 
 namespace ScribeApi.Features.Transcriptions;
 
@@ -19,7 +23,8 @@ public class TranscriptionsController : ControllerBase
     private readonly ITranscriptionJobQueries _queries;
     private readonly ITranscriptExportService _exportService;
     private readonly ITranscriptEditService _editService;
-    private readonly IFileStorageService _storageService;
+    private readonly IJobTranslationService _translationService;
+    private readonly IAnalysisService _analysisService;
     private readonly IMapper _mapper;
 
     public TranscriptionsController(
@@ -27,14 +32,16 @@ public class TranscriptionsController : ControllerBase
         ITranscriptionJobQueries queries,
         ITranscriptExportService exportService,
         ITranscriptEditService editService,
-        IFileStorageService storageService,
+        IJobTranslationService translationService,
+        IAnalysisService analysisService,
         IMapper mapper)
     {
         _jobService = jobService;
         _queries = queries;
         _exportService = exportService;
         _editService = editService;
-        _storageService = storageService;
+        _translationService = translationService;
+        _analysisService = analysisService;
         _mapper = mapper;
     }
 
@@ -49,17 +56,7 @@ public class TranscriptionsController : ControllerBase
 
         var (items, totalCount) = await _queries.GetUserJobsAsync(userId, page, pageSize, ct);
 
-        var listItems = items.Select(j => new TranscriptionJobListItem
-        {
-            JobId = j.Id,
-            OriginalFileName = j.MediaFile?.OriginalFileName ?? "Unknown",
-            Status = j.Status,
-            Quality = j.Quality,
-            LanguageCode = j.LanguageCode,
-            DurationSeconds = j.MediaFile?.DurationSeconds,
-            CreatedAtUtc = j.CreatedAtUtc,
-            CompletedAtUtc = j.CompletedAtUtc
-        }).ToList();
+        var listItems = _mapper.Map<List<TranscriptionJobListItem>>(items);
 
         var response = new PagedResponse<TranscriptionJobListItem>(
             listItems, page, pageSize, totalCount);
@@ -93,36 +90,28 @@ public class TranscriptionsController : ControllerBase
         return NoContent();
     }
 
+    [HttpDelete("{jobId:guid}")]
+    [SkipTransaction]
+    public async Task<IActionResult> DeleteJob(Guid jobId, CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        await _jobService.DeleteJobAsync(jobId, userId, ct);
+
+        return NoContent();
+    }
+
     [HttpGet("{jobId:guid}")]
     public async Task<ActionResult<TranscriptionJobDetailResponse>> GetJob(Guid jobId, CancellationToken ct)
     {
         var userId = User.GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        var job = await _queries.GetJobWithSegmentsAsync(jobId, ct);
+        var response = await _jobService.GetJobDetailsAsync(jobId, userId, ct);
 
-        if (job == null || job.UserId != userId)
+        if (response == null)
             return NotFound();
-
-        var response = _mapper.Map<TranscriptionJobDetailResponse>(job);
-
-        // Generate Presigned URL if MediaFile exists
-        if (job.MediaFile != null && !string.IsNullOrEmpty(job.MediaFile.StorageObjectKey))
-        {
-            try 
-            {
-                var url = await _storageService.GenerateDownloadUrlAsync(
-                    job.MediaFile.StorageObjectKey, 
-                    TimeSpan.FromMinutes(15), 
-                    ct);
-                
-                response.PresignedUrl = url;
-            }
-            catch (NotSupportedException) 
-            { 
-               // Ignore for local storage
-            }
-        }
 
         return Ok(response);
     }
@@ -166,6 +155,61 @@ public class TranscriptionsController : ControllerBase
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         var result = await _editService.RevertSegmentAsync(jobId, segmentId, userId, ct);
+
+        return Ok(result);
+    }
+
+    [HttpPost("{jobId:guid}/translate")]
+    public async Task<IActionResult> TranslateJob(
+        Guid jobId,
+        [FromBody] TranslateJobRequest request,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        await _translationService.EnqueueTranslationAsync(jobId, userId, request.TargetLanguage, ct);
+
+        return Accepted();
+    }
+
+    [HttpPost("{jobId:guid}/analysis")]
+    public async Task<ActionResult<List<TranscriptionAnalysisDto>>> GenerateAnalysis(
+        Guid jobId,
+        [FromBody] GenerateAnalysisRequest request,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var result = await _analysisService.GenerateAnalysisAsync(jobId, userId, request, ct);
+
+        return Ok(result);
+    }
+
+    [HttpPost("{jobId:guid}/analysis/translate")]
+    public async Task<ActionResult<List<TranscriptionAnalysisDto>>> TranslateAnalysis(
+        Guid jobId,
+        [FromBody] TranslateAnalysisRequest request,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var result = await _analysisService.TranslateAnalysisAsync(jobId, userId, request, ct);
+
+        return Ok(result);
+    }
+
+    [HttpGet("{jobId:guid}/analysis")]
+    public async Task<ActionResult<List<TranscriptionAnalysisDto>>> GetAnalysis(
+        Guid jobId,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var result = await _analysisService.GetAnalysesAsync(jobId, userId, ct);
 
         return Ok(result);
     }

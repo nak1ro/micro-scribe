@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using ScribeApi.Core.Exceptions;
 
 namespace ScribeApi.Api.Middleware;
@@ -91,6 +92,8 @@ public sealed class ExceptionHandlingMiddleware
             PlanLimitExceededException => (HttpStatusCode.PaymentRequired, "Plan limit exceeded"),
             TranscriptionException => (HttpStatusCode.UnprocessableEntity, "Transcription processing error"),
             StorageException => (HttpStatusCode.ServiceUnavailable, "Storage service error"),
+            DbUpdateConcurrencyException => (HttpStatusCode.Conflict, "Data was modified by another request"),
+            ConcurrencyException => (HttpStatusCode.Conflict, "Data was modified by another request"),
             _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred")
         };
     }

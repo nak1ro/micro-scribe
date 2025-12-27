@@ -17,6 +17,9 @@ public class TranscriptSegment
     // Speaker label for diarization support
     public string? Speaker { get; set; }
 
+    // Translations per language (stored as JSONB: {"ru": "Привет", "es": "Hola"})
+    public Dictionary<string, string> Translations { get; set; } = new();
+
     // Original text before any edits
     public string? OriginalText { get; set; }
 

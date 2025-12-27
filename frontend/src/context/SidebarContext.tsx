@@ -6,6 +6,7 @@ interface SidebarContextValue {
     isCollapsed: boolean;
     isMobileOpen: boolean;
     toggleCollapse: () => void;
+    setCollapsed: (collapsed: boolean) => void;
     openMobile: () => void;
     closeMobile: () => void;
 }
@@ -36,6 +37,11 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
         });
     }, []);
 
+    const setCollapsed = React.useCallback((collapsed: boolean) => {
+        setIsCollapsed(collapsed);
+        localStorage.setItem(STORAGE_KEY, String(collapsed));
+    }, []);
+
     const openMobile = React.useCallback(() => setIsMobileOpen(true), []);
     const closeMobile = React.useCallback(() => setIsMobileOpen(false), []);
 
@@ -44,10 +50,11 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
             isCollapsed,
             isMobileOpen,
             toggleCollapse,
+            setCollapsed,
             openMobile,
             closeMobile,
         }),
-        [isCollapsed, isMobileOpen, toggleCollapse, openMobile, closeMobile]
+        [isCollapsed, isMobileOpen, toggleCollapse, setCollapsed, openMobile, closeMobile]
     );
 
     return (

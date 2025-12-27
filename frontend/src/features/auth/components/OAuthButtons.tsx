@@ -103,10 +103,52 @@ export function OAuthButtons({ mode, onProviderClick }: OAuthButtonsProps) {
                         type="button"
                         variant="outline"
                         className={oauthButtonStyles}
+                        aria-label={`${actionText} with ${provider.name}`}
                         onClick={() => {
-                            // TODO: Implement OAuth flow
-                            console.log(`${provider.name} OAuth clicked`);
-                            onProviderClick?.(provider.id);
+                            // OAuth Redirect Logic
+                            const providerId = provider.id;
+                            const origin = typeof window !== 'undefined' ? window.location.origin : '';
+                            const redirectUri = `${origin}/auth/callback/${providerId}`;
+
+                            let authUrl = "";
+
+                            if (providerId === "google") {
+                                const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+                                if (!clientId) {
+                                    console.error("Missing Google Client ID");
+                                    // Fallback to prop if available, but we prefer handling it here
+                                    onProviderClick?.(providerId);
+                                    return;
+                                }
+                                const params = new URLSearchParams({
+                                    client_id: clientId,
+                                    redirect_uri: redirectUri,
+                                    response_type: "code",
+                                    scope: "openid email profile",
+                                    access_type: "offline",
+                                    prompt: "consent",
+                                });
+                                authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+                            } else if (providerId === "microsoft") {
+                                const clientId = process.env.NEXT_PUBLIC_MICROSOFT_CLIENT_ID;
+                                if (!clientId) {
+                                    console.error("Missing Microsoft Client ID");
+                                    onProviderClick?.(providerId);
+                                    return;
+                                }
+                                const params = new URLSearchParams({
+                                    client_id: clientId,
+                                    redirect_uri: redirectUri,
+                                    response_type: "code",
+                                    scope: "openid email profile User.Read offline_access",
+                                    response_mode: "query",
+                                });
+                                authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`;
+                            }
+
+                            if (authUrl) {
+                                window.location.href = authUrl;
+                            }
                         }}
                     >
                         <Icon className="h-6 w-6" />

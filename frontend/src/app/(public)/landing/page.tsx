@@ -1,40 +1,34 @@
 import { PublicLayout } from "@/components/layout";
 import {
     HeroSection,
-    SocialProofSection,
     ProblemSolutionSection,
     HowItWorksSection,
     FeaturesSection,
     UseCasesSection,
     PricingSection,
-    TestimonialsSection,
+    WhisperReviewsSection,
     FAQSection,
     FinalCTASection,
-    SectionSeparator,
-} from "@/features/landing";
+    LandingBackground,
+    TestimonialsSection,
+} from "@/features/marketing/landing";
 
 export default function LandingPage() {
     return (
         <PublicLayout>
-            <HeroSection />
-            <SectionSeparator variant="gradient" />
-            <SocialProofSection />
-            <SectionSeparator />
-            <PricingSection />
-            <SectionSeparator/>
-            <HowItWorksSection />
-            <SectionSeparator />
-            <FeaturesSection />
-            <SectionSeparator/>
-            <UseCasesSection />
-            <SectionSeparator />
-            <ProblemSolutionSection />
-            <SectionSeparator/>
-            <TestimonialsSection />
-            <SectionSeparator />
-            <FinalCTASection />
-            <SectionSeparator/>
-            <FAQSection />
+            <LandingBackground>
+                <HeroSection />
+                <ProblemSolutionSection />
+                <HowItWorksSection />
+                <PricingSection />
+                <FeaturesSection />
+                <WhisperReviewsSection />
+                <UseCasesSection />
+                <FAQSection />
+                <FinalCTASection />
+            </LandingBackground>
         </PublicLayout>
     );
 }
+
+

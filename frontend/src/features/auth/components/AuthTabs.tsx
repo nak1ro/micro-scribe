@@ -23,7 +23,7 @@ export function AuthTabs({ activeTab, onTabChange }: AuthTabsProps) {
     };
 
     return (
-        <div className="relative flex border-b border-border">
+        <div role="tablist" className="relative flex border-b border-border">
             <TabButton
                 isActive={activeTab === "login"}
                 onClick={() => handleTabClick("login")}

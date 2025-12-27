@@ -2,143 +2,169 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import {
-    Mic2,
-    ChevronLeft,
-    ChevronRight,
-    Sparkles,
-    X,
+    Microphone,
+    NavArrowLeft,
+    NavArrowRight,
+    Sparks,
+    SidebarCollapse,
+    SidebarExpand,
+    Xmark,
     Menu,
-    FileAudio,
+    MusicDoubleNote,
     Plus,
     Settings,
-} from "lucide-react";
+    Folder,
+    NavArrowDown,
+    Flash,
+    Check,
+    MoreVert,
+    EditPencil,
+    Trash,
+    ArrowLeft,
+} from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/context/SidebarContext";
-import { Button } from "@/components/ui";
 import { useUsage } from "@/hooks/useUsage";
+import { useFolders, useDeleteFolder, FOLDER_COLORS } from "@/hooks";
 import { PlanType } from "@/types/api/usage";
+import { FolderColor } from "@/types/models/folder";
+import { FolderModal } from "@/features/workspace/folders";
 
 interface SidebarProps {
-    /** Callback when New Transcription is clicked */
     onNewTranscription?: () => void;
 }
 
-const SIDEBAR_WIDTH = 240;
-const SIDEBAR_COLLAPSED_WIDTH = 64;
+const SIDEBAR_WIDTH = 245;
+const SIDEBAR_COLLAPSED_WIDTH = 68;
 
 export function Sidebar({ onNewTranscription }: SidebarProps) {
-    const { isCollapsed, isMobileOpen, toggleCollapse, closeMobile } =
-        useSidebar();
+    const { isCollapsed, isMobileOpen, toggleCollapse, setCollapsed, closeMobile } = useSidebar();
     const { data: usage } = useUsage();
+    const pathname = usePathname();
+
+    // Auto-collapse logic based on route
+    React.useEffect(() => {
+        if (pathname?.includes("/transcriptions/")) {
+            setCollapsed(true);
+        } else {
+            // "When opens dashboard again, it becomes full again"
+            // This assumes we want to expand on ANY non-transcription page, or strictly checks for dashboard/root
+            setCollapsed(false);
+        }
+    }, [pathname, setCollapsed]);
 
     const isPremium = usage?.planType === PlanType.Pro;
     const transcriptionsUsed = usage?.usage.jobsCleanedToday ?? 0;
     const transcriptionsLimit = usage?.limits.dailyTranscriptionLimit ?? 5;
 
+    // Check if we are in transcription view
+    const isTranscriptionView = pathname?.includes("/transcriptions/");
+
     const sidebarContent = (
-        <>
-            {/* Logo */}
-            <div className="p-4 border-b border-border">
-                <Link
-                    href="/"
-                    className={cn(
-                        "flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity",
-                        isCollapsed && "justify-center"
-                    )}
-                >
-                    <Mic2 className="h-7 w-7 text-primary shrink-0" />
-                    {!isCollapsed && (
-                        <span className="text-lg font-semibold">MicroScribe</span>
-                    )}
-                </Link>
-            </div>
-
-            {/* New Transcription Button - Prominent CTA */}
-            <div className="p-3">
-                <NewTranscriptionButton
-                    isCollapsed={isCollapsed}
-                    onClick={onNewTranscription}
-                />
-            </div>
-
-            {/* Usage / Premium Status */}
-            <div className="px-3 pb-3">
-                {isPremium ? (
-                    <PremiumBadge isCollapsed={isCollapsed} />
+        <div className="flex flex-col h-full">
+            {/* Brand Header */}
+            <div className={cn(
+                "h-16 flex items-center border-b border-border",
+                isCollapsed ? "justify-center px-0" : "justify-between px-4"
+            )}>
+                {!isCollapsed ? (
+                    <>
+                        <Link
+                            href="/"
+                            className="flex items-center gap-2.5 text-foreground hover:opacity-80 transition-opacity"
+                        >
+                            <Microphone className="h-7 w-7 text-primary shrink-0" />
+                            <span className="font-semibold text-base">ScribeRocket</span>
+                        </Link>
+                        {isTranscriptionView ? (
+                            <Link
+                                href="/dashboard"
+                                className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                                aria-label="Back to Dashboard"
+                            >
+                                <ArrowLeft className="h-4 w-4" />
+                            </Link>
+                        ) : (
+                            <button
+                                onClick={toggleCollapse}
+                                className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                                aria-label="Collapse sidebar"
+                            >
+                                <SidebarCollapse className="h-4 w-4" />
+                            </button>
+                        )}
+                    </>
                 ) : (
+                    isTranscriptionView ? (
+                        <Link
+                            href="/dashboard"
+                            className="w-10 h-10 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                            aria-label="Back to Dashboard"
+                        >
+                            <ArrowLeft className="h-5 w-5" />
+                        </Link>
+                    ) : (
+                        <button
+                            onClick={toggleCollapse}
+                            className="w-10 h-10 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                            aria-label="Expand sidebar"
+                        >
+                            <SidebarExpand className="h-5 w-5" />
+                        </button>
+                    )
+                )}
+            </div>
+
+            {/* Upgrade Card (Free Users) - Hero CTA */}
+            {!isPremium && !isCollapsed && (
+                <div className="px-4 py-2 mt-4">
+                    <UpgradeCard />
+                </div>
+            )}
+
+            {/* Usage*/}
+            <div className={cn(
+                "mt-5 space-y-2",
+                isCollapsed ? "px-3 py-1.5" : "px-4 py-2"
+            )}>
+                {!isPremium && (
                     <UsageIndicator
                         used={transcriptionsUsed}
                         limit={transcriptionsLimit}
                         isCollapsed={isCollapsed}
                     />
                 )}
+                {isPremium && !isCollapsed && <PremiumBadge />}
             </div>
 
-            {/* Get Premium CTA (free users only) - Prominent */}
-            {!isPremium && (
-                <div className="px-3 pb-3">
-                    <Link href="/dashboard/subscription">
-                        <div
-                            className={cn(
-                                "flex items-center gap-2 px-3 py-2.5 rounded-lg",
-                                "bg-gradient-to-r from-amber-500/10 to-orange-500/10",
-                                "border border-amber-500/20",
-                                "text-amber-600 dark:text-amber-400",
-                                "hover:from-amber-500/20 hover:to-orange-500/20",
-                                "transition-all duration-200 cursor-pointer",
-                                isCollapsed && "justify-center px-2"
-                            )}
-                        >
-                            <Sparkles className="h-4 w-4 shrink-0" />
-                            {!isCollapsed && (
-                                <span className="text-sm font-medium">Upgrade to Premium</span>
-                            )}
-                        </div>
-                    </Link>
-                </div>
-            )}
+            <div className={cn(
+                isCollapsed ? "px-3 mt-7 mb-7" : "px-4 mt-8 mb-8"
+            )}>
+                <NewTranscriptionButton isCollapsed={isCollapsed} onClick={onNewTranscription} />
+            </div>
 
-            {/* Main Navigation */}
-            <nav className="flex-1 p-2 space-y-1 border-t border-border">
-                <NavItem
+            {/* Navigation */}
+            <SidebarSection>
+                <SidebarNavItem
                     href="/dashboard"
-                    icon={FileAudio}
+                    icon={MusicDoubleNote}
                     label="My Transcriptions"
                     isCollapsed={isCollapsed}
                 />
-            </nav>
+            </SidebarSection>
 
-            {/* Bottom Navigation - Settings (combined Account + Subscription) */}
-            <div className="p-2 border-t border-border">
-                <NavItem
+            {/* Bottom - Settings */}
+            <SidebarSection className="border-t border-border mt-auto pb-4">
+                <SidebarNavItem
                     href="/dashboard/settings"
                     icon={Settings}
                     label="Settings"
                     isCollapsed={isCollapsed}
                 />
-            </div>
-
-            {/* Collapse Toggle (desktop only) */}
-            <div className="hidden lg:block p-2 border-t border-border">
-                <button
-                    type="button"
-                    onClick={toggleCollapse}
-                    className={cn(
-                        "flex items-center justify-center w-full p-2 rounded-md",
-                        "text-muted-foreground hover:text-foreground hover:bg-accent",
-                        "transition-colors duration-[var(--transition-fast)]"
-                    )}
-                    aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-                >
-                    {isCollapsed ? (
-                        <ChevronRight className="h-5 w-5" />
-                    ) : (
-                        <ChevronLeft className="h-5 w-5" />
-                    )}
-                </button>
-            </div>
-        </>
+            </SidebarSection>
+        </div>
     );
 
     return (
@@ -148,12 +174,9 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
                 className={cn(
                     "hidden lg:flex flex-col fixed left-0 top-0 h-screen",
                     "bg-card border-r border-border",
-                    "shadow-[1px_0_3px_rgba(0,0,0,0.04)]",
-                    "transition-[width] duration-[var(--transition-normal)] ease-[var(--easing-soft)]"
+                    "transition-[width] duration-200 ease-out"
                 )}
-                style={{
-                    width: isCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH,
-                }}
+                style={{ width: isCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH }}
             >
                 {sidebarContent}
             </aside>
@@ -161,29 +184,16 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
             {/* Mobile Trigger */}
             <MobileTrigger />
 
-            {/* Mobile Sidebar Overlay */}
+            {/* Mobile Overlay */}
             {isMobileOpen && (
-                <div
-                    className="lg:hidden fixed inset-0 z-50 bg-black/50"
-                    onClick={closeMobile}
-                >
+                <div className="lg:hidden fixed inset-0 z-50 bg-black/50" onClick={closeMobile}>
                     <aside
-                        className={cn(
-                            "fixed left-0 top-0 h-full w-[280px] bg-card",
-                            "flex flex-col",
-                            "animate-slide-in-up"
-                        )}
+                        className="fixed left-0 top-0 h-full w-[260px] bg-card animate-slide-in-up"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* Mobile Close Button */}
-                        <div className="absolute top-4 right-4">
-                            <button
-                                type="button"
-                                onClick={closeMobile}
-                                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-                                aria-label="Close sidebar"
-                            >
-                                <X className="h-6 w-6" />
+                        <div className="absolute top-3 right-3">
+                            <button onClick={closeMobile} className="p-1.5 text-muted-foreground hover:text-foreground">
+                                <Xmark className="h-5 w-5" />
                             </button>
                         </div>
                         {sidebarContent}
@@ -191,44 +201,60 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
                 </div>
             )}
 
-            {/* Spacer for main content */}
+            {/* Spacer */}
             <div
-                className="hidden lg:block shrink-0 transition-[width] duration-[var(--transition-normal)]"
-                style={{
-                    width: isCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH,
-                }}
+                className="hidden lg:block shrink-0 transition-[width] duration-200"
+                style={{ width: isCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH }}
             />
         </>
     );
 }
 
 // ─────────────────────────────────────────────────────────────
-// Mobile Trigger Button
+// Upgrade Card - Vibrant Hero CTA
 // ─────────────────────────────────────────────────────────────
 
-function MobileTrigger() {
-    const { openMobile } = useSidebar();
-
+function UpgradeCard() {
     return (
-        <button
-            type="button"
-            onClick={openMobile}
-            className={cn(
-                "lg:hidden fixed top-4 left-4 z-40",
-                "p-2 rounded-md",
-                "bg-card border border-border shadow-sm",
-                "text-muted-foreground hover:text-foreground",
-                "transition-colors"
-            )}
-            aria-label="Open sidebar"
-        >
-            <Menu className="h-5 w-5" />
-        </button>
+        <Link href="/dashboard/subscription">
+            <div
+                className={cn(
+                    "relative overflow-hidden rounded-xl p-4",
+                    "bg-gradient-primary from-primary via-secondary to-primary",
+                    "text-primary-foreground",
+                    "shadow-lg shadow-primary/25",
+                    "hover:shadow-xl hover:shadow-primary/35",
+                    "hover:shadow-xl hover:shadow-primary/35",
+                    "transition-all duration-200"
+                )}
+            >
+                {/* Shimmer sweep effect */}
+                <div
+                    className="absolute inset-0 w-[200%] h-full bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                    style={{ animation: "shimmer 3s ease-in-out infinite" }}
+                />
+
+                {/* Glow overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent" />
+
+                <div className="relative">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Sparks className="h-5 w-5" />
+                        <span className="font-bold text-sm">Go Premium</span>
+                    </div>
+                    <p className="text-sm opacity-90 mb-2">Unlimited transcriptions</p>
+                    <div className="flex items-center gap-1.5 text-sm opacity-80">
+                        <Check className="h-3.5 w-3.5" />
+                        <span>No daily limits</span>
+                    </div>
+                </div>
+            </div>
+        </Link>
     );
 }
 
 // ─────────────────────────────────────────────────────────────
-// Usage Indicator (Free Users)
+// Usage Indicator - Ring Progress
 // ─────────────────────────────────────────────────────────────
 
 interface UsageIndicatorProps {
@@ -238,34 +264,59 @@ interface UsageIndicatorProps {
 }
 
 function UsageIndicator({ used, limit, isCollapsed }: UsageIndicatorProps) {
+    const remaining = Math.max(0, limit - used);
     const percentage = Math.min((used / limit) * 100, 100);
+
+    // Status color based on remaining usage
+    const getStatusColor = () => {
+        if (remaining === 0) return "hsl(var(--destructive))";
+        if (remaining <= 2) return "hsl(45 93% 47%)";
+        return "hsl(var(--primary))";
+    };
+
+    // Parameters for the ring indicator
+    const collapsedRadius = 10;
+    const collapsedCircumference = 2 * Math.PI * collapsedRadius;
+    const collapsedStrokeDashoffset = collapsedCircumference - (percentage / 100) * collapsedCircumference;
+
+    const expandedRadius = 14;
+    const expandedCircumference = 2 * Math.PI * expandedRadius;
+    const expandedStrokeDashoffset = expandedCircumference - (percentage / 100) * expandedCircumference;
 
     if (isCollapsed) {
         return (
-            <div
-                className="flex items-center justify-center"
-                title={`${used}/${limit} transcriptions used`}
-            >
-                <span className="text-xs font-medium text-muted-foreground">
-                    {used}/{limit}
-                </span>
+            <div className="flex items-center justify-center">
+                <Link
+                    href="/dashboard/subscription"
+                    className="w-10 h-10 flex items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                    title="Go Premium"
+                >
+                    <Sparks className="h-5 w-5" />
+                </Link>
             </div>
         );
     }
 
     return (
-        <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Daily usage</span>
-                <span className="font-medium">
-                    {used}/{limit}
-                </span>
-            </div>
-            <div className="h-2 rounded-full bg-muted overflow-hidden">
-                <div
-                    className="h-full rounded-full bg-gradient-to-r from-primary to-secondary transition-all duration-[var(--transition-normal)]"
-                    style={{ width: `${percentage}%` }}
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border border-border">
+            <svg width="32" height="32" viewBox="0 0 36 36">
+                <circle cx="18" cy="18" r={expandedRadius} fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
+                <circle
+                    cx="18"
+                    cy="18"
+                    r={expandedRadius}
+                    fill="none"
+                    stroke={getStatusColor()}
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeDasharray={expandedCircumference}
+                    strokeDashoffset={expandedStrokeDashoffset}
+                    transform="rotate(-90 18 18)"
                 />
+            </svg>
+            <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium">{used}/{limit} today</div>
+                <div className="text-xs text-muted-foreground">Daily usage</div>
             </div>
         </div>
     );
@@ -275,62 +326,17 @@ function UsageIndicator({ used, limit, isCollapsed }: UsageIndicatorProps) {
 // Premium Badge
 // ─────────────────────────────────────────────────────────────
 
-function PremiumBadge({ isCollapsed }: { isCollapsed: boolean }) {
-    if (isCollapsed) {
-        return (
-            <div
-                className="flex items-center justify-center"
-                title="Unlimited transcriptions"
-            >
-                <Sparkles className="h-5 w-5 text-primary" />
-            </div>
-        );
-    }
-
+function PremiumBadge() {
     return (
-        <div
-            className={cn(
-                "flex items-center gap-2 px-3 py-2 rounded-md",
-                "bg-primary/10 text-primary"
-            )}
-        >
-            <Sparkles className="h-4 w-4" />
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 text-primary">
+            <Sparks className="h-5 w-5" />
             <span className="text-sm font-medium">Unlimited</span>
         </div>
     );
 }
 
 // ─────────────────────────────────────────────────────────────
-// Navigation Item
-// ─────────────────────────────────────────────────────────────
-
-interface NavItemProps {
-    href: string;
-    icon: React.ComponentType<{ className?: string }>;
-    label: string;
-    isCollapsed: boolean;
-}
-
-function NavItem({ href, icon: Icon, label, isCollapsed }: NavItemProps) {
-    return (
-        <Link
-            href={href}
-            className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md",
-                "text-muted-foreground hover:text-foreground hover:bg-accent",
-                "transition-colors duration-[var(--transition-fast)]",
-                isCollapsed && "justify-center px-2"
-            )}
-            title={isCollapsed ? label : undefined}
-        >
-            <Icon className="h-5 w-5 shrink-0" />
-            {!isCollapsed && <span className="text-sm font-medium">{label}</span>}
-        </Link>
-    );
-}
-
-// ─────────────────────────────────────────────────────────────
-// New Transcription Button - Prominent CTA with Gradient
+// New Transcription Button
 // ─────────────────────────────────────────────────────────────
 
 interface NewTranscriptionButtonProps {
@@ -346,26 +352,413 @@ function NewTranscriptionButton({ isCollapsed, onClick }: NewTranscriptionButton
         }
     };
 
+    if (isCollapsed) {
+        return (
+            <Link href="/dashboard?action=new" onClick={handleClick}>
+                <div
+                    className={cn(
+                        "w-10 h-10 mx-auto flex items-center justify-center rounded-lg",
+                        "bg-primary text-primary-foreground",
+                        "hover:bg-primary/90 transition-colors"
+                    )}
+                >
+                    <Plus className="h-5 w-5" />
+                </div>
+            </Link>
+        );
+    }
+
     return (
         <Link href="/dashboard?action=new" onClick={handleClick}>
             <div
                 className={cn(
                     "flex items-center justify-center gap-2 w-full",
-                    "px-4 py-3 rounded-xl",
-                    "bg-gradient-to-r from-primary to-secondary",
-                    "text-primary-foreground font-medium",
-                    "shadow-lg shadow-primary/25",
-                    "hover:shadow-xl hover:shadow-primary/30",
-                    "hover:scale-[1.02]",
-                    "active:scale-[0.98]",
-                    "transition-all duration-200",
-                    isCollapsed && "px-3 py-3"
+                    "px-4 py-2.5 rounded-lg",
+                    "bg-gradient-primary text-primary-foreground",
+                    "font-medium text-sm",
+                    "hover:bg-primary/90 transition-all duration-150"
                 )}
             >
                 <Plus className="h-5 w-5" />
-                {!isCollapsed && <span>New Transcription</span>}
+                <span>New</span>
             </div>
         </Link>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Sidebar Section Wrapper
+// ─────────────────────────────────────────────────────────────
+
+interface SidebarSectionProps {
+    children: React.ReactNode;
+    className?: string;
+}
+
+function SidebarSection({ children, className }: SidebarSectionProps) {
+    return (
+        <div className={cn("px-3 py-2", className)}>
+            {children}
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Sidebar Navigation Item
+// ─────────────────────────────────────────────────────────────
+
+interface SidebarNavItemProps {
+    href: string;
+    icon: React.ComponentType<{ className?: string }>;
+    label: string;
+    isCollapsed: boolean;
+}
+
+function SidebarNavItem({ href, icon: Icon, label, isCollapsed }: SidebarNavItemProps) {
+    if (isCollapsed) {
+        return (
+            <Link
+                href={href}
+                className="w-10 h-10 mx-auto flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                title={label}
+            >
+                <Icon className="h-5 w-5" />
+            </Link>
+        );
+    }
+
+    return (
+        <Link
+            href={href}
+            className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg",
+                "text-sm font-medium text-muted-foreground",
+                "hover:text-foreground hover:bg-accent",
+                "transition-colors duration-150"
+            )}
+        >
+            <Icon className="h-5 w-5 shrink-0" />
+            <span>{label}</span>
+        </Link>
+    );
+}
+
+// Keep NavItem for backwards compatibility
+function NavItem(props: SidebarNavItemProps) {
+    return <SidebarNavItem {...props} />;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Mobile Trigger
+// ─────────────────────────────────────────────────────────────
+
+function MobileTrigger() {
+    const { openMobile } = useSidebar();
+
+    return (
+        <button
+            type="button"
+            onClick={openMobile}
+            className={cn(
+                "lg:hidden fixed top-3 left-3 z-40",
+                "p-2 rounded-lg",
+                "bg-card border border-border shadow-sm",
+                "text-muted-foreground hover:text-foreground",
+                "transition-colors"
+            )}
+        >
+            <Menu className="h-5 w-5" />
+        </button>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Folder Section
+// ─────────────────────────────────────────────────────────────
+
+interface FolderSectionProps {
+    isCollapsed: boolean;
+}
+
+function FolderSection({ isCollapsed }: FolderSectionProps) {
+    const router = useRouter();
+    const { data: folders, isLoading } = useFolders();
+    const deleteFolderMutation = useDeleteFolder();
+    const [isExpanded, setIsExpanded] = React.useState(true);
+    const [isModalOpen, setIsModalOpen] = React.useState(false);
+    const [editingFolder, setEditingFolder] = React.useState<{
+        id: string;
+        name: string;
+        color: FolderColor;
+        itemCount: number;
+        createdAtUtc: string;
+    } | null>(null);
+
+    const handleEdit = (folder: typeof editingFolder) => {
+        setEditingFolder(folder);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setEditingFolder(null);
+    };
+
+    const handleDelete = async (folderId: string) => {
+        try {
+            await deleteFolderMutation.mutateAsync(folderId);
+        } catch (error) {
+            console.error("Failed to delete folder:", error);
+        }
+    };
+
+    if (isCollapsed) {
+        return (
+            <div className="flex items-center justify-center">
+                <div
+                    className="w-10 h-10 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+                    title="Folders"
+                >
+                    <Folder className="h-5 w-5" />
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="overflow-y-auto">
+            <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className={cn(
+                    "flex items-center justify-between w-full rounded-lg",
+                    "px-2.5 py-2",
+                    "text-sm font-medium text-muted-foreground",
+                    "hover:text-foreground hover:bg-accent",
+                    "transition-colors duration-150"
+                )}
+            >
+                <span className="flex items-center gap-2.5">
+                    <Folder className="h-4 w-4" />
+                    Folders
+                </span>
+                <NavArrowDown className={cn("h-3.5 w-3.5 transition-transform", !isExpanded && "-rotate-90")} />
+            </button>
+
+            {isExpanded && (
+                <div className="px-1.5 pb-1 space-y-0.5">
+                    <button
+                        onClick={() => {
+                            setEditingFolder(null);
+                            setIsModalOpen(true);
+                        }}
+                        className={cn(
+                            "flex items-center gap-2.5 w-full rounded-lg",
+                            "px-2.5 py-2",
+                            "text-sm text-muted-foreground",
+                            "hover:text-foreground hover:bg-accent",
+                            "transition-colors duration-150"
+                        )}
+                    >
+                        <Plus className="h-4 w-4" />
+                        Create Folder
+                    </button>
+
+                    {isLoading ? (
+                        <div className="px-2 py-1 text-xs text-muted-foreground">Loading...</div>
+                    ) : folders && folders.length > 0 ? (
+                        folders.map((folder) => (
+                            <FolderListItem
+                                key={folder.id}
+                                id={folder.id}
+                                name={folder.name}
+                                color={folder.color}
+                                itemCount={folder.itemCount}
+                                onClick={() => router.push(`/dashboard?folder=${folder.id}`)}
+                                onEdit={() => handleEdit(folder)}
+                                onDelete={() => handleDelete(folder.id)}
+                            />
+                        ))
+                    ) : (
+                        <div className="px-2 py-1 text-xs text-muted-foreground">No folders</div>
+                    )}
+                </div>
+            )}
+
+            <FolderModal isOpen={isModalOpen} onClose={handleCloseModal} folder={editingFolder} />
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Folder List Item
+// ─────────────────────────────────────────────────────────────
+
+interface FolderListItemProps {
+    id: string;
+    name: string;
+    color: FolderColor;
+    itemCount: number;
+    onClick: () => void;
+    onEdit: () => void;
+    onDelete: () => void;
+}
+
+function FolderListItem({ name, color, itemCount, onClick, onEdit, onDelete }: FolderListItemProps) {
+    const colors = FOLDER_COLORS[color] || FOLDER_COLORS.Blue;
+    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+    const [isConfirmingDelete, setIsConfirmingDelete] = React.useState(false);
+    const menuRef = React.useRef<HTMLDivElement>(null);
+
+    // Close menu on outside click
+    React.useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+                setIsMenuOpen(false);
+                setIsConfirmingDelete(false);
+            }
+        };
+        if (isMenuOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [isMenuOpen]);
+
+    const handleMenuClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsMenuOpen(!isMenuOpen);
+        setIsConfirmingDelete(false);
+    };
+
+    const handleEditClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsMenuOpen(false);
+        onEdit();
+    };
+
+    const handleDeleteClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsConfirmingDelete(true);
+    };
+
+    const handleConfirmDelete = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsMenuOpen(false);
+        setIsConfirmingDelete(false);
+        onDelete();
+    };
+
+    const handleCancelDelete = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsConfirmingDelete(false);
+    };
+
+    return (
+        <div className="relative group" ref={menuRef}>
+            <div
+                className={cn(
+                    "flex items-center gap-2.5 w-full rounded-lg",
+                    "px-2.5 py-2",
+                    "text-sm text-muted-foreground",
+                    "hover:text-foreground hover:bg-accent",
+                    "transition-colors duration-150 cursor-pointer"
+                )}
+            >
+                <div
+                    className="flex items-center gap-2.5 flex-1 min-w-0"
+                    onClick={onClick}
+                >
+                    <Folder
+                        className="h-4 w-4 shrink-0"
+                        style={{ color: colors.border }}
+                    />
+                    <span className="truncate flex-1 text-left">{name}</span>
+                </div>
+
+                {/* Item count - hidden on hover */}
+                <span className="text-xs text-muted-foreground/70 tabular-nums group-hover:hidden">
+                    {itemCount}
+                </span>
+
+                {/* 3-dot menu button - visible on hover */}
+                <button
+                    type="button"
+                    onClick={handleMenuClick}
+                    className={cn(
+                        "p-1 rounded-md hidden group-hover:flex items-center justify-center",
+                        "text-muted-foreground hover:text-foreground hover:bg-muted",
+                        "transition-colors"
+                    )}
+                >
+                    <MoreVert className="h-4 w-4" />
+                </button>
+            </div>
+
+            {/* Dropdown Menu */}
+            {isMenuOpen && (
+                <div
+                    className={cn(
+                        "absolute right-0 top-full mt-1 z-50",
+                        "min-w-[140px] py-1",
+                        "bg-popover border border-border rounded-lg shadow-lg"
+                    )}
+                >
+                    {!isConfirmingDelete ? (
+                        <>
+                            <button
+                                onClick={handleEditClick}
+                                className={cn(
+                                    "flex items-center gap-2 w-full px-3 py-2 text-sm",
+                                    "text-foreground hover:bg-accent",
+                                    "transition-colors"
+                                )}
+                            >
+                                <EditPencil className="h-3.5 w-3.5" />
+                                Edit
+                            </button>
+                            <button
+                                onClick={handleDeleteClick}
+                                className={cn(
+                                    "flex items-center gap-2 w-full px-3 py-2 text-sm",
+                                    "text-destructive hover:bg-destructive/10",
+                                    "transition-colors"
+                                )}
+                            >
+                                <Trash className="h-3.5 w-3.5" />
+                                Delete
+                            </button>
+                        </>
+                    ) : (
+                        <div className="px-3 py-2 space-y-2">
+                            <p className="text-xs text-muted-foreground">
+                                Delete folder?
+                            </p>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleConfirmDelete}
+                                    className={cn(
+                                        "flex-1 px-2 py-1 text-xs font-medium rounded",
+                                        "bg-destructive text-destructive-foreground",
+                                        "hover:bg-destructive/90 transition-colors"
+                                    )}
+                                >
+                                    Delete
+                                </button>
+                                <button
+                                    onClick={handleCancelDelete}
+                                    className={cn(
+                                        "flex-1 px-2 py-1 text-xs font-medium rounded",
+                                        "bg-muted text-muted-foreground",
+                                        "hover:bg-accent transition-colors"
+                                    )}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
     );
 }
 

@@ -1,0 +1,56 @@
+# ======================
+# Python / Virtual Env
+# ======================
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# ======================
+# Environment variables
+# ======================
+.env
+.env.*
+!.env.example
+
+# ======================
+# Logs & runtime files
+# ======================
+*.log
+*.pid
+
+# ======================
+# OS-specific
+# ======================
+# Windows
+Thumbs.db
+desktop.ini
+
+# macOS
+.DS_Store
+
+# ======================
+# IDEs / Editors
+# ======================
+.idea/
+.vscode/
+
+# ======================
+# Model / cache files
+# ======================
+.cache/
+torch_cache/
+whisperx_cache/
+*.pt
+*.pth
+
+# ======================
+# Temp / uploads
+# ======================
+temp_*
+*.wav
+*.mp3
+*.flac
+*.m4a

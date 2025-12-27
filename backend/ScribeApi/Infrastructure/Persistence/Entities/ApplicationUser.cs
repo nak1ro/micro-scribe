@@ -19,8 +19,6 @@ public class ApplicationUser : IdentityUser
     // Soft delete flag
     public bool IsDeleted { get; set; }
 
-    // Token for email confirmation flow
-    public string? EmailConfirmationToken { get; set; }
 
     // Token for password reset flow
     public string? PasswordResetToken { get; set; }

@@ -1,7 +1,14 @@
+import * as React from "react";
+import { DashboardLayout } from "@/components/layout";
+
 export default function ProtectedLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
-    return children;
+    return (
+        <DashboardLayout>
+            {children}
+        </DashboardLayout>
+    );
 }

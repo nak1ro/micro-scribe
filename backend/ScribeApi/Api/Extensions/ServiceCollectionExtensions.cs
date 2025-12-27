@@ -17,14 +17,23 @@ using ScribeApi.Features.Auth.Services;
 using ScribeApi.Features.Media;
 using ScribeApi.Features.Media.Contracts;
 using ScribeApi.Features.Media.Services;
-using ScribeApi.Features.Uploads; // Added
+using ScribeApi.Features.Uploads;
 using ScribeApi.Features.Transcriptions.Contracts;
-using ScribeApi.Features.Transcriptions.Services;
+using ScribeApi.Features.Transcriptions.Jobs;
+using ScribeApi.Features.Transcriptions.Export;
+using ScribeApi.Features.Transcriptions.Editor;
+using ScribeApi.Features.Analysis.Contracts;
+using ScribeApi.Features.Analysis.Services;
+using ScribeApi.Features.Translation.Contracts;
+using ScribeApi.Features.Translation.Services;
 using ScribeApi.Features.Uploads.Contracts;
+using ScribeApi.Features.Uploads.Services;
 using ScribeApi.Features.Webhooks.Contracts;
 using ScribeApi.Features.Webhooks.Services;
 using ScribeApi.Features.Usage.Services;
 using ScribeApi.Features.Usage.Contracts;
+using ScribeApi.Features.Folders.Contracts;
+using ScribeApi.Features.Folders.Services;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
 using ScribeApi.Infrastructure.Storage;
@@ -32,6 +41,7 @@ using ScribeApi.Infrastructure.BackgroundJobs;
 using ScribeApi.Infrastructure.Email;
 using ScribeApi.Infrastructure.Transcription;
 using FfmpegMediaService = ScribeApi.Infrastructure.MediaProcessing.FfmpegMediaService;
+using ScribeApi.Infrastructure.AI;
 
 namespace ScribeApi.Api.Extensions;
 
@@ -80,7 +90,6 @@ public static class ServiceCollectionExtensions
             options.UseNpgsql(dataSource));
 
         // Identity
-        // Identity
         services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
                 options.Password.RequireDigit = true;
@@ -126,26 +135,50 @@ public static class ServiceCollectionExtensions
         services.AddScoped<TransactionFilter>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IExternalAuthService, ExternalAuthService>();
         services.AddScoped<IOAuthService, OAuthService>();
         services.AddScoped<IAuthQueries, AuthQueries>();
         services.AddScoped<IMediaService, MediaService>();
         services.AddScoped<IMediaQueries, MediaQueries>();
-        services.AddScoped<ITranscriptionJobService, TranscriptionJobService>();
-        services.AddScoped<ITranscriptionJobQueries, TranscriptionJobQueries>();
-        services.AddScoped<IMediaQueries, MediaQueries>();
+        
+        // Transcription services (new sub-folder namespaces)
         services.AddScoped<ITranscriptionJobService, TranscriptionJobService>();
         services.AddScoped<ITranscriptionJobQueries, TranscriptionJobQueries>();
         services.AddScoped<ITranscriptExportService, TranscriptExportService>();
         services.AddScoped<ITranscriptEditService, TranscriptEditService>();
+        
+        // Analysis feature (new top-level feature)
+        services.AddScoped<IAnalysisService, AnalysisService>();
+        
+        // Translation feature (new top-level feature)
+        services.AddScoped<IJobTranslationService, JobTranslationService>();
+        
         services.AddScoped<IUploadService, UploadService>();
         services.AddScoped<IWebhookService, WebhookService>();
         services.AddScoped<IUsageService, UsageService>();
+        services.AddScoped<IFolderService, FolderService>();
         services.AddScoped<WebhookDeliveryJob>();
         services.AddHttpClient<WebhookDeliveryJob>();
         services.Configure<OpenAiSettings>(configuration.GetSection("OpenAi"));
+        services.AddHttpClient<IGenerativeAiService, OpenAiGenerativeAiService>();
 
-        services.AddHttpClient<OpenAiTranscriptionProvider>();
-        services.AddScoped<ITranscriptionProvider, OpenAiTranscriptionProvider>();
+        services.Configure<WhisperXSettings>(configuration.GetSection("WhisperX"));
+
+        // Transcription provider - configurable via Transcription:Provider (OpenAi or WhisperX)
+        var transcriptionProvider = configuration["Transcription:Provider"] ?? "OpenAi";
+        Console.WriteLine($"[STARTUP] Transcription Provider configured: '{transcriptionProvider}'");
+        
+        if (transcriptionProvider.Equals("WhisperX", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("[STARTUP] Registering WhisperXTranscriptionProvider");
+            services.AddHttpClient<ITranscriptionProvider, WhisperXTranscriptionProvider>();
+        }
+        else
+        {
+            Console.WriteLine("[STARTUP] Registering OpenAiTranscriptionProvider");
+            services.AddHttpClient<ITranscriptionProvider, OpenAiTranscriptionProvider>();
+        }
+
         services.AddScoped<IFfmpegMediaService, FfmpegMediaService>();
         services.AddScoped<ChunkedTranscriptionService>();
         services.AddScoped<TranscriptionJobRunner>();
@@ -154,6 +187,10 @@ public static class ServiceCollectionExtensions
         
         // Transcription settings
         services.Configure<TranscriptionSettings>(configuration.GetSection("Transcription"));
+
+        // Translation services
+        services.Configure<TranslationSettings>(configuration.GetSection("Translation"));
+        services.AddHttpClient<ITranslationService, Infrastructure.Translation.AzureTranslationService>();
 
         // Hangfire
         services.AddHangfireServices(configuration);
@@ -174,6 +211,11 @@ public static class ServiceCollectionExtensions
 
             services.AddScoped<IFileStorageService, S3MediaStorageService>();
         }
+        else if (storageProvider.Equals("Azure", StringComparison.OrdinalIgnoreCase))
+        {
+            services.Configure<AzureBlobSettings>(configuration.GetSection("Storage:AzureBlob"));
+            services.AddScoped<IFileStorageService, AzureBlobStorageService>();
+        }
         else
         {
             services.AddScoped<IFileStorageService, LocalFileStorageService>();
@@ -187,6 +229,9 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IPlanResolver, PlanResolver>();
         services.AddSingleton<IPlanGuard, PlanGuard>();
+
+        // Billing
+        services.AddBilling(configuration);
 
         return services;
     }

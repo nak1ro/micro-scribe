@@ -1,23 +1,21 @@
 "use client";
 
 import * as React from "react";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { SidebarProvider, useSidebar } from "@/context/SidebarContext";
-import { FloatingActionButton } from "@/components/ui";
+import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
-    /** Callback when New Transcription is clicked (from sidebar or FAB) */
-    onNewTranscription?: () => void;
 }
 
 export function DashboardLayout({
     children,
-    onNewTranscription,
 }: DashboardLayoutProps) {
     return (
         <SidebarProvider>
-            <DashboardLayoutInner onNewTranscription={onNewTranscription}>
+            <DashboardLayoutInner>
                 {children}
             </DashboardLayoutInner>
         </SidebarProvider>
@@ -27,24 +25,17 @@ export function DashboardLayout({
 // Inner component that can safely use useSidebar
 function DashboardLayoutInner({
     children,
-    onNewTranscription,
 }: DashboardLayoutProps) {
     const { isCollapsed } = useSidebar();
+    const pathname = usePathname();
+    const noPadding = pathname?.includes("/transcriptions/");
 
     return (
-        <div className="flex min-h-screen">
-            <Sidebar onNewTranscription={onNewTranscription} />
-            <main className="flex-1 min-w-0">
-                <div className="px-4 py-6 lg:px-8">{children}</div>
+        <div className={cn("flex", noPadding ? "h-screen overflow-hidden" : "min-h-screen")}>
+            <Sidebar />
+            <main className="flex-1 min-w-0 flex flex-col">
+                {noPadding ? children : <div className="px-4 py-6 lg:px-8 flex-1">{children}</div>}
             </main>
-
-            {/* Floating Action Button - Shows when sidebar is collapsed */}
-            {isCollapsed && onNewTranscription && (
-                <FloatingActionButton
-                    onClick={onNewTranscription}
-                    label="New Transcription"
-                />
-            )}
         </div>
     );
 }

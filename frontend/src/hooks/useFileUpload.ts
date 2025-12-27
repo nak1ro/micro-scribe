@@ -54,7 +54,7 @@ export function useFileUpload(options: UseFileUploadOptions = {}): UseFileUpload
     }), [options.chunkSize, options.maxRetries, options.pollIntervalMs]);
 
     const isUploading = React.useMemo(
-        () => ["initiating", "uploading", "completing", "validating", "creating-job"].includes(status),
+        () => ["initiating", "uploading", "extracting", "completing", "validating", "creating-job"].includes(status),
         [status]
     );
 
