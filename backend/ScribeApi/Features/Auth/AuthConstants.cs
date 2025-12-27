@@ -11,6 +11,7 @@ public static class AuthConstants
     public static class Providers
     {
         public const string Google = "google";
+        public const string Microsoft = "microsoft";
     }
 
     public static class Validation

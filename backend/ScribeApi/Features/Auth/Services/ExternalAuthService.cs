@@ -39,7 +39,21 @@ public class ExternalAuthService : IExternalAuthService
 
     public async Task<UserDto> ExternalLoginAsync(ExternalAuthRequestDto request, CancellationToken cancellationToken = default)
     {
-        var oauthUserInfo = await _oauthService.ValidateGoogleTokenAsync(request.IdToken, cancellationToken);
+        OAuthUserInfo oauthUserInfo;
+        
+        if (request.Provider.Equals(AuthConstants.Providers.Google, StringComparison.OrdinalIgnoreCase))
+        {
+            oauthUserInfo = await _oauthService.ValidateGoogleTokenAsync(request.IdToken, cancellationToken);
+        }
+        else if (request.Provider.Equals(AuthConstants.Providers.Microsoft, StringComparison.OrdinalIgnoreCase))
+        {
+            oauthUserInfo = await _oauthService.ValidateMicrosoftTokenAsync(request.IdToken, cancellationToken);
+        }
+        else
+        {
+            throw new ValidationException($"Unsupported provider: {request.Provider}");
+        }
+
         return await ProcessExternalLoginFlowAsync(oauthUserInfo, cancellationToken);
     }
 
@@ -58,7 +72,20 @@ public class ExternalAuthService : IExternalAuthService
         }
 
         // Validate the OAuth token
-        var oauthUserInfo = await _oauthService.ValidateGoogleTokenAsync(request.IdToken, cancellationToken);
+        OAuthUserInfo oauthUserInfo;
+        
+        if (request.Provider.Equals(AuthConstants.Providers.Google, StringComparison.OrdinalIgnoreCase))
+        {
+            oauthUserInfo = await _oauthService.ValidateGoogleTokenAsync(request.IdToken, cancellationToken);
+        }
+        else if (request.Provider.Equals(AuthConstants.Providers.Microsoft, StringComparison.OrdinalIgnoreCase))
+        {
+            oauthUserInfo = await _oauthService.ValidateMicrosoftTokenAsync(request.IdToken, cancellationToken);
+        }
+        else
+        {
+            throw new ValidationException($"Unsupported provider: {request.Provider}");
+        }
 
         // Check if this provider account is already linked to another user
         var existingLogin = await _authQueries.GetExternalLoginAsync(oauthUserInfo.Provider, oauthUserInfo.ProviderKey, cancellationToken);
