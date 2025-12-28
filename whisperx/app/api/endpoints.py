@@ -75,13 +75,21 @@ async def transcribe_endpoint(
     t0 = time.time()
     tmp_path: Optional[str] = None
 
+    logger.info("[%s] === REQUEST RECEIVED === filename=%s language=%s quality=%s diarize=%s", 
+                req_id, file.filename, language, quality, enable_diarization)
+
     # Limit GPU concurrency (prevents OOM / thrash)
     async with _gpu_semaphore:
         try:
+            logger.info("[%s] Saving upload to tempfile...", req_id)
             tmp_path = await save_upload_to_tempfile(file)
+            logger.info("[%s] File saved to: %s", req_id, tmp_path)
 
             # Check duration - fail fast (but after upload, alas)
+            logger.info("[%s] Getting audio duration...", req_id)
             duration = await get_audio_duration(tmp_path)
+            logger.info("[%s] Audio duration: %.1fs", req_id, duration)
+            
             if duration > MAX_AUDIO_DURATION:
                 raise HTTPException(
                     status_code=400, 
@@ -91,7 +99,9 @@ async def transcribe_endpoint(
             # Define the heavy lifting as a coro
             async def _process():
                 # Load audio (CPU)
+                logger.info("[%s] Loading audio with whisperx...", req_id)
                 audio = whisperx.load_audio(tmp_path)
+                logger.info("[%s] Audio loaded, shape=%s", req_id, audio.shape if hasattr(audio, 'shape') else 'unknown')
 
                 # Inference mode reduces overhead + helps memory
                 # Note: We can't strictly async/await inside torch.inference_mode context 
@@ -103,6 +113,10 @@ async def transcribe_endpoint(
                     model = get_model(quality)
 
                     # STEP 1: Transcribe
+                    if torch.cuda.is_available():
+                         mem = torch.cuda.memory_allocated() / 1024**2
+                         logger.info("[%s] GPU Mem before transcribe: %.2f MB", req_id, mem)
+
                     logger.info("[%s] Transcribing quality=%s language=%s duration=%.1fs", req_id, quality, language or "auto", duration)
                     transcribe_options = {"batch_size": BATCH_SIZE}
                     if language:
@@ -110,8 +124,13 @@ async def transcribe_endpoint(
 
                     result = model.transcribe(audio, **transcribe_options)
                     detected_language = result.get("language")
+                    logger.info("[%s] Transcription complete. Language detected: %s", req_id, detected_language)
 
                     # STEP 2: Align
+                    if torch.cuda.is_available():
+                         mem = torch.cuda.memory_allocated() / 1024**2
+                         logger.info("[%s] GPU Mem before align: %.2f MB", req_id, mem)
+
                     logger.info("[%s] Aligning detected_language=%s", req_id, detected_language)
                     model_a, metadata = get_align(detected_language)
 
@@ -124,9 +143,14 @@ async def transcribe_endpoint(
                         return_char_alignments=False,
                     )
                     aligned["language"] = detected_language
+                    logger.info("[%s] Alignment complete", req_id)
 
                     # STEP 3: Diarize (optional)
                     if enable_diarization:
+                        if torch.cuda.is_available():
+                             mem = torch.cuda.memory_allocated() / 1024**2
+                             logger.info("[%s] GPU Mem before diarize: %.2f MB", req_id, mem)
+
                         if not ALLOW_DIARIZATION:
                             raise HTTPException(status_code=400, detail="Diarization disabled on server.")
                         logger.info("[%s] Diarizing", req_id)
@@ -135,6 +159,7 @@ async def transcribe_endpoint(
                         aligned = whisperx.assign_word_speakers(diarize_segments, aligned)
                         # Re-attach language if lost
                         aligned["language"] = detected_language
+                        logger.info("[%s] Diarization complete", req_id)
 
                 return _build_response(aligned, enable_diarization)
 

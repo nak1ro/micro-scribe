@@ -14,8 +14,11 @@ public class StripeSettings
     // Webhook signing secret for verifying webhook signatures (whsec_xxx)
     public string WebhookSecret { get; set; } = string.Empty;
 
-    // Price ID for Pro plan from Stripe Dashboard (price_xxx)
-    public string ProPriceId { get; set; } = string.Empty;
+    // Price ID for Pro plan Monthly (price_xxx)
+    public string ProMonthlyPriceId { get; set; } = string.Empty;
+
+    // Price ID for Pro plan Annual (price_xxx)
+    public string ProAnnualPriceId { get; set; } = string.Empty;
 
     // URL to redirect to after successful checkout
     public string SuccessUrl { get; set; } = string.Empty;

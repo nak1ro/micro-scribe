@@ -37,6 +37,7 @@ public class StripeClient
     // Create a checkout session for upgrading to Pro plan
     public async Task<Session> CreateCheckoutSessionAsync(
         string customerId,
+        string priceId,
         string? successUrl = null,
         string? cancelUrl = null,
         CancellationToken ct = default)
@@ -45,7 +46,7 @@ public class StripeClient
         {
             Customer = customerId,
             Mode = "subscription",
-            LineItems = [new SessionLineItemOptions { Price = _settings.ProPriceId, Quantity = 1 }],
+            LineItems = [new SessionLineItemOptions { Price = priceId, Quantity = 1 }],
             SuccessUrl = successUrl ?? _settings.SuccessUrl,
             CancelUrl = cancelUrl ?? _settings.CancelUrl
         };

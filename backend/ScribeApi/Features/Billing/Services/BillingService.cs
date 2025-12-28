@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ScribeApi.Features.Billing.Contracts;
+using Microsoft.Extensions.Options;
+using ScribeApi.Core.Configuration;
 using ScribeApi.Infrastructure.Billing;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
@@ -11,15 +13,18 @@ public class BillingService : IBillingService
 {
     private readonly AppDbContext _context;
     private readonly StripeClient _stripeClient;
+    private readonly StripeSettings _stripeSettings;
     private readonly ILogger<BillingService> _logger;
 
     public BillingService(
         AppDbContext context,
         StripeClient stripeClient,
+        IOptions<StripeSettings> stripeSettings,
         ILogger<BillingService> logger)
     {
         _context = context;
         _stripeClient = stripeClient;
+        _stripeSettings = stripeSettings.Value;
         _logger = logger;
     }
 
@@ -30,8 +35,15 @@ public class BillingService : IBillingService
     {
         var customerId = await EnsureStripeCustomerAsync(userId, ct);
 
+        var priceId = request.Interval switch
+        {
+            BillingInterval.Yearly => _stripeSettings.ProAnnualPriceId,
+            _ => _stripeSettings.ProMonthlyPriceId
+        };
+
         var session = await _stripeClient.CreateCheckoutSessionAsync(
             customerId,
+            priceId,
             request.SuccessUrl,
             request.CancelUrl,
             ct);

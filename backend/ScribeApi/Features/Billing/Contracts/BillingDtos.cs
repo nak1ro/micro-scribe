@@ -2,8 +2,15 @@ using ScribeApi.Infrastructure.Persistence.Entities;
 
 namespace ScribeApi.Features.Billing.Contracts;
 
+public enum BillingInterval
+{
+    Monthly,
+    Yearly
+}
+
 // Request to create a checkout session
 public record CreateCheckoutSessionRequest(
+    BillingInterval Interval = BillingInterval.Monthly,
     string? SuccessUrl = null,
     string? CancelUrl = null
 );
