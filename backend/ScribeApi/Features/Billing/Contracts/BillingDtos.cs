@@ -26,6 +26,9 @@ public record PortalSessionResponse(string Url);
 // Request to create a billing portal session
 public record CreatePortalSessionRequest(string? ReturnUrl = null);
 
+// Request to change subscription plan
+public record ChangeSubscriptionPlanRequest(BillingInterval NewInterval);
+
 // Current subscription status for a user
 public record SubscriptionStatusDto(
     PlanType Plan,

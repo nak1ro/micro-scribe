@@ -28,4 +28,10 @@ public interface IBillingService
 
     // Ensure user has a Stripe customer ID, creating one if needed
     Task<string> EnsureStripeCustomerAsync(string userId, CancellationToken ct = default);
+
+    // Cancel the user's subscription
+    Task<bool> CancelSubscriptionAsync(string userId, bool cancelImmediately = false, CancellationToken ct = default);
+
+    // Change subscription plan (Monthly ↔ Annual)
+    Task<SubscriptionResponse> ChangeSubscriptionPlanAsync(string userId, BillingInterval newInterval, CancellationToken ct = default);
 }

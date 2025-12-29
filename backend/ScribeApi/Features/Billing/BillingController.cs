@@ -77,6 +77,34 @@ public class BillingController : ControllerBase
         return Ok(result);
     }
 
+    // Cancel user's subscription
+    [HttpDelete("subscription")]
+    public async Task<IActionResult> CancelSubscription(
+        [FromQuery] bool cancelImmediately = false,
+        CancellationToken ct = default)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var success = await _billingService.CancelSubscriptionAsync(userId, cancelImmediately, ct);
+        if (!success) return NotFound("No active subscription found");
+
+        return Ok(new { Message = cancelImmediately ? "Subscription cancelled immediately" : "Subscription will cancel at period end" });
+    }
+
+    // Change subscription plan (Monthly ↔ Annual)
+    [HttpPut("subscription")]
+    public async Task<ActionResult<SubscriptionResponse>> ChangeSubscriptionPlan(
+        [FromBody] ChangeSubscriptionPlanRequest request,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var result = await _billingService.ChangeSubscriptionPlanAsync(userId, request.NewInterval, ct);
+        return Ok(result);
+    }
+
     // Get Stripe publishable key for frontend
     [HttpGet("config")]
     [AllowAnonymous]

@@ -92,15 +92,34 @@ public class StripeClient
         {
             Customer = customerId,
             Items = [new SubscriptionItemOptions { Price = priceId }],
-            PaymentBehavior = "default_incomplete",
             PaymentSettings = new SubscriptionPaymentSettingsOptions
             {
                 SaveDefaultPaymentMethod = "on_subscription"
-            },
-            Expand = ["latest_invoice.payment_intent"]
+            }
         };
 
         return await _subscriptionService.CreateAsync(options, cancellationToken: ct);
+    }
+
+    // Update subscription to a new price (for plan switching)
+    public async Task<Subscription> UpdateSubscriptionPriceAsync(
+        string subscriptionId,
+        string newPriceId,
+        CancellationToken ct = default)
+    {
+        var subscription = await _subscriptionService.GetAsync(subscriptionId, cancellationToken: ct);
+        var itemId = subscription.Items.Data.FirstOrDefault()?.Id;
+
+        if (string.IsNullOrEmpty(itemId))
+            throw new InvalidOperationException("Subscription has no items");
+
+        var options = new SubscriptionUpdateOptions
+        {
+            Items = [new SubscriptionItemOptions { Id = itemId, Price = newPriceId }],
+            ProrationBehavior = "create_prorations"
+        };
+
+        return await _subscriptionService.UpdateAsync(subscriptionId, options, cancellationToken: ct);
     }
 
     // Create a billing portal session for managing subscription

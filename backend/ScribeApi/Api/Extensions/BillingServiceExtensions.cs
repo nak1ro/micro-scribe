@@ -13,6 +13,9 @@ public static class BillingServiceExtensions
         // Register configuration
         services.Configure<StripeSettings>(configuration.GetSection(StripeSettings.SectionName));
 
+        // Register memory cache for webhook idempotency
+        services.AddMemoryCache();
+
         // Register services
         services.AddScoped<StripeClient>();
         services.AddScoped<StripeWebhookHandler>();

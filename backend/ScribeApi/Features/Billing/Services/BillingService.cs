@@ -147,4 +147,63 @@ public class BillingService : IBillingService
 
         return customer.Id;
     }
+
+    public async Task<bool> CancelSubscriptionAsync(string userId, bool cancelImmediately = false, CancellationToken ct = default)
+    {
+        var subscription = await _context.Subscriptions
+            .Where(s => s.UserId == userId && s.Status == SubscriptionStatus.Active)
+            .OrderByDescending(s => s.CreatedAtUtc)
+            .FirstOrDefaultAsync(ct);
+
+        if (subscription == null || string.IsNullOrEmpty(subscription.StripeSubscriptionId))
+        {
+            _logger.LogWarning("No active subscription found for user {UserId}", userId);
+            return false;
+        }
+
+        await _stripeClient.CancelSubscriptionAsync(subscription.StripeSubscriptionId, cancelImmediately, ct);
+
+        if (cancelImmediately)
+        {
+            subscription.Status = SubscriptionStatus.Canceled;
+            subscription.CanceledAtUtc = DateTime.UtcNow;
+
+            var user = await _context.Users.OfType<ApplicationUser>().FirstOrDefaultAsync(u => u.Id == userId, ct);
+            if (user != null) user.Plan = PlanType.Free;
+        }
+
+        await _context.SaveChangesAsync(ct);
+        _logger.LogInformation("Cancelled subscription {SubscriptionId} for user {UserId}, immediate: {Immediate}", 
+            subscription.StripeSubscriptionId, userId, cancelImmediately);
+
+        return true;
+    }
+
+    public async Task<SubscriptionResponse> ChangeSubscriptionPlanAsync(
+        string userId,
+        BillingInterval newInterval,
+        CancellationToken ct = default)
+    {
+        var subscription = await _context.Subscriptions
+            .Where(s => s.UserId == userId && s.Status == SubscriptionStatus.Active)
+            .OrderByDescending(s => s.CreatedAtUtc)
+            .FirstOrDefaultAsync(ct);
+
+        if (subscription == null || string.IsNullOrEmpty(subscription.StripeSubscriptionId))
+            throw new InvalidOperationException("No active subscription found");
+
+        var newPriceId = newInterval switch
+        {
+            BillingInterval.Yearly => _stripeSettings.ProAnnualPriceId,
+            _ => _stripeSettings.ProMonthlyPriceId
+        };
+
+        var updated = await _stripeClient.UpdateSubscriptionPriceAsync(
+            subscription.StripeSubscriptionId, newPriceId, ct);
+
+        _logger.LogInformation("Changed subscription {SubscriptionId} to {Interval} for user {UserId}",
+            subscription.StripeSubscriptionId, newInterval, userId);
+
+        return new SubscriptionResponse(updated.Id, updated.Status);
+    }
 }
