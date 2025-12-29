@@ -2,91 +2,111 @@
 trigger: manual
 ---
 
-# Stripe Billing Integration Guide
+Stripe Elements Integration Guide
+Overview
+This guide explains how to integrate Stripe Elements for in-app payment collection. The backend uses SetupIntent flow instead of Checkout Sessions.
 
-## Overview
-This guide details how to integrate the Scribe Pro subscription flow (Stripe) into the frontend. The backend supports two billing intervals: **Monthly** and **Yearly**.
+1. Get Stripe Config
+Fetch the publishable key on app init.
 
-## 1. Configuration
-Before making requests, fetch the Stripe Publishable Key.
+GET /api/billing/config
+{ "publishableKey": "pk_test_..." }
+2. Create SetupIntent
+When user opens the payment modal, create a SetupIntent.
 
-### `GET /api/billing/config`
-**Response:**
-```json
-{
-  "publishableKey": "pk_test_..."
+POST /api/billing/setup-intent
+Request:
+
+{ "interval": "Monthly" }
+Response:
+
+{ "clientSecret": "seti_..." }
+3. Render Payment Form
+Use the clientSecret with Stripe Elements:
+
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
+const stripePromise = loadStripe('pk_test_...');
+function CheckoutForm({ clientSecret, interval }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    const { setupIntent, error } = await stripe.confirmSetup({
+      elements,
+      confirmParams: { return_url: window.location.href },
+      redirect: 'if_required'
+    });
+    
+    if (error) {
+      console.error(error);
+      return;
+    }
+    
+    // Call backend to create subscription
+    await fetch('/api/billing/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        paymentMethodId: setupIntent.payment_method,
+        interval: interval
+      })
+    });
+  };
+  return (
+    <form onSubmit={handleSubmit}>
+      <PaymentElement />
+      <button type="submit">Subscribe</button>
+    </form>
+  );
 }
-```
-*Use this key to initialize `loadStripe`.*
-
----
-
-## 2. Starting Checkout
-When the user clicks "Subscribe", call this endpoint. You must specify the selected billing interval.
-
-### `POST /api/billing/checkout`
-**Request Body:**
-```json
-{
-  "interval": "Monthly", // or "Yearly"
-  "successUrl": "https://your-app.com/dashboard?checkout=success", // Optional override
-  "cancelUrl": "https://your-app.com/dashboard?checkout=canceled"  // Optional override
+function PaymentModal({ clientSecret, interval }) {
+  return (
+    <Elements stripe={stripePromise} options={{ clientSecret }}>
+      <CheckoutForm clientSecret={clientSecret} interval={interval} />
+    </Elements>
+  );
 }
-```
+4. Confirm Subscription
+After confirmSetup succeeds, create the subscription.
 
-**Response:**
-```json
+POST /api/billing/subscribe
+Request:
+
 {
-  "sessionId": "cs_test_...",
-  "url": "https://checkout.stripe.com/..."
+  "paymentMethodId": "pm_...",
+  "interval": "Yearly"
 }
-```
+Response:
 
-**Frontend Action:**
-Redirect the user to the `url` returned in the response.
-
----
-
-## 3. Managing Subscriptions
-For users who are already subscribed, provide a "Manage Subscription" button.
-
-### `POST /api/billing/portal`
-**Request Body:**
-```json
 {
-  "returnUrl": "https://your-app.com/dashboard" // User returns here after portal
+  "subscriptionId": "sub_...",
+  "status": "active"
 }
-```
+5. Manage Subscription
+Redirect to Stripe Billing Portal for cancellation/updates.
 
-**Response:**
-```json
+POST /api/billing/portal
+Query Params: ?returnUrl=https://yourapp.com/settings
+
+Response:
+
+{ "url": "https://billing.stripe.com/..." }
+6. Check Status
+Get current subscription state.
+
+GET /api/billing/subscription
 {
-  "url": "https://billing.stripe.com/..."
-}
-```
-
-**Frontend Action:**
-Redirect the user to the `url`.
-
----
-
-## 4. Checking Status
-To determine if a user has access to Pro features and what plan they are on.
-
-### `GET /api/billing/subscription`
-**Response:**
-```json
-{
-  "plan": 1, // 0 = Free, 1 = Pro
-  "status": 0, // 0 = Active, 1 = Canceled, etc.
-  "currentPeriodEnd": "2025-12-31T23:59:59Z",
+  "plan": 1,
+  "status": 0,
+  "currentPeriodEnd": "2025-01-28T00:00:00Z",
   "cancelAtPeriodEnd": false
 }
-```
-
-## UI Guidelines
-1.  **Toggle Switch**: Add a UI toggle for "Monthly ($10)" vs "Yearly ($100)".
-2.  **Visual Feedback**:
-    *   Show "Save 20%" (or similar) when Yearly is selected.
-    *   Update the price display dynamically based on the toggle.
-3.  **State Management**: Store the selected `interval` state (`Monthly` | `Yearly`) and pass it to the checkout API.
+Plan	Value
+Free	0
+Pro	1
+Status	Value
+Active	0
+Canceled	1
+PastDue	2

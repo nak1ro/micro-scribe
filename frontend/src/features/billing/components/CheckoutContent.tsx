@@ -1,9 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { ArrowLeft, CheckCircle, Sparks } from "iconoir-react";
-import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button, Spinner } from "@/components/ui";
 import { useBillingConfig, useSetupIntent } from "@/features/billing";
@@ -14,8 +13,34 @@ import type { BillingInterval } from "@/types/api/billing";
 
 // Checkout page content
 export function CheckoutContent() {
-    const router = useRouter();
     const [interval, setInterval] = React.useState<BillingInterval>("Monthly");
+    const pathname = usePathname();
+    const prevPathname = React.useRef(pathname);
+
+    // Force full page reload when navigating away from checkout to stop Stripe beacons
+    React.useEffect(() => {
+        const handleBeforeUnload = () => {
+            // This runs on actual page unload
+        };
+
+        // Intercept link clicks to force full reload
+        const handleClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const anchor = target.closest("a");
+            if (anchor && anchor.href && !anchor.href.includes("/account/checkout")) {
+                e.preventDefault();
+                window.location.href = anchor.href;
+            }
+        };
+
+        document.addEventListener("click", handleClick);
+        window.addEventListener("beforeunload", handleBeforeUnload);
+
+        return () => {
+            document.removeEventListener("click", handleClick);
+            window.removeEventListener("beforeunload", handleBeforeUnload);
+        };
+    }, []);
 
     const { data: config, isLoading: configLoading } = useBillingConfig();
     const setupIntentMutation = useSetupIntent();
@@ -42,13 +67,13 @@ export function CheckoutContent() {
             <div className="max-w-4xl mx-auto px-4 py-8">
                 {/* Header */}
                 <div className="mb-8">
-                    <Link
+                    <a
                         href="/account/billing"
                         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
                     >
                         <ArrowLeft className="h-4 w-4" />
                         Back to billing
-                    </Link>
+                    </a>
                     <h1 className="text-2xl font-bold text-foreground">Upgrade to Pro</h1>
                     <p className="text-muted-foreground mt-1">
                         Unlock unlimited transcriptions and premium features

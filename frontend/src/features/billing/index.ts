@@ -1,4 +1,2 @@
+// Only export hooks - Stripe components should be imported directly to avoid loading Stripe.js globally
 export * from "./hooks/useBilling";
-export { StripeProvider } from "./components/StripeProvider";
-export { CheckoutForm } from "./components/CheckoutForm";
-export { CheckoutContent } from "./components/CheckoutContent";

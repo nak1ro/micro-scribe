@@ -41,6 +41,25 @@ export function CheckoutForm({ interval }: CheckoutFormProps) {
         });
 
         if (error) {
+            // Handle case where SetupIntent already succeeded (user clicked twice)
+            if (error.code === "setup_intent_unexpected_state") {
+                // Try to get the payment method from the existing setupIntent
+                const paymentMethodId = (error as any).setup_intent?.payment_method;
+                if (paymentMethodId) {
+                    try {
+                        await subscribeMutation.mutateAsync({
+                            paymentMethodId,
+                            interval,
+                        });
+                        router.push("/dashboard?upgrade=success");
+                        return;
+                    } catch {
+                        setErrorMessage("Failed to create subscription. Please try again.");
+                        setIsProcessing(false);
+                        return;
+                    }
+                }
+            }
             setErrorMessage(error.message ?? "An error occurred");
             setIsProcessing(false);
             return;

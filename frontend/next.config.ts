@@ -12,8 +12,18 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Apply strict COEP to all routes except checkout (Stripe needs cross-origin)
-        source: "/((?!account/checkout).*)",
+        // Checkout and billing pages - no COEP for Stripe.js
+        source: "/account/:path*",
+        headers: [
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin-allow-popups",
+          },
+        ],
+      },
+      {
+        // Dashboard
+        source: "/dashboard/:path*",
         headers: [
           {
             key: "Cross-Origin-Opener-Policy",
@@ -26,12 +36,16 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // Relaxed policy for checkout page to allow Stripe.js
-        source: "/account/checkout",
+        // Transcriptions - strict COEP for FFmpeg
+        source: "/transcriptions/:path*",
         headers: [
           {
             key: "Cross-Origin-Opener-Policy",
-            value: "same-origin-allow-popups",
+            value: "same-origin",
+          },
+          {
+            key: "Cross-Origin-Embedder-Policy",
+            value: "require-corp",
           },
         ],
       },
