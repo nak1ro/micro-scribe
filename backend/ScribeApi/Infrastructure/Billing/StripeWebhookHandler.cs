@@ -80,7 +80,10 @@ public class StripeWebhookHandler
 
     private async Task HandleSubscriptionUpdatedAsync(Stripe.Event stripeEvent, CancellationToken ct)
     {
-        if (stripeEvent.Data.Object is not Stripe.Subscription stripeSub) return;
+        if (stripeEvent.Data.Object is not Stripe.Subscription eventSub) return;
+
+        // Fetch latest subscription from Stripe to ensure fresh state (events can arrive out of order)
+        var stripeSub = await _stripeClient.GetSubscriptionAsync(eventSub.Id, ct) ?? eventSub;
 
         var user = await FindUserByCustomerIdAsync(stripeSub.CustomerId, ct);
         if (user == null) return;

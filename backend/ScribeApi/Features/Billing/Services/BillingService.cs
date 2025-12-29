@@ -58,8 +58,11 @@ public class BillingService : IBillingService
             _ => _stripeSettings.ProMonthlyPriceId
         };
 
+        // Generate idempotency key to prevent duplicate subscriptions
+        var idempotencyKey = $"sub_{userId}_{DateTime.UtcNow:yyyyMMddHHmm}";
+
         // Create subscription with the actual customer ID
-        var subscription = await _stripeClient.CreateSubscriptionAsync(actualCustomerId, priceId, ct);
+        var subscription = await _stripeClient.CreateSubscriptionAsync(actualCustomerId, priceId, idempotencyKey, ct);
 
         _logger.LogInformation("Created subscription {SubscriptionId} for user {UserId}", subscription.Id, userId);
 

@@ -86,6 +86,7 @@ public class StripeClient
     public async Task<Subscription> CreateSubscriptionAsync(
         string customerId,
         string priceId,
+        string? idempotencyKey = null,
         CancellationToken ct = default)
     {
         var options = new SubscriptionCreateOptions
@@ -95,10 +96,17 @@ public class StripeClient
             PaymentSettings = new SubscriptionPaymentSettingsOptions
             {
                 SaveDefaultPaymentMethod = "on_subscription"
-            }
+            },
+            Expand = ["latest_invoice.payment_intent"]
         };
 
-        return await _subscriptionService.CreateAsync(options, cancellationToken: ct);
+        var requestOptions = new RequestOptions();
+        if (!string.IsNullOrEmpty(idempotencyKey))
+        {
+            requestOptions.IdempotencyKey = idempotencyKey;
+        }
+
+        return await _subscriptionService.CreateAsync(options, requestOptions, ct);
     }
 
     // Update subscription to a new price (for plan switching)
