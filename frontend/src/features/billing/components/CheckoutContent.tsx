@@ -44,9 +44,15 @@ export function CheckoutContent() {
 
     const { data: config, isLoading: configLoading } = useBillingConfig();
     const setupIntentMutation = useSetupIntent();
+    const lastCalledInterval = React.useRef<BillingInterval | null>(null);
 
-    // Create SetupIntent when interval changes
+    // Create SetupIntent when interval changes (with guard against Strict Mode double-call)
     React.useEffect(() => {
+        // Skip if already called with this interval
+        if (lastCalledInterval.current === interval) {
+            return;
+        }
+        lastCalledInterval.current = interval;
         setupIntentMutation.mutate({ interval });
     }, [interval]);
 

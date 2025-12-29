@@ -48,8 +48,8 @@ public class BillingService : IBillingService
     {
         var customerId = await EnsureStripeCustomerAsync(userId, ct);
 
-        // Attach payment method to customer
-        await _stripeClient.AttachPaymentMethodAsync(customerId, request.PaymentMethodId, ct);
+        // Attach payment method - returns actual customer ID (may differ if PM was already attached)
+        var actualCustomerId = await _stripeClient.AttachPaymentMethodAsync(customerId, request.PaymentMethodId, ct);
 
         // Select price based on interval
         var priceId = request.Interval switch
@@ -58,8 +58,8 @@ public class BillingService : IBillingService
             _ => _stripeSettings.ProMonthlyPriceId
         };
 
-        // Create subscription
-        var subscription = await _stripeClient.CreateSubscriptionAsync(customerId, priceId, ct);
+        // Create subscription with the actual customer ID
+        var subscription = await _stripeClient.CreateSubscriptionAsync(actualCustomerId, priceId, ct);
 
         _logger.LogInformation("Created subscription {SubscriptionId} for user {UserId}", subscription.Id, userId);
 
@@ -132,17 +132,16 @@ public class BillingService : IBillingService
             .FirstOrDefaultAsync(u => u.Id == userId, ct)
             ?? throw new InvalidOperationException($"User {userId} not found");
 
-        var existingSubscription = await _context.Subscriptions
-            .Where(s => s.UserId == userId && !string.IsNullOrEmpty(s.StripeCustomerId))
-            .OrderByDescending(s => s.CreatedAtUtc)
-            .FirstOrDefaultAsync(ct);
-
-        if (existingSubscription != null)
+        // If user already has a Stripe customer ID, return it
+        if (!string.IsNullOrEmpty(user.StripeCustomerId))
         {
-            return existingSubscription.StripeCustomerId;
+            return user.StripeCustomerId;
         }
 
+        // Create new Stripe customer and save to user
         var customer = await _stripeClient.CreateCustomerAsync(user.Email!, user.UserName, ct);
+        user.StripeCustomerId = customer.Id;
+        await _context.SaveChangesAsync(ct);
 
         _logger.LogInformation("Created Stripe customer {CustomerId} for user {UserId}", customer.Id, userId);
 

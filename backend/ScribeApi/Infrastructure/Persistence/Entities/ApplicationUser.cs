@@ -19,6 +19,9 @@ public class ApplicationUser : IdentityUser
     // Soft delete flag
     public bool IsDeleted { get; set; }
 
+    // Stripe customer ID for billing
+    public string? StripeCustomerId { get; set; }
+
 
     // Token for password reset flow
     public string? PasswordResetToken { get; set; }

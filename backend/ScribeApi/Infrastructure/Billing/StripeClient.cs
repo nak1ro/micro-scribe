@@ -49,29 +49,37 @@ public class StripeClient
         return await _setupIntentService.CreateAsync(options, cancellationToken: ct);
     }
 
-    // Attach a payment method to a customer and set as default (idempotent)
-    public async Task AttachPaymentMethodAsync(string customerId, string paymentMethodId, CancellationToken ct = default)
+    // Attach a payment method to a customer and set as default. Returns the actual customer ID.
+    public async Task<string> AttachPaymentMethodAsync(string customerId, string paymentMethodId, CancellationToken ct = default)
     {
-        // Check if payment method is already attached to this customer
+        // Check if payment method is already attached to a customer
         var paymentMethod = await _paymentMethodService.GetAsync(paymentMethodId, cancellationToken: ct);
+        var actualCustomerId = customerId;
 
-        if (paymentMethod.Customer?.Id != customerId)
+        if (paymentMethod.Customer != null)
         {
-            // Only attach if not already attached to this customer
+            // Payment method is already attached - use that customer
+            actualCustomerId = paymentMethod.Customer.Id;
+        }
+        else
+        {
+            // Attach to the provided customer
             await _paymentMethodService.AttachAsync(paymentMethodId, new PaymentMethodAttachOptions
             {
                 Customer = customerId
             }, cancellationToken: ct);
         }
 
-        // Always set as default payment method
-        await _customerService.UpdateAsync(customerId, new CustomerUpdateOptions
+        // Set as default payment method
+        await _customerService.UpdateAsync(actualCustomerId, new CustomerUpdateOptions
         {
             InvoiceSettings = new CustomerInvoiceSettingsOptions
             {
                 DefaultPaymentMethod = paymentMethodId
             }
         }, cancellationToken: ct);
+
+        return actualCustomerId;
     }
 
     // Create a subscription for a customer with a specific price
