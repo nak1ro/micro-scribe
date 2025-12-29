@@ -59,5 +59,7 @@ export const API_ENDPOINTS = {
         SUBSCRIBE: '/billing/subscribe',
         PORTAL: '/billing/portal',
         SUBSCRIPTION: '/billing/subscription',
+        CHANGE_PLAN: '/billing/subscription',
+        CANCEL: '/billing/subscription',
     },
 } as const;

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { billingApi } from "@/services/billing";
-import type { SetupIntentRequest, SubscribeRequest, PortalRequest } from "@/types/api/billing";
+import type { SetupIntentRequest, SubscribeRequest, PortalRequest, ChangePlanRequest } from "@/types/api/billing";
 
 export const useBillingConfig = () => {
     return useQuery({
@@ -40,6 +40,26 @@ export const useCustomerPortal = () => {
             if (data.url) {
                 window.location.href = data.url;
             }
+        },
+    });
+};
+
+export const useChangePlan = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (payload: ChangePlanRequest) => billingApi.changePlan(payload),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["billing", "subscription"] });
+        },
+    });
+};
+
+export const useCancelSubscription = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (cancelImmediately?: boolean) => billingApi.cancelSubscription(cancelImmediately),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["billing", "subscription"] });
         },
     });
 };

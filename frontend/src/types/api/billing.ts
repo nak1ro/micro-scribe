@@ -34,16 +34,8 @@ export interface PortalResponse {
 }
 
 // Subscription status
-export enum SubscriptionPlan {
-    Free = 0,
-    Pro = 1
-}
-
-export enum SubscriptionStatus {
-    Active = 0,
-    Canceled = 1,
-    PastDue = 2
-}
+export type SubscriptionPlan = "Free" | "Pro";
+export type SubscriptionStatus = "Active" | "Canceled" | "PastDue" | "Incomplete";
 
 export interface SubscriptionStatusResponse {
     plan: SubscriptionPlan;
@@ -51,3 +43,19 @@ export interface SubscriptionStatusResponse {
     currentPeriodEnd: string;
     cancelAtPeriodEnd: boolean;
 }
+
+// Change plan interval
+export interface ChangePlanRequest {
+    newInterval: BillingInterval;
+}
+
+export interface ChangePlanResponse {
+    subscriptionId: string;
+    status: string;
+}
+
+// Cancel subscription
+export interface CancelSubscriptionResponse {
+    message: string;
+}
+

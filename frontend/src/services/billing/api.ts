@@ -7,7 +7,10 @@ import type {
     SubscribeResponse,
     PortalRequest,
     PortalResponse,
-    SubscriptionStatusResponse
+    SubscriptionStatusResponse,
+    ChangePlanRequest,
+    ChangePlanResponse,
+    CancelSubscriptionResponse
 } from "@/types/api/billing";
 
 export const billingApi = {
@@ -39,6 +42,21 @@ export const billingApi = {
 
     getSubscriptionStatus: async (): Promise<SubscriptionStatusResponse> => {
         const response = await apiClient.get<SubscriptionStatusResponse>(API_ENDPOINTS.BILLING.SUBSCRIPTION);
+        return response.data;
+    },
+
+    changePlan: async (payload: ChangePlanRequest): Promise<ChangePlanResponse> => {
+        const response = await apiClient.put<ChangePlanResponse>(
+            API_ENDPOINTS.BILLING.CHANGE_PLAN,
+            payload
+        );
+        return response.data;
+    },
+
+    cancelSubscription: async (cancelImmediately = false): Promise<CancelSubscriptionResponse> => {
+        const response = await apiClient.delete<CancelSubscriptionResponse>(
+            `${API_ENDPOINTS.BILLING.CANCEL}?cancelImmediately=${cancelImmediately}`
+        );
         return response.data;
     }
 };

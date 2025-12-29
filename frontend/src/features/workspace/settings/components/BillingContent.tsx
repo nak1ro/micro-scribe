@@ -2,8 +2,12 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { useSubscriptionStatus, useCustomerPortal } from "@/features/billing";
-import { SubscriptionPlan, SubscriptionStatus } from "@/types/api/billing";
+import {
+    useSubscriptionStatus,
+    useCustomerPortal,
+    useChangePlan,
+    useCancelSubscription
+} from "@/features/billing";
 import { billingCopy } from "../data";
 import { CurrentPlanSection } from "./CurrentPlanSection";
 import { SavingsCallout } from "./SavingsCallout";
@@ -16,9 +20,12 @@ export function BillingContent() {
     const router = useRouter();
     const { data: subscription, isLoading } = useSubscriptionStatus();
     const portalMutation = useCustomerPortal();
+    const changePlanMutation = useChangePlan();
+    const cancelMutation = useCancelSubscription();
 
-    const isPro = subscription?.plan === SubscriptionPlan.Pro;
-    const isActive = subscription?.status === SubscriptionStatus.Active;
+    const isPro = subscription?.plan === "Pro";
+    const isActive = subscription?.status === "Active";
+    const isCanceling = subscription?.cancelAtPeriodEnd === true;
 
     // Determine billing cycle from subscription end date
     const nextBillingDate = subscription?.currentPeriodEnd
@@ -30,12 +37,14 @@ export function BillingContent() {
     };
 
     const handleSwitchToAnnual = () => {
-        // Open Stripe portal for billing changes
-        portalMutation.mutate({ returnUrl: window.location.href });
+        changePlanMutation.mutate({ newInterval: "Yearly" });
     };
 
     const handleCancel = () => {
-        // Open Stripe portal for cancellation
+        cancelMutation.mutate(false);
+    };
+
+    const handleManagePayment = () => {
         portalMutation.mutate({ returnUrl: window.location.href });
     };
 
@@ -63,21 +72,48 @@ export function BillingContent() {
             <CurrentPlanSection
                 planType={isPro ? "Pro" : "Free"}
                 nextBillingDate={nextBillingDate}
-                cancelAtPeriodEnd={subscription?.cancelAtPeriodEnd}
+                cancelAtPeriodEnd={isCanceling}
                 onUpgrade={handleUpgrade}
+                onManagePayment={handleManagePayment}
+                isManaging={portalMutation.isPending}
             />
 
-            {/* Savings callout (only for Pro users) */}
+            {/* Savings callout (only for Pro users on monthly) */}
             <SavingsCallout
-                isVisible={isPro && isActive}
+                isVisible={isPro && isActive && !isCanceling}
                 onSwitchToAnnual={handleSwitchToAnnual}
+                isLoading={changePlanMutation.isPending}
             />
 
             {/* Locked features upsell (Free users only) */}
             {!isPro && <LockedFeatures onUpgrade={handleUpgrade} />}
 
             {/* Cancel subscription (Pro users only) */}
-            {isPro && isActive && <CancelSubscriptionSection onCancel={handleCancel} />}
+            {isPro && isActive && !isCanceling && (
+                <CancelSubscriptionSection
+                    onCancel={handleCancel}
+                    isLoading={cancelMutation.isPending}
+                />
+            )}
+
+            {/* Show canceling status */}
+            {isCanceling && (
+                <div className="rounded-xl border border-warning/30 bg-warning/5 p-6">
+                    <h3 className="text-lg font-semibold text-foreground">
+                        Subscription Ending
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        Your subscription will end on {nextBillingDate?.toLocaleDateString()}.
+                        You can reactivate anytime before this date.
+                    </p>
+                    <button
+                        onClick={handleManagePayment}
+                        className="mt-3 text-sm font-medium text-primary hover:underline"
+                    >
+                        Reactivate Subscription →
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

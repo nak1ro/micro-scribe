@@ -8,10 +8,11 @@ import { billingCopy } from "../data";
 
 interface CancelSubscriptionSectionProps {
     onCancel: () => void;
+    isLoading?: boolean;
 }
 
 // Danger zone section for subscription cancellation
-export function CancelSubscriptionSection({ onCancel }: CancelSubscriptionSectionProps) {
+export function CancelSubscriptionSection({ onCancel, isLoading }: CancelSubscriptionSectionProps) {
     const [showConfirm, setShowConfirm] = React.useState(false);
 
     const handleCancel = () => {
@@ -43,13 +44,15 @@ export function CancelSubscriptionSection({ onCancel }: CancelSubscriptionSectio
                                 variant="destructive"
                                 size="sm"
                                 onClick={handleCancel}
+                                disabled={isLoading}
                             >
-                                Yes, Cancel Subscription
+                                {isLoading ? "Canceling..." : "Yes, Cancel Subscription"}
                             </Button>
                             <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setShowConfirm(false)}
+                                disabled={isLoading}
                             >
                                 Keep Subscription
                             </Button>
