@@ -1,8 +1,10 @@
 import { apiClient, API_ENDPOINTS } from "@/services/api";
 import type {
     BillingConfig,
-    CheckoutRequest,
-    CheckoutResponse,
+    SetupIntentRequest,
+    SetupIntentResponse,
+    SubscribeRequest,
+    SubscribeResponse,
     PortalRequest,
     PortalResponse,
     SubscriptionStatusResponse
@@ -14,8 +16,19 @@ export const billingApi = {
         return response.data;
     },
 
-    createCheckoutSession: async (payload: CheckoutRequest): Promise<CheckoutResponse> => {
-        const response = await apiClient.post<CheckoutResponse>(API_ENDPOINTS.BILLING.CHECKOUT, payload);
+    createSetupIntent: async (payload: SetupIntentRequest): Promise<SetupIntentResponse> => {
+        const response = await apiClient.post<SetupIntentResponse>(
+            API_ENDPOINTS.BILLING.SETUP_INTENT,
+            payload
+        );
+        return response.data;
+    },
+
+    subscribe: async (payload: SubscribeRequest): Promise<SubscribeResponse> => {
+        const response = await apiClient.post<SubscribeResponse>(
+            API_ENDPOINTS.BILLING.SUBSCRIBE,
+            payload
+        );
         return response.data;
     },
 

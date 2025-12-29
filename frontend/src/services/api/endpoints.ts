@@ -55,7 +55,8 @@ export const API_ENDPOINTS = {
     },
     BILLING: {
         CONFIG: '/billing/config',
-        CHECKOUT: '/billing/checkout',
+        SETUP_INTENT: '/billing/setup-intent',
+        SUBSCRIBE: '/billing/subscribe',
         PORTAL: '/billing/portal',
         SUBSCRIPTION: '/billing/subscription',
     },

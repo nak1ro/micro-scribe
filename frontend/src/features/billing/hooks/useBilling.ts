@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { billingApi } from "@/services/billing";
-import type { CheckoutRequest, PortalRequest } from "@/types/api/billing";
+import type { SetupIntentRequest, SubscribeRequest, PortalRequest } from "@/types/api/billing";
 
 export const useBillingConfig = () => {
     return useQuery({
@@ -17,13 +17,18 @@ export const useSubscriptionStatus = () => {
     });
 };
 
-export const useCheckout = () => {
+export const useSetupIntent = () => {
     return useMutation({
-        mutationFn: (payload: CheckoutRequest) => billingApi.createCheckoutSession(payload),
-        onSuccess: (data) => {
-            if (data.url) {
-                window.location.href = data.url;
-            }
+        mutationFn: (payload: SetupIntentRequest) => billingApi.createSetupIntent(payload),
+    });
+};
+
+export const useSubscribe = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (payload: SubscribeRequest) => billingApi.subscribe(payload),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["billing", "subscription"] });
         },
     });
 };

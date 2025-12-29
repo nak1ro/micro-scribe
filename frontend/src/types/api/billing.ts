@@ -4,17 +4,27 @@ export interface BillingConfig {
 
 export type BillingInterval = 'Monthly' | 'Yearly';
 
-export interface CheckoutRequest {
+// SetupIntent for Stripe Elements
+export interface SetupIntentRequest {
     interval: BillingInterval;
-    successUrl?: string;
-    cancelUrl?: string;
 }
 
-export interface CheckoutResponse {
-    sessionId: string;
-    url: string;
+export interface SetupIntentResponse {
+    clientSecret: string;
 }
 
+// Subscribe after payment method confirmed
+export interface SubscribeRequest {
+    paymentMethodId: string;
+    interval: BillingInterval;
+}
+
+export interface SubscribeResponse {
+    subscriptionId: string;
+    status: string;
+}
+
+// Portal session
 export interface PortalRequest {
     returnUrl: string;
 }
@@ -23,6 +33,7 @@ export interface PortalResponse {
     url: string;
 }
 
+// Subscription status
 export enum SubscriptionPlan {
     Free = 0,
     Pro = 1
@@ -31,11 +42,7 @@ export enum SubscriptionPlan {
 export enum SubscriptionStatus {
     Active = 0,
     Canceled = 1,
-    Incomplete = 2,
-    IncompleteExpired = 3,
-    PastDue = 4,
-    Trialing = 5,
-    Unpaid = 6
+    PastDue = 2
 }
 
 export interface SubscriptionStatusResponse {
