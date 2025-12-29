@@ -53,4 +53,10 @@ export const API_ENDPOINTS = {
         REMOVE_ITEMS: (id: string) => `/folders/${id}/items`,
         LIST_ITEMS: (id: string) => `/folders/${id}/items`,
     },
+    BILLING: {
+        CONFIG: '/billing/config',
+        CHECKOUT: '/billing/checkout',
+        PORTAL: '/billing/portal',
+        SUBSCRIPTION: '/billing/subscription',
+    },
 } as const;

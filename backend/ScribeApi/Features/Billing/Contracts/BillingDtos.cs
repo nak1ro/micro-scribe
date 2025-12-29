@@ -8,15 +8,17 @@ public enum BillingInterval
     Yearly
 }
 
-// Request to create a checkout session
-public record CreateCheckoutSessionRequest(
-    BillingInterval Interval = BillingInterval.Monthly,
-    string? SuccessUrl = null,
-    string? CancelUrl = null
-);
+// Request to create a SetupIntent for collecting payment method
+public record CreateSetupIntentRequest(BillingInterval Interval = BillingInterval.Monthly);
 
-// Response with checkout session URL
-public record CheckoutSessionResponse(string SessionId, string Url);
+// Response with SetupIntent client secret for frontend
+public record SetupIntentResponse(string ClientSecret);
+
+// Request to confirm subscription after payment method collected
+public record ConfirmSubscriptionRequest(string PaymentMethodId, BillingInterval Interval = BillingInterval.Monthly);
+
+// Response after subscription created
+public record SubscriptionResponse(string SubscriptionId, string Status);
 
 // Response with billing portal URL
 public record PortalSessionResponse(string Url);

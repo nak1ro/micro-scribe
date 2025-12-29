@@ -3,10 +3,16 @@ namespace ScribeApi.Features.Billing.Contracts;
 // Service interface for billing operations
 public interface IBillingService
 {
-    // Create a checkout session for upgrading to Pro
-    Task<CheckoutSessionResponse> CreateCheckoutSessionAsync(
+    // Create a SetupIntent for collecting payment method via Elements
+    Task<SetupIntentResponse> CreateSetupIntentAsync(
         string userId,
-        CreateCheckoutSessionRequest request,
+        CreateSetupIntentRequest request,
+        CancellationToken ct = default);
+
+    // Confirm subscription after payment method collected
+    Task<SubscriptionResponse> ConfirmSubscriptionAsync(
+        string userId,
+        ConfirmSubscriptionRequest request,
         CancellationToken ct = default);
 
     // Create a billing portal session for subscription management

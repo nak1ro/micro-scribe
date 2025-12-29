@@ -27,16 +27,29 @@ public class BillingController : ControllerBase
         _webhookHandler = webhookHandler;
     }
 
-    // Create a checkout session for upgrading to Pro
-    [HttpPost("checkout")]
-    public async Task<ActionResult<CheckoutSessionResponse>> CreateCheckoutSession(
-        [FromBody] CreateCheckoutSessionRequest request,
+    // Create a SetupIntent for collecting payment method via Elements
+    [HttpPost("setup-intent")]
+    public async Task<ActionResult<SetupIntentResponse>> CreateSetupIntent(
+        [FromBody] CreateSetupIntentRequest request,
         CancellationToken ct)
     {
         var userId = User.GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        var result = await _billingService.CreateCheckoutSessionAsync(userId, request, ct);
+        var result = await _billingService.CreateSetupIntentAsync(userId, request, ct);
+        return Ok(result);
+    }
+
+    // Confirm subscription after payment method collected
+    [HttpPost("subscribe")]
+    public async Task<ActionResult<SubscriptionResponse>> ConfirmSubscription(
+        [FromBody] ConfirmSubscriptionRequest request,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var result = await _billingService.ConfirmSubscriptionAsync(userId, request, ct);
         return Ok(result);
     }
 

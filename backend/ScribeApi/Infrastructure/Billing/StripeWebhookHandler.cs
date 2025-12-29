@@ -44,9 +44,6 @@ public class StripeWebhookHandler
 
         switch (stripeEvent.Type)
         {
-            case "checkout.session.completed":
-                await HandleCheckoutSessionCompletedAsync(stripeEvent, ct);
-                break;
             case "customer.subscription.created":
             case "customer.subscription.updated":
                 await HandleSubscriptionUpdatedAsync(stripeEvent, ct);
@@ -64,27 +61,6 @@ public class StripeWebhookHandler
                 _logger.LogDebug("Unhandled event type: {EventType}", stripeEvent.Type);
                 break;
         }
-    }
-
-    private async Task HandleCheckoutSessionCompletedAsync(Stripe.Event stripeEvent, CancellationToken ct)
-    {
-        var session = stripeEvent.Data.Object as Stripe.Checkout.Session;
-        if (session == null) return;
-
-        _logger.LogInformation("Checkout completed for customer {CustomerId}", session.CustomerId);
-
-        var user = await FindUserByCustomerIdAsync(session.CustomerId, ct);
-
-        if (user == null)
-        {
-            _logger.LogWarning("No user found for Stripe customer {CustomerId}", session.CustomerId);
-            return;
-        }
-
-        user.Plan = PlanType.Pro;
-        await _context.SaveChangesAsync(ct);
-
-        _logger.LogInformation("User {UserId} upgraded to Pro via checkout", user.Id);
     }
 
     private async Task HandleSubscriptionUpdatedAsync(Stripe.Event stripeEvent, CancellationToken ct)

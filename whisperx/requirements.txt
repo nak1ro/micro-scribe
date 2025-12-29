@@ -1,9 +1,7 @@
-# Core dependencies
-
 whisperx
-pyannote.audio==3.4.0
+pyannote.audio
 fastapi
-uvicorn
+uvicorn[standard]
 python-multipart
 requests
 python-dotenv

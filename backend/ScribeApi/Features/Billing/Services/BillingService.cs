@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using ScribeApi.Features.Billing.Contracts;
 using Microsoft.Extensions.Options;
 using ScribeApi.Core.Configuration;
+using ScribeApi.Features.Billing.Contracts;
 using ScribeApi.Infrastructure.Billing;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
@@ -28,29 +28,42 @@ public class BillingService : IBillingService
         _logger = logger;
     }
 
-    public async Task<CheckoutSessionResponse> CreateCheckoutSessionAsync(
+    public async Task<SetupIntentResponse> CreateSetupIntentAsync(
         string userId,
-        CreateCheckoutSessionRequest request,
+        CreateSetupIntentRequest request,
+        CancellationToken ct = default)
+    {
+        var customerId = await EnsureStripeCustomerAsync(userId, ct);
+        var setupIntent = await _stripeClient.CreateSetupIntentAsync(customerId, ct);
+
+        _logger.LogInformation("Created SetupIntent {SetupIntentId} for user {UserId}", setupIntent.Id, userId);
+
+        return new SetupIntentResponse(setupIntent.ClientSecret);
+    }
+
+    public async Task<SubscriptionResponse> ConfirmSubscriptionAsync(
+        string userId,
+        ConfirmSubscriptionRequest request,
         CancellationToken ct = default)
     {
         var customerId = await EnsureStripeCustomerAsync(userId, ct);
 
+        // Attach payment method to customer
+        await _stripeClient.AttachPaymentMethodAsync(customerId, request.PaymentMethodId, ct);
+
+        // Select price based on interval
         var priceId = request.Interval switch
         {
             BillingInterval.Yearly => _stripeSettings.ProAnnualPriceId,
             _ => _stripeSettings.ProMonthlyPriceId
         };
 
-        var session = await _stripeClient.CreateCheckoutSessionAsync(
-            customerId,
-            priceId,
-            request.SuccessUrl,
-            request.CancelUrl,
-            ct);
+        // Create subscription
+        var subscription = await _stripeClient.CreateSubscriptionAsync(customerId, priceId, ct);
 
-        _logger.LogInformation("Created checkout session {SessionId} for user {UserId}", session.Id, userId);
+        _logger.LogInformation("Created subscription {SubscriptionId} for user {UserId}", subscription.Id, userId);
 
-        return new CheckoutSessionResponse(session.Id, session.Url);
+        return new SubscriptionResponse(subscription.Id, subscription.Status);
     }
 
     public async Task<PortalSessionResponse> CreatePortalSessionAsync(
@@ -59,7 +72,6 @@ public class BillingService : IBillingService
         CancellationToken ct = default)
     {
         var customerId = await EnsureStripeCustomerAsync(userId, ct);
-
         var session = await _stripeClient.CreatePortalSessionAsync(customerId, returnUrl, ct);
 
         _logger.LogInformation("Created portal session for user {UserId}", userId);
@@ -84,7 +96,6 @@ public class BillingService : IBillingService
                 false);
         }
 
-        // Get active subscription from DB
         var subscription = await _context.Subscriptions
             .Where(s => s.UserId == userId)
             .OrderByDescending(s => s.CreatedAtUtc)
@@ -99,18 +110,13 @@ public class BillingService : IBillingService
                 false);
         }
 
-        // Check if cancel at period end from Stripe
         var cancelAtPeriodEnd = false;
-        
-        if (string.IsNullOrEmpty(subscription.StripeSubscriptionId))
-            return new SubscriptionStatusDto(
-                user.Plan,
-                subscription.Status,
-                subscription.CurrentPeriodEndUtc,
-                cancelAtPeriodEnd);
-        
-        var stripeSubscription = await _stripeClient.GetSubscriptionAsync(subscription.StripeSubscriptionId, ct);
-        cancelAtPeriodEnd = stripeSubscription?.CancelAtPeriodEnd ?? false;
+
+        if (!string.IsNullOrEmpty(subscription.StripeSubscriptionId))
+        {
+            var stripeSubscription = await _stripeClient.GetSubscriptionAsync(subscription.StripeSubscriptionId, ct);
+            cancelAtPeriodEnd = stripeSubscription?.CancelAtPeriodEnd ?? false;
+        }
 
         return new SubscriptionStatusDto(
             user.Plan,
@@ -126,7 +132,6 @@ public class BillingService : IBillingService
             .FirstOrDefaultAsync(u => u.Id == userId, ct)
             ?? throw new InvalidOperationException($"User {userId} not found");
 
-        // Check if user already has a subscription with StripeCustomerId
         var existingSubscription = await _context.Subscriptions
             .Where(s => s.UserId == userId && !string.IsNullOrEmpty(s.StripeCustomerId))
             .OrderByDescending(s => s.CreatedAtUtc)
@@ -137,7 +142,6 @@ public class BillingService : IBillingService
             return existingSubscription.StripeCustomerId;
         }
 
-        // Create new Stripe customer
         var customer = await _stripeClient.CreateCustomerAsync(user.Email!, user.UserName, ct);
 
         _logger.LogInformation("Created Stripe customer {CustomerId} for user {UserId}", customer.Id, userId);
