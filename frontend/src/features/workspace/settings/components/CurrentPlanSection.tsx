@@ -7,16 +7,16 @@ import { planDisplayData, billingCopy } from "../data";
 
 interface CurrentPlanSectionProps {
     planType: "Free" | "Pro";
-    billingCycle?: "monthly" | "annual";
     nextBillingDate?: Date;
+    cancelAtPeriodEnd?: boolean;
     onUpgrade: () => void;
 }
 
 // Displays current plan status with billing details
 export function CurrentPlanSection({
     planType,
-    billingCycle,
     nextBillingDate,
+    cancelAtPeriodEnd,
     onUpgrade,
 }: CurrentPlanSectionProps) {
     const plan = planDisplayData[planType];
@@ -40,18 +40,16 @@ export function CurrentPlanSection({
                         >
                             {billingCopy.currentPlanLabel}
                         </span>
+                        {cancelAtPeriodEnd && (
+                            <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-destructive/10 text-destructive">
+                                Canceling
+                            </span>
+                        )}
                     </div>
-
-                    {isPro && billingCycle && (
-                        <p className="text-sm text-muted-foreground">
-                            {billingCopy.billingCycleLabel}:{" "}
-                            <span className="capitalize">{billingCycle}</span>
-                        </p>
-                    )}
 
                     {isPro && nextBillingDate && (
                         <p className="text-sm text-muted-foreground">
-                            {billingCopy.nextBillingLabel}:{" "}
+                            {cancelAtPeriodEnd ? "Access until" : billingCopy.nextBillingLabel}:{" "}
                             {nextBillingDate.toLocaleDateString()}
                         </p>
                     )}

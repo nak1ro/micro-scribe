@@ -49,14 +49,22 @@ public class StripeClient
         return await _setupIntentService.CreateAsync(options, cancellationToken: ct);
     }
 
-    // Attach a payment method to a customer and set as default
+    // Attach a payment method to a customer and set as default (idempotent)
     public async Task AttachPaymentMethodAsync(string customerId, string paymentMethodId, CancellationToken ct = default)
     {
-        await _paymentMethodService.AttachAsync(paymentMethodId, new PaymentMethodAttachOptions
-        {
-            Customer = customerId
-        }, cancellationToken: ct);
+        // Check if payment method is already attached to this customer
+        var paymentMethod = await _paymentMethodService.GetAsync(paymentMethodId, cancellationToken: ct);
 
+        if (paymentMethod.Customer?.Id != customerId)
+        {
+            // Only attach if not already attached to this customer
+            await _paymentMethodService.AttachAsync(paymentMethodId, new PaymentMethodAttachOptions
+            {
+                Customer = customerId
+            }, cancellationToken: ct);
+        }
+
+        // Always set as default payment method
         await _customerService.UpdateAsync(customerId, new CustomerUpdateOptions
         {
             InvoiceSettings = new CustomerInvoiceSettingsOptions

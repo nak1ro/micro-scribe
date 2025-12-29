@@ -216,7 +216,7 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
 
 function UpgradeCard() {
     return (
-        <Link href="/dashboard/subscription">
+        <Link href="/account/checkout">
             <div
                 className={cn(
                     "relative overflow-hidden rounded-xl p-4",
@@ -287,7 +287,7 @@ function UsageIndicator({ used, limit, isCollapsed }: UsageIndicatorProps) {
         return (
             <div className="flex items-center justify-center">
                 <Link
-                    href="/dashboard/subscription"
+                    href="/account/checkout"
                     className="w-10 h-10 flex items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                     title="Go Premium"
                 >

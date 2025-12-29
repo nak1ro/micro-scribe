@@ -1,41 +1,51 @@
 "use client";
 
 import * as React from "react";
-import { useUsage } from "@/hooks/useUsage";
-import { PlanType } from "@/types/api/usage";
+import { useRouter } from "next/navigation";
+import { useSubscriptionStatus, useCustomerPortal } from "@/features/billing";
+import { SubscriptionPlan, SubscriptionStatus } from "@/types/api/billing";
 import { billingCopy } from "../data";
 import { CurrentPlanSection } from "./CurrentPlanSection";
 import { SavingsCallout } from "./SavingsCallout";
 import { LockedFeatures } from "./LockedFeatures";
 import { CancelSubscriptionSection } from "./CancelSubscriptionSection";
+import { Spinner } from "@/components/ui";
 
 // Main billing page content orchestrating all billing components
 export function BillingContent() {
-    const { data: usage } = useUsage();
+    const router = useRouter();
+    const { data: subscription, isLoading } = useSubscriptionStatus();
+    const portalMutation = useCustomerPortal();
 
-    // Map backend PlanType to local type
-    const planType = usage?.planType === PlanType.Pro ? "Pro" : "Free";
-    const isPro = planType === "Pro";
+    const isPro = subscription?.plan === SubscriptionPlan.Pro;
+    const isActive = subscription?.status === SubscriptionStatus.Active;
 
-    // Mock billing cycle (would come from backend in real implementation)
-    const billingCycle: "monthly" | "annual" = "monthly";
-    const nextBillingDate = isPro ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : undefined;
+    // Determine billing cycle from subscription end date
+    const nextBillingDate = subscription?.currentPeriodEnd
+        ? new Date(subscription.currentPeriodEnd)
+        : undefined;
 
-    // Action handlers (placeholders for Stripe integration)
     const handleUpgrade = () => {
-        console.log("Redirecting to Stripe Checkout...");
-        // TODO: Integrate with Stripe Checkout
+        router.push("/account/checkout");
     };
 
     const handleSwitchToAnnual = () => {
-        console.log("Redirecting to Stripe for billing change...");
-        // TODO: Integrate with Stripe billing portal
+        // Open Stripe portal for billing changes
+        portalMutation.mutate({ returnUrl: window.location.href });
     };
 
     const handleCancel = () => {
-        console.log("Processing cancellation...");
-        // TODO: Integrate with backend cancellation endpoint
+        // Open Stripe portal for cancellation
+        portalMutation.mutate({ returnUrl: window.location.href });
     };
+
+    if (isLoading) {
+        return (
+            <div className="max-w-3xl mx-auto px-4 py-8 flex items-center justify-center">
+                <Spinner size="lg" />
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
@@ -51,15 +61,15 @@ export function BillingContent() {
 
             {/* Current plan overview */}
             <CurrentPlanSection
-                planType={planType}
-                billingCycle={isPro ? billingCycle : undefined}
+                planType={isPro ? "Pro" : "Free"}
                 nextBillingDate={nextBillingDate}
+                cancelAtPeriodEnd={subscription?.cancelAtPeriodEnd}
                 onUpgrade={handleUpgrade}
             />
 
-            {/* Savings callout (only for monthly Pro users) */}
+            {/* Savings callout (only for Pro users) */}
             <SavingsCallout
-                isVisible={isPro && billingCycle === "monthly"}
+                isVisible={isPro && isActive}
                 onSwitchToAnnual={handleSwitchToAnnual}
             />
 
@@ -67,7 +77,7 @@ export function BillingContent() {
             {!isPro && <LockedFeatures onUpgrade={handleUpgrade} />}
 
             {/* Cancel subscription (Pro users only) */}
-            {isPro && <CancelSubscriptionSection onCancel={handleCancel} />}
+            {isPro && isActive && <CancelSubscriptionSection onCancel={handleCancel} />}
         </div>
     );
 }
