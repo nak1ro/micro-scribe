@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using ScribeApi.Core.Configuration;
+using ScribeApi.Core.Interfaces;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
 
@@ -13,20 +13,20 @@ public class StripeWebhookHandler
     private readonly AppDbContext _context;
     private readonly StripeSettings _settings;
     private readonly StripeClient _stripeClient;
-    private readonly IMemoryCache _cache;
+    private readonly IWebhookIdempotencyService _idempotencyService;
     private readonly ILogger<StripeWebhookHandler> _logger;
 
     public StripeWebhookHandler(
         AppDbContext context,
         IOptions<StripeSettings> settings,
         StripeClient stripeClient,
-        IMemoryCache cache,
+        IWebhookIdempotencyService idempotencyService,
         ILogger<StripeWebhookHandler> logger)
     {
         _context = context;
         _settings = settings.Value;
         _stripeClient = stripeClient;
-        _cache = cache;
+        _idempotencyService = idempotencyService;
         _logger = logger;
     }
 
@@ -44,17 +44,16 @@ public class StripeWebhookHandler
         }
     }
 
-    // Handle a Stripe webhook event (with idempotency check)
+    // Handle a Stripe webhook event (with database-backed idempotency)
     public async Task HandleEventAsync(Stripe.Event stripeEvent, CancellationToken ct = default)
     {
-        var cacheKey = $"stripe_event:{stripeEvent.Id}";
-        if (_cache.TryGetValue(cacheKey, out _))
+        // Try to mark event as processed - returns false if already processed
+        if (!await _idempotencyService.TryMarkAsProcessedAsync(stripeEvent.Id, stripeEvent.Type, ct))
         {
             _logger.LogDebug("Skipping duplicate event {EventId}", stripeEvent.Id);
             return;
         }
 
-        _cache.Set(cacheKey, true, TimeSpan.FromHours(24));
         _logger.LogInformation("Handling Stripe event {EventType} ({EventId})", stripeEvent.Type, stripeEvent.Id);
 
         switch (stripeEvent.Type)

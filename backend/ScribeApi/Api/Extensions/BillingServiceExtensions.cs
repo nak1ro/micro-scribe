@@ -1,4 +1,5 @@
 using ScribeApi.Core.Configuration;
+using ScribeApi.Core.Interfaces;
 using ScribeApi.Features.Billing.Contracts;
 using ScribeApi.Features.Billing.Services;
 using ScribeApi.Infrastructure.Billing;
@@ -13,14 +14,13 @@ public static class BillingServiceExtensions
         // Register configuration
         services.Configure<StripeSettings>(configuration.GetSection(StripeSettings.SectionName));
 
-        // Register memory cache for webhook idempotency
-        services.AddMemoryCache();
-
         // Register services
         services.AddScoped<StripeClient>();
         services.AddScoped<StripeWebhookHandler>();
         services.AddScoped<IBillingService, BillingService>();
+        services.AddScoped<IWebhookIdempotencyService, WebhookIdempotencyService>();
 
         return services;
     }
 }
+
