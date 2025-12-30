@@ -14,7 +14,7 @@ import {
     Menu,
     MusicDoubleNote,
     Plus,
-    Settings,
+    User,
     Folder,
     NavArrowDown,
     Flash,
@@ -155,12 +155,12 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
                 />
             </SidebarSection>
 
-            {/* Bottom - Settings */}
+            {/* Bottom - Account */}
             <SidebarSection className="border-t border-border mt-auto pb-4">
                 <SidebarNavItem
-                    href="/dashboard/settings"
-                    icon={Settings}
-                    label="Settings"
+                    href="/account"
+                    icon={User}
+                    label="Account"
                     isCollapsed={isCollapsed}
                 />
             </SidebarSection>
