@@ -1,6 +1,8 @@
 // Landing Page Content - Centralized for easy updates
 // All strings, numbers, and configuration in one place
 
+import { PLANS } from "@/lib/plans";
+
 export const siteConfig = {
     name: "ScribeRocket",
     tagline: "Transcription made easy",
@@ -180,30 +182,10 @@ export const useCasesContent = {
     ],
 };
 
-// Plan limits from backend configuration
+// Plan limits derived from centralized PLANS config
 export const planLimits = {
-    free: {
-        dailyTranscriptionLimit: 10,
-        maxMinutesPerFile: 10,
-        maxFileSizeMB: 100, // 104857600 bytes
-        maxFilesPerUpload: 1,
-        maxConcurrentJobs: 1,
-        priorityProcessing: false,
-        translation: false,
-        allModels: false,
-        unlimitedStorage: false,
-    },
-    pro: {
-        dailyTranscriptionLimit: null, // unlimited
-        maxMinutesPerFile: 300, // 5 hours
-        maxFileSizeMB: 1024, // 1GB
-        maxFilesPerUpload: 50,
-        maxConcurrentJobs: 5,
-        priorityProcessing: true,
-        translation: true,
-        allModels: true,
-        unlimitedStorage: true,
-    },
+    free: PLANS.free.limits,
+    pro: PLANS.pro.limits,
 };
 
 export const pricingContent = {
@@ -214,25 +196,8 @@ export const pricingContent = {
             name: "Free Plan",
             price: "$0",
             priceLabel: "100% Free",
-            description: "Perfect for trying out",
-            features: [
-                {
-                    icon: "Upload",
-                    text: "3 files per day, up to 10 minutes each",
-                },
-                {
-                    icon: "Clock",
-                    text: "1 file at a time, lower priority queue",
-                },
-                {
-                    icon: "Download",
-                    text: "Basic export (TXT only)",
-                },
-                {
-                    icon: "CheckCircle",
-                    text: "Free access — no credit card required",
-                },
-            ],
+            description: PLANS.free.description,
+            features: PLANS.free.features,
             cta: {
                 label: "Try For Free – Start Transcription",
                 href: "/auth?mode=signup",
@@ -242,46 +207,21 @@ export const pricingContent = {
         },
         {
             name: "Premium Plan",
-            price: "$12",
+            price: `$${PLANS.pro.price.monthly}`,
             period: "/month",
             priceLabel: "Billed Monthly",
-            description: "Unlock Full AI Transcription Power",
-            features: [
-                {
-                    icon: "Infinity",
-                    text: "Unlimited transcriptions, 20+ files at once",
-                },
-                {
-                    icon: "Upload",
-                    text: "Files up to 3 hours / 2GB",
-                },
-                {
-                    icon: "Zap",
-                    text: "Priority queue — faster processing",
-                },
-                {
-                    icon: "Download",
-                    text: "Multi-format export (TXT, DOCX, SRT, CSV, MP3)",
-                },
-                {
-                    icon: "Users",
-                    text: "Speaker recognition & timestamps",
-                },
-                {
-                    icon: "Sparkles",
-                    text: "AI summaries & translations",
-                },
-            ],
+            description: PLANS.pro.description,
+            features: PLANS.pro.features,
             cta: {
                 label: "Start Transcription",
                 href: "/auth?mode=signup",
                 variant: "default" as const,
             },
             highlighted: true,
-            priceMonthly: "$12",
-            priceAnnual: "$10",
+            priceMonthly: `$${PLANS.pro.price.monthly}`,
+            priceAnnual: `$${PLANS.pro.price.yearly}`,
             priceLabelMonthly: "Billed Monthly",
-            priceLabelAnnual: "Billed Annually ($120/year)",
+            priceLabelAnnual: `Billed Annually ($${PLANS.pro.price.yearly * 12}/year)`,
         },
     ],
     note: "All plans start with a free trial • No credit card required • Cancel anytime",
