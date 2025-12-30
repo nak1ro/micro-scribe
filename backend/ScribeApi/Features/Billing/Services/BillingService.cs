@@ -75,7 +75,10 @@ public class BillingService : IBillingService
         CancellationToken ct = default)
     {
         var customerId = await EnsureStripeCustomerAsync(userId, ct);
-        var session = await _stripeClient.CreatePortalSessionAsync(customerId, returnUrl, ct);
+        
+        // Stripe requires absolute URL, fallback to SuccessUrl from settings
+        var effectiveReturnUrl = string.IsNullOrEmpty(returnUrl) ? _stripeSettings.SuccessUrl : returnUrl;
+        var session = await _stripeClient.CreatePortalSessionAsync(customerId, effectiveReturnUrl, ct);
 
         _logger.LogInformation("Created portal session for user {UserId}", userId);
 

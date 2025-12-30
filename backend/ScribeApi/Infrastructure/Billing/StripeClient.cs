@@ -133,14 +133,14 @@ public class StripeClient
     // Create a billing portal session for managing subscription
     public async Task<Session> CreatePortalSessionAsync(
         string customerId,
-        string? returnUrl = null,
+        string returnUrl,
         CancellationToken ct = default)
     {
         var portalService = new SessionService();
         var options = new SessionCreateOptions
         {
             Customer = customerId,
-            ReturnUrl = returnUrl ?? "/"
+            ReturnUrl = returnUrl
         };
 
         return await portalService.CreateAsync(options, cancellationToken: ct);

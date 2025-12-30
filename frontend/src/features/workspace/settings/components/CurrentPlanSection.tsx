@@ -10,8 +10,6 @@ interface CurrentPlanSectionProps {
     nextBillingDate?: Date;
     cancelAtPeriodEnd?: boolean;
     onUpgrade: () => void;
-    onManagePayment?: () => void;
-    isManaging?: boolean;
 }
 
 // Displays current plan status with billing details
@@ -20,8 +18,6 @@ export function CurrentPlanSection({
     nextBillingDate,
     cancelAtPeriodEnd,
     onUpgrade,
-    onManagePayment,
-    isManaging,
 }: CurrentPlanSectionProps) {
     const plan = planDisplayData[planType];
     const isPro = planType === "Pro";
@@ -63,16 +59,6 @@ export function CurrentPlanSection({
                     {!isPro && (
                         <Button onClick={onUpgrade} size="lg">
                             Upgrade to Pro
-                        </Button>
-                    )}
-                    {isPro && onManagePayment && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={onManagePayment}
-                            disabled={isManaging}
-                        >
-                            {isManaging ? "Loading..." : "Manage Payment"}
                         </Button>
                     )}
                 </div>

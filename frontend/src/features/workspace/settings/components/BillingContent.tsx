@@ -80,8 +80,6 @@ export function BillingContent() {
                 nextBillingDate={nextBillingDate}
                 cancelAtPeriodEnd={isCanceling}
                 onUpgrade={handleUpgrade}
-                onManagePayment={handleManagePayment}
-                isManaging={portalMutation.isPending}
             />
 
             {/* Payment method (Pro users only) */}
