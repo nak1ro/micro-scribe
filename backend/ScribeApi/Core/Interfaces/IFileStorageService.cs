@@ -21,7 +21,10 @@ public interface IFileStorageService
         CancellationToken ct);
 
     Task<string> GeneratePartUploadUrlAsync(string key, string uploadId, int partNumber, CancellationToken ct);
-    Task CompleteMultipartUploadAsync(string key, string uploadId, List<UploadPartInfo> parts, CancellationToken ct);
+    
+    // Azure uses part numbers to derive Block IDs; S3 would need ETags but we're Azure-only now
+    Task CompleteMultipartUploadAsync(string key, string uploadId, List<int> partNumbers, CancellationToken ct);
+    
     Task AbortMultipartUploadAsync(string key, string uploadId, CancellationToken ct);
 
     // Existing operations

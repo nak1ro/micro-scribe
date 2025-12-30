@@ -58,13 +58,11 @@ export interface UploadSessionResponse {
 }
 
 export interface CompleteUploadRequest {
-    parts?: PartETagDto[] | null;
+    parts?: PartDto[] | null;
 }
 
-export interface PartETagDto {
+export interface PartDto {
     partNumber: number;
-    eTag?: string;
-    blockId?: string;
 }
 
 export interface UploadSessionStatusResponse {

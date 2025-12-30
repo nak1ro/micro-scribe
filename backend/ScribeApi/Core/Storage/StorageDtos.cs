@@ -8,6 +8,3 @@ public record PresignedUploadResult(string UploadUrl, string ObjectKey, DateTime
 
 // Result of initiating a multipart upload
 public record MultipartUploadInitResult(string UploadId, string ObjectKey, int PartSizeBytes, int TotalParts);
-
-// Completed part info (renamed from PartETag to avoid Amazon SDK conflict)
-public record UploadPartInfo(int PartNumber, string ETag);

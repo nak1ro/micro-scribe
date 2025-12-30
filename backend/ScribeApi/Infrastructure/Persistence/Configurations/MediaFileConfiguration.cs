@@ -33,7 +33,6 @@ public class MediaFileConfiguration : IEntityTypeConfiguration<MediaFile>
             .HasMaxLength(50);
 
         builder.Property(x => x.ETag)
-            .IsRequired()
             .HasMaxLength(255);
 
         builder.Property(x => x.NormalizedAudioObjectKey)

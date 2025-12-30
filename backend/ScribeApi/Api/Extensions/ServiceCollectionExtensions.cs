@@ -1,7 +1,6 @@
 using System.Text;
 using Npgsql;
 using System.Text.Json.Serialization;
-using Amazon.S3;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Identity;
@@ -198,20 +197,10 @@ public static class ServiceCollectionExtensions
         // HttpClient for OAuthService
         services.AddHttpClient<IOAuthService, OAuthService>();
 
-        // Storage
-        var storageProvider = configuration["Storage:Provider"] ?? "Local";
+        // Storage - Azure Blob is primary, Local for development
+        var storageProvider = configuration["Storage:Provider"] ?? "Azure";
 
-        if (storageProvider.Equals("S3", StringComparison.OrdinalIgnoreCase))
-        {
-            services.AddDefaultAWSOptions(configuration.GetAWSOptions());
-            services.AddAWSService<IAmazonS3>();
-            
-            // Bind your S3 settings (non-secret)
-            services.Configure<S3Settings>(configuration.GetSection("Storage:S3"));
-
-            services.AddScoped<IFileStorageService, S3MediaStorageService>();
-        }
-        else if (storageProvider.Equals("Azure", StringComparison.OrdinalIgnoreCase))
+        if (storageProvider.Equals("Azure", StringComparison.OrdinalIgnoreCase))
         {
             services.Configure<AzureBlobSettings>(configuration.GetSection("Storage:AzureBlob"));
             services.AddScoped<IFileStorageService, AzureBlobStorageService>();

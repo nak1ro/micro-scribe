@@ -36,7 +36,7 @@ public class LocalFileStorageService : IFileStorageService
 
     public Task<PresignedUploadResult> GenerateUploadUrlAsync(string key, string contentType, long sizeBytes, CancellationToken ct)
     {
-        throw new NotSupportedException("LocalFileStorageService does not support presigned URLs. Use S3 provider for production.");
+        throw new NotSupportedException("LocalFileStorageService does not support presigned URLs. Use Azure provider for production.");
     }
 
     public Task<string> GenerateDownloadUrlAsync(string key, TimeSpan expiry, CancellationToken ct)
@@ -46,17 +46,17 @@ public class LocalFileStorageService : IFileStorageService
 
     public Task<MultipartUploadInitResult> InitiateMultipartUploadAsync(string key, string contentType, long totalSizeBytes, CancellationToken ct)
     {
-        throw new NotSupportedException("LocalFileStorageService does not support multipart uploads. Use S3 provider for production.");
+        throw new NotSupportedException("LocalFileStorageService does not support multipart uploads. Use Azure provider for production.");
     }
 
     public Task<string> GeneratePartUploadUrlAsync(string key, string uploadId, int partNumber, CancellationToken ct)
     {
-        throw new NotSupportedException("LocalFileStorageService does not support presigned URLs. Use S3 provider for production.");
+        throw new NotSupportedException("LocalFileStorageService does not support presigned URLs. Use Azure provider for production.");
     }
 
-    public Task CompleteMultipartUploadAsync(string key, string uploadId, List<UploadPartInfo> parts, CancellationToken ct)
+    public Task CompleteMultipartUploadAsync(string key, string uploadId, List<int> partNumbers, CancellationToken ct)
     {
-        throw new NotSupportedException("LocalFileStorageService does not support multipart uploads. Use S3 provider for production.");
+        throw new NotSupportedException("LocalFileStorageService does not support multipart uploads. Use Azure provider for production.");
     }
 
     public Task AbortMultipartUploadAsync(string key, string uploadId, CancellationToken ct)

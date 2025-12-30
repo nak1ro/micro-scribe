@@ -55,7 +55,7 @@ public class UploadSession
     public string? ETag { get; set; }
 
     // Storage provider identifier
-    public string StorageProvider { get; set; } = "S3";
+    public string StorageProvider { get; set; } = "Azure";
 
     // Storage bucket name
     public required string BucketName { get; set; }

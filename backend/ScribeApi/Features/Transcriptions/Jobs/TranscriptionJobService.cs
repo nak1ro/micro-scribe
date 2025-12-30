@@ -132,7 +132,7 @@ public class TranscriptionJobService : ITranscriptionJobService
             OriginalFileName = session.FileName,
             ContentType = session.DeclaredContentType,
             StorageObjectKey = session.StorageKey,
-            ETag = session.ETag ?? string.Empty,
+            ETag = session.ETag,
             BucketName = session.BucketName,
             StorageProvider = session.StorageProvider,
             CreatedFromUploadSessionId = session.Id,
