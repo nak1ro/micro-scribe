@@ -209,4 +209,46 @@ public class BillingService : IBillingService
 
         return new SubscriptionResponse(updated.Id, updated.Status);
     }
+
+    public async Task<PaymentMethodResponse?> GetPaymentMethodAsync(string userId, CancellationToken ct = default)
+    {
+        var user = await _context.Users.OfType<ApplicationUser>()
+            .FirstOrDefaultAsync(u => u.Id == userId, ct);
+
+        if (string.IsNullOrEmpty(user?.StripeCustomerId)) return null;
+
+        var paymentMethod = await _stripeClient.GetDefaultPaymentMethodAsync(user.StripeCustomerId, ct);
+        if (paymentMethod?.Card == null) return null;
+
+        return new PaymentMethodResponse(
+            paymentMethod.Card.Brand,
+            paymentMethod.Card.Last4,
+            (int)paymentMethod.Card.ExpMonth,
+            (int)paymentMethod.Card.ExpYear);
+    }
+
+    public async Task<InvoiceListResponse> GetInvoicesAsync(
+        string userId,
+        int limit = 10,
+        string? startingAfter = null,
+        CancellationToken ct = default)
+    {
+        var user = await _context.Users.OfType<ApplicationUser>()
+            .FirstOrDefaultAsync(u => u.Id == userId, ct);
+
+        if (string.IsNullOrEmpty(user?.StripeCustomerId))
+            return new InvoiceListResponse([], false, null);
+
+        var invoices = await _stripeClient.ListInvoicesAsync(user.StripeCustomerId, limit, startingAfter, ct);
+
+        var items = invoices.Data.Select(inv => new InvoiceItem(
+            inv.Id,
+            inv.Created,
+            inv.AmountPaid,
+            inv.Currency,
+            inv.Status,
+            inv.InvoicePdf)).ToList();
+
+        return new InvoiceListResponse(items, invoices.HasMore, items.LastOrDefault()?.Id);
+    }
 }

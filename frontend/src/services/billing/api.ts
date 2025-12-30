@@ -1,4 +1,5 @@
 import { apiClient, API_ENDPOINTS } from "@/services/api";
+import { isAxiosError } from "axios";
 import type {
     BillingConfig,
     SetupIntentRequest,
@@ -10,7 +11,9 @@ import type {
     SubscriptionStatusResponse,
     ChangePlanRequest,
     ChangePlanResponse,
-    CancelSubscriptionResponse
+    CancelSubscriptionResponse,
+    PaymentMethodResponse,
+    InvoiceListResponse,
 } from "@/types/api/billing";
 
 export const billingApi = {
@@ -58,5 +61,28 @@ export const billingApi = {
             `${API_ENDPOINTS.BILLING.CANCEL}?cancelImmediately=${cancelImmediately}`
         );
         return response.data;
-    }
+    },
+
+    getPaymentMethod: async (): Promise<PaymentMethodResponse | null> => {
+        try {
+            const response = await apiClient.get<PaymentMethodResponse>(
+                API_ENDPOINTS.BILLING.PAYMENT_METHOD
+            );
+            return response.data;
+        } catch (error) {
+            if (isAxiosError(error) && error.response?.status === 404) {
+                return null;
+            }
+            throw error;
+        }
+    },
+
+    getInvoices: async (limit = 10, startingAfter?: string): Promise<InvoiceListResponse> => {
+        const params = new URLSearchParams({ limit: limit.toString() });
+        if (startingAfter) params.append("startingAfter", startingAfter);
+        const response = await apiClient.get<InvoiceListResponse>(
+            `${API_ENDPOINTS.BILLING.INVOICES}?${params}`
+        );
+        return response.data;
+    },
 };

@@ -1,33 +1,58 @@
 "use client";
 
 import * as React from "react";
-import { Receipt, Check, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { Receipt, Check, Clock, ChevronDown, ChevronUp, Download } from "lucide-react";
 import { Button } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import type { InvoiceItem } from "@/types/api/billing";
 
-// Placeholder billing history data
-const MOCK_INVOICES = [
-    { id: "inv_001", date: "2024-12-15", amount: 9.99, status: "paid" as const },
-    { id: "inv_002", date: "2024-11-15", amount: 9.99, status: "paid" as const },
-    { id: "inv_003", date: "2024-10-15", amount: 9.99, status: "paid" as const },
-    { id: "inv_004", date: "2024-09-15", amount: 9.99, status: "paid" as const },
-    { id: "inv_005", date: "2024-08-15", amount: 9.99, status: "paid" as const },
-    { id: "inv_006", date: "2024-07-15", amount: 9.99, status: "paid" as const },
-    { id: "inv_007", date: "2024-06-15", amount: 9.99, status: "paid" as const },
-];
-
-interface Invoice {
-    id: string;
-    date: string;
-    amount: number;
-    status: "paid" | "pending" | "failed";
+interface BillingHistorySectionProps {
+    invoices: InvoiceItem[];
+    hasMore: boolean;
+    isLoading?: boolean;
 }
 
-export function BillingHistorySection() {
+export function BillingHistorySection({ invoices, hasMore, isLoading }: BillingHistorySectionProps) {
     const [isExpanded, setIsExpanded] = React.useState(false);
 
-    const visibleInvoices = isExpanded ? MOCK_INVOICES : MOCK_INVOICES.slice(0, 5);
-    const hasMoreInvoices = MOCK_INVOICES.length > 5;
+    const visibleInvoices = isExpanded ? invoices : invoices.slice(0, 5);
+    const canExpand = invoices.length > 5 || hasMore;
+
+    if (isLoading) {
+        return (
+            <div className="rounded-xl border border-border bg-card p-6">
+                <div className="flex items-center gap-4">
+                    <div className="p-2 rounded-lg bg-muted">
+                        <Receipt className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-semibold text-foreground">
+                            Billing History
+                        </h3>
+                        <p className="text-sm text-muted-foreground">Loading...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (invoices.length === 0) {
+        return (
+            <div className="rounded-xl border border-border bg-card p-6">
+                <div className="flex items-center gap-4">
+                    <div className="p-2 rounded-lg bg-muted">
+                        <Receipt className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-semibold text-foreground">
+                            Billing History
+                        </h3>
+                        <p className="text-sm text-muted-foreground">No invoices yet</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -60,6 +85,9 @@ export function BillingHistorySection() {
                             <th className="text-left text-sm font-medium text-muted-foreground px-6 py-3">
                                 Status
                             </th>
+                            <th className="text-right text-sm font-medium text-muted-foreground px-6 py-3">
+                                Invoice
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
@@ -71,7 +99,7 @@ export function BillingHistorySection() {
             </div>
 
             {/* Expand/Collapse */}
-            {hasMoreInvoices && (
+            {canExpand && (
                 <div className="p-4 border-t border-border">
                     <Button
                         variant="ghost"
@@ -87,7 +115,7 @@ export function BillingHistorySection() {
                         ) : (
                             <>
                                 <ChevronDown className="h-4 w-4" />
-                                View all ({MOCK_INVOICES.length} invoices)
+                                View all invoices
                             </>
                         )}
                     </Button>
@@ -97,17 +125,18 @@ export function BillingHistorySection() {
     );
 }
 
-function InvoiceRow({ invoice }: { invoice: Invoice }) {
-    const formattedDate = new Date(invoice.date).toLocaleDateString("en-US", {
+function InvoiceRow({ invoice }: { invoice: InvoiceItem }) {
+    const formattedDate = new Date(invoice.createdAtUtc).toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
         year: "numeric",
     });
 
+    // Convert cents to dollars
     const formattedAmount = new Intl.NumberFormat("en-US", {
         style: "currency",
-        currency: "USD",
-    }).format(invoice.amount);
+        currency: invoice.currency.toUpperCase(),
+    }).format(invoice.amountCents / 100);
 
     return (
         <tr className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
@@ -120,11 +149,24 @@ function InvoiceRow({ invoice }: { invoice: Invoice }) {
             <td className="px-6 py-4">
                 <StatusBadge status={invoice.status} />
             </td>
+            <td className="px-6 py-4 text-right">
+                {invoice.invoicePdf && (
+                    <a
+                        href={invoice.invoicePdf}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                    >
+                        <Download className="h-3.5 w-3.5" />
+                        PDF
+                    </a>
+                )}
+            </td>
         </tr>
     );
 }
 
-function StatusBadge({ status }: { status: Invoice["status"] }) {
+function StatusBadge({ status }: { status: InvoiceItem["status"] }) {
     const config = {
         paid: {
             icon: Check,

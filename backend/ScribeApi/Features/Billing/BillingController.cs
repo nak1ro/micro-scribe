@@ -105,6 +105,33 @@ public class BillingController : ControllerBase
         return Ok(result);
     }
 
+    // Get user's default payment method
+    [HttpGet("payment-method")]
+    public async Task<ActionResult<PaymentMethodResponse>> GetPaymentMethod(CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var result = await _billingService.GetPaymentMethodAsync(userId, ct);
+        if (result == null) return NotFound("No payment method found");
+
+        return Ok(result);
+    }
+
+    // Get user's invoice history
+    [HttpGet("invoices")]
+    public async Task<ActionResult<InvoiceListResponse>> GetInvoices(
+        [FromQuery] int limit = 10,
+        [FromQuery] string? startingAfter = null,
+        CancellationToken ct = default)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var result = await _billingService.GetInvoicesAsync(userId, limit, startingAfter, ct);
+        return Ok(result);
+    }
+
     // Get Stripe publishable key for frontend
     [HttpGet("config")]
     [AllowAnonymous]

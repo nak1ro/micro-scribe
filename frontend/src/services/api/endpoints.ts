@@ -61,5 +61,7 @@ export const API_ENDPOINTS = {
         SUBSCRIPTION: '/billing/subscription',
         CHANGE_PLAN: '/billing/subscription',
         CANCEL: '/billing/subscription',
+        PAYMENT_METHOD: '/billing/payment-method',
+        INVOICES: '/billing/invoices',
     },
 } as const;

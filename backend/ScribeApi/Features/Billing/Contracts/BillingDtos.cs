@@ -39,3 +39,26 @@ public record SubscriptionStatusDto(
 
 // Publishable key for frontend Stripe initialization
 public record StripePublicKeyResponse(string PublishableKey);
+
+// Payment method card details
+public record PaymentMethodResponse(
+    string? Brand,
+    string? Last4,
+    int? ExpMonth,
+    int? ExpYear);
+
+// Invoice list with pagination
+public record InvoiceListResponse(
+    List<InvoiceItem> Invoices,
+    bool HasMore,
+    string? NextCursor);
+
+// Single invoice item
+public record InvoiceItem(
+    string Id,
+    DateTime CreatedAtUtc,
+    long AmountCents,
+    string Currency,
+    string Status,
+    string? InvoicePdf);
+

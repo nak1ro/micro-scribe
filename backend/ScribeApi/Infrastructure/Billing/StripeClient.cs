@@ -186,4 +186,44 @@ public class StripeClient
             return null;
         }
     }
+
+    // Get customer's default payment method
+    public async Task<PaymentMethod?> GetDefaultPaymentMethodAsync(string customerId, CancellationToken ct = default)
+    {
+        try
+        {
+            var customer = await _customerService.GetAsync(customerId, new CustomerGetOptions
+            {
+                Expand = ["invoice_settings.default_payment_method"]
+            }, cancellationToken: ct);
+
+            return customer.InvoiceSettings?.DefaultPaymentMethod;
+        }
+        catch (StripeException)
+        {
+            return null;
+        }
+    }
+
+    // List invoices for a customer
+    public async Task<StripeList<Invoice>> ListInvoicesAsync(
+        string customerId, 
+        int limit = 10, 
+        string? startingAfter = null, 
+        CancellationToken ct = default)
+    {
+        var invoiceService = new InvoiceService();
+        var options = new InvoiceListOptions
+        {
+            Customer = customerId,
+            Limit = limit
+        };
+
+        if (!string.IsNullOrEmpty(startingAfter))
+        {
+            options.StartingAfter = startingAfter;
+        }
+
+        return await invoiceService.ListAsync(options, cancellationToken: ct);
+    }
 }

@@ -6,7 +6,9 @@ import {
     useSubscriptionStatus,
     useCustomerPortal,
     useChangePlan,
-    useCancelSubscription
+    useCancelSubscription,
+    usePaymentMethod,
+    useInvoices,
 } from "@/features/billing";
 import { billingCopy } from "../data";
 import { CurrentPlanSection } from "./CurrentPlanSection";
@@ -24,6 +26,8 @@ export function BillingContent() {
     const portalMutation = useCustomerPortal();
     const changePlanMutation = useChangePlan();
     const cancelMutation = useCancelSubscription();
+    const { data: paymentMethod, isLoading: isLoadingPayment } = usePaymentMethod();
+    const { data: invoicesData, isLoading: isLoadingInvoices } = useInvoices();
 
     const isPro = subscription?.plan === "Pro";
     const isActive = subscription?.status === "Active";
@@ -83,13 +87,20 @@ export function BillingContent() {
             {/* Payment method (Pro users only) */}
             {isPro && (
                 <PaymentMethodSection
+                    paymentMethod={paymentMethod}
                     onManagePayment={handleManagePayment}
-                    isLoading={portalMutation.isPending}
+                    isLoading={portalMutation.isPending || isLoadingPayment}
                 />
             )}
 
             {/* Billing history (Pro users only) */}
-            {isPro && <BillingHistorySection />}
+            {isPro && (
+                <BillingHistorySection
+                    invoices={invoicesData?.invoices ?? []}
+                    hasMore={invoicesData?.hasMore ?? false}
+                    isLoading={isLoadingInvoices}
+                />
+            )}
 
             {/* Savings callout (only for Pro users on monthly) */}
             <SavingsCallout

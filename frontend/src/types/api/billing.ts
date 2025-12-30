@@ -59,3 +59,26 @@ export interface CancelSubscriptionResponse {
     message: string;
 }
 
+// Payment method
+export interface PaymentMethodResponse {
+    brand: string;
+    last4: string;
+    expMonth: number;
+    expYear: number;
+}
+
+// Invoices
+export interface InvoiceItem {
+    id: string;
+    createdAtUtc: string;
+    amountCents: number;
+    currency: string;
+    status: "paid" | "pending" | "failed";
+    invoicePdf: string | null;
+}
+
+export interface InvoiceListResponse {
+    invoices: InvoiceItem[];
+    hasMore: boolean;
+    nextCursor: string | null;
+}

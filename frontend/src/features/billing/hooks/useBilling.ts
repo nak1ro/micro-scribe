@@ -63,3 +63,17 @@ export const useCancelSubscription = () => {
         },
     });
 };
+
+export const usePaymentMethod = () => {
+    return useQuery({
+        queryKey: ["billing", "payment-method"],
+        queryFn: billingApi.getPaymentMethod,
+    });
+};
+
+export const useInvoices = (limit = 10) => {
+    return useQuery({
+        queryKey: ["billing", "invoices", limit],
+        queryFn: () => billingApi.getInvoices(limit),
+    });
+};

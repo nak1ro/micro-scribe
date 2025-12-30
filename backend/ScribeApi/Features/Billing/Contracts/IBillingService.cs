@@ -34,4 +34,10 @@ public interface IBillingService
 
     // Change subscription plan (Monthly ↔ Annual)
     Task<SubscriptionResponse> ChangeSubscriptionPlanAsync(string userId, BillingInterval newInterval, CancellationToken ct = default);
+
+    // Get user's default payment method
+    Task<PaymentMethodResponse?> GetPaymentMethodAsync(string userId, CancellationToken ct = default);
+
+    // Get user's invoice history
+    Task<InvoiceListResponse> GetInvoicesAsync(string userId, int limit = 10, string? startingAfter = null, CancellationToken ct = default);
 }
