@@ -156,7 +156,7 @@ export function CreateTranscriptionModal({
                     sourceLanguage: sourceLanguage === "auto" ? undefined : sourceLanguage,
                     quality,
                     enableSpeakerDiarization,
-                });
+                }, tempId);
 
                 if (job) {
                     // Upload succeeded - remove optimistic item (server data will appear on refetch)

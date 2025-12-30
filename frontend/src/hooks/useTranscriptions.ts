@@ -19,6 +19,7 @@ interface UseTranscriptionsReturn {
     hasActiveJobs: boolean;
     refetch: () => Promise<void>;
     deleteItem: (id: string) => Promise<void>;
+    cancelItem: (id: string) => Promise<void>;
     addOptimisticItem: (item: TranscriptionListItem) => void;
     updateOptimisticItem: (id: string, updates: Partial<TranscriptionListItem>) => void;
     removeOptimisticItem: (id: string) => void;
@@ -103,12 +104,24 @@ export function useTranscriptions(
         },
     });
 
+    // Cancel mutation (cancels in-progress job)
+    const cancelMutation = useMutation({
+        mutationFn: (id: string) => transcriptionApi.cancelJob(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: transcriptionsKeys.all });
+        },
+    });
+
     const refetch = async () => {
         await listQuery.refetch();
     };
 
     const deleteItem = async (id: string) => {
         await deleteMutation.mutateAsync(id);
+    };
+
+    const cancelItem = async (id: string) => {
+        await cancelMutation.mutateAsync(id);
     };
 
     // Optimistic update functions
@@ -135,6 +148,7 @@ export function useTranscriptions(
         hasActiveJobs: hasActive,
         refetch,
         deleteItem,
+        cancelItem,
         addOptimisticItem,
         updateOptimisticItem,
         removeOptimisticItem,

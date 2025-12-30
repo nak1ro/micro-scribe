@@ -18,6 +18,8 @@ interface DashboardContentProps {
     onOpenModal: () => void;
     onDownload?: (id: string) => void;
     onDelete: (id: string) => Promise<void>;
+    onCancelUpload?: (id: string) => void;
+    onCancelJob?: (id: string) => Promise<void>;
     onShare?: (id: string) => void;
     folderName?: string;
 }
@@ -29,6 +31,8 @@ export function DashboardContent({
     onOpenModal,
     onDownload,
     onDelete,
+    onCancelUpload,
+    onCancelJob,
     onShare,
     folderName,
 }: DashboardContentProps) {
@@ -164,6 +168,8 @@ export function DashboardContent({
                     isLoading={isLoading}
                     onDownload={handleDownloadClick}
                     onDelete={handleDeleteClick}
+                    onCancelUpload={onCancelUpload}
+                    onCancelJob={onCancelJob}
                     onShare={onShare}
                     onNewClick={onOpenModal}
                     onBulkDelete={handleBulkDelete}

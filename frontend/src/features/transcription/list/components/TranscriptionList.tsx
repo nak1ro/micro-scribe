@@ -15,6 +15,8 @@ interface TranscriptionListProps {
     isLoading?: boolean;
     onDownload?: (id: string) => void;
     onDelete?: (id: string) => void;
+    onCancelUpload?: (id: string) => void;
+    onCancelJob?: (id: string) => void;
     onShare?: (id: string) => void;
     onNewClick?: (type?: InputType) => void;
     onBulkDelete?: (ids: string[]) => void;
@@ -28,6 +30,8 @@ export function TranscriptionList({
     isLoading = false,
     onDownload,
     onDelete,
+    onCancelUpload,
+    onCancelJob,
     onShare,
     onNewClick,
     onBulkDelete,
@@ -114,6 +118,8 @@ export function TranscriptionList({
                         onSelect={toggleSelect}
                         onDownload={onDownload}
                         onDelete={onDelete}
+                        onCancelUpload={onCancelUpload}
+                        onCancelJob={onCancelJob}
                         onShare={onShare}
                     />
                 ))}

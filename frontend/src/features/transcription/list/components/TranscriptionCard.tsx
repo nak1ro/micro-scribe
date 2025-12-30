@@ -11,6 +11,7 @@ import {
     CheckCircle,
     XmarkCircle,
     Prohibition,
+    Xmark,
 } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -23,8 +24,14 @@ interface TranscriptionCardProps {
     onSelect?: (id: string) => void;
     onDownload?: (id: string) => void;
     onDelete?: (id: string) => void;
+    onCancelUpload?: (id: string) => void;
+    onCancelJob?: (id: string) => void;
     onShare?: (id: string) => void;
 }
+
+// Status categories for button visibility
+const IN_PROGRESS_STATUSES: TranscriptionStatus[] = ["uploading", "pending", "processing"];
+const FINISHED_STATUSES: TranscriptionStatus[] = ["completed", "failed", "cancelled"];
 
 export function TranscriptionCard({
     item,
@@ -32,6 +39,8 @@ export function TranscriptionCard({
     onSelect,
     onDownload,
     onDelete,
+    onCancelUpload,
+    onCancelJob,
     onShare,
 }: TranscriptionCardProps) {
     const router = useRouter();
@@ -59,8 +68,20 @@ export function TranscriptionCard({
         onSelect?.(item.id);
     };
 
+    const handleCancel = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (item.status === "uploading") {
+            onCancelUpload?.(item.id);
+        } else {
+            onCancelJob?.(item.id);
+        }
+    };
+
     // Get processing step text for preview
     const processingText = getProcessingStepText(item.status, item.processingStep ?? null);
+
+    const isInProgress = IN_PROGRESS_STATUSES.includes(item.status);
+    const isFinished = FINISHED_STATUSES.includes(item.status);
 
     return (
         <div
@@ -76,9 +97,25 @@ export function TranscriptionCard({
             )}
         >
 
-            {/* Action menu */}
-            {showActions && (
-                <div className="absolute top-5 right-4 flex gap-1">
+            {/* Cancel button - always visible for in-progress */}
+            {isInProgress && (onCancelUpload || onCancelJob) && (
+                <div className="absolute top-3 right-3">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 bg-card/80 backdrop-blur text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={handleCancel}
+                        title="Cancel"
+                        aria-label="Cancel transcription"
+                    >
+                        <Xmark className="h-3.5 w-3.5" />
+                    </Button>
+                </div>
+            )}
+
+            {/* Action menu - only for finished items on hover */}
+            {showActions && isFinished && (
+                <div className="absolute top-3 right-3 flex gap-1">
                     {item.status === "completed" && onDownload && (
                         <Button
                             variant="ghost"

@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { CreateTranscriptionModal } from "@/features/transcription";
 import { DashboardContent, useDashboardModal } from "@/features/workspace/dashboard";
 import { useTranscriptions, useFolderItems, useFolder } from "@/hooks";
+import { uploadAbortRegistry } from "@/services/upload/uploadAbortRegistry";
 import type { TranscriptionListItem } from "@/types/models/transcription";
 
 function DashboardPageContent() {
@@ -19,6 +20,7 @@ function DashboardPageContent() {
         error: allError,
         refetch,
         deleteItem,
+        cancelItem,
         addOptimisticItem,
         updateOptimisticItem,
         removeOptimisticItem,
@@ -52,6 +54,12 @@ function DashboardPageContent() {
         await refetch();
     };
 
+    // Abort client-side upload (FFmpeg/Azure upload)
+    const handleCancelUpload = (id: string) => {
+        uploadAbortRegistry.abort(id);
+        removeOptimisticItem(id);
+    };
+
     // Check for "action=new" in URL to open modal
     React.useEffect(() => {
         if (searchParams.get("action") === "new") {
@@ -83,6 +91,8 @@ function DashboardPageContent() {
                 onOpenModal={openModal}
                 onDownload={(id) => console.log("Download:", id)}
                 onDelete={deleteItem}
+                onCancelUpload={handleCancelUpload}
+                onCancelJob={cancelItem}
                 onShare={(id) => console.log("Share:", id)}
                 folderName={folderId ? folderData?.name : undefined}
             />
