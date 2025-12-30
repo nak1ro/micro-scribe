@@ -10,6 +10,8 @@ import {
 } from "@/features/billing";
 import { billingCopy } from "../data";
 import { CurrentPlanSection } from "./CurrentPlanSection";
+import { PaymentMethodSection } from "./PaymentMethodSection";
+import { BillingHistorySection } from "./BillingHistorySection";
 import { SavingsCallout } from "./SavingsCallout";
 import { LockedFeatures } from "./LockedFeatures";
 import { CancelSubscriptionSection } from "./CancelSubscriptionSection";
@@ -77,6 +79,17 @@ export function BillingContent() {
                 onManagePayment={handleManagePayment}
                 isManaging={portalMutation.isPending}
             />
+
+            {/* Payment method (Pro users only) */}
+            {isPro && (
+                <PaymentMethodSection
+                    onManagePayment={handleManagePayment}
+                    isLoading={portalMutation.isPending}
+                />
+            )}
+
+            {/* Billing history (Pro users only) */}
+            {isPro && <BillingHistorySection />}
 
             {/* Savings callout (only for Pro users on monthly) */}
             <SavingsCallout
