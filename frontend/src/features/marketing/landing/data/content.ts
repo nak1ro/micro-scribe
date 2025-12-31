@@ -77,7 +77,7 @@ export const howItWorksContent = {
             number: 1,
             icon: "Upload",
             title: "Upload",
-            description: "Drag & drop your audio or video file (MP3, WAV, MP4, etc.)",
+            description: "Upload files, paste a YouTube link, or record directly from your microphone",
         },
         {
             number: 2,

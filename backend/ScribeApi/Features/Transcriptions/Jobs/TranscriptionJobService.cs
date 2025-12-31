@@ -59,7 +59,7 @@ public class TranscriptionJobService : ITranscriptionJobService
             var mediaFileId = await ResolveAndValidateMediaFileAsync(userId, request, ct);
 
             await EnsureNoPendingJobsAsync(mediaFileId, userId, ct);
-            await EnsurePlanLimitsAsync(userId, ct);
+            await EnsurePlanLimitsAsync(userId, mediaFileId, ct);
 
             var job = await CreateAndPersistJobAsync(userId, mediaFileId, request, ct);
 
@@ -164,7 +164,7 @@ public class TranscriptionJobService : ITranscriptionJobService
             throw new ConflictException("A transcription job is already in progress for this media file.");
     }
 
-    private async Task EnsurePlanLimitsAsync(string userId, CancellationToken ct)
+    private async Task EnsurePlanLimitsAsync(string userId, Guid mediaFileId, CancellationToken ct)
     {
         var plan = await GetUserPlanAsync(userId, ct);
 
@@ -173,6 +173,13 @@ public class TranscriptionJobService : ITranscriptionJobService
 
         var activeCount = await _queries.CountActiveJobsAsync(userId, ct);
         _planGuard.EnsureConcurrentJobs(plan, activeCount);
+
+        // Check audio duration against plan limit
+        var mediaFile = await _context.MediaFiles.FirstOrDefaultAsync(m => m.Id == mediaFileId, ct);
+        if (mediaFile?.DurationSeconds.HasValue == true)
+        {
+            _planGuard.EnsureAudioDuration(plan, mediaFile.DurationSeconds.Value);
+        }
     }
 
     private async Task<PlanDefinition> GetUserPlanAsync(string userId, CancellationToken ct)

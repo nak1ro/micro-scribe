@@ -48,13 +48,13 @@ export const PLANS: Record<PlanId, Plan> = {
             yearly: 0,
         },
         limits: {
-            dailyTranscriptionLimit: 10,
+            dailyTranscriptionLimit: 3,
             maxMinutesPerFile: 10,
-            maxFileSizeMB: 100,
+            maxFileSizeMB: 100, // 104857600 bytes
             maxFilesPerUpload: 1,
             maxConcurrentJobs: 1,
             priorityProcessing: false,
-            translation: false,
+            translation: true,
             allModels: false,
             unlimitedStorage: false,
         },
@@ -75,14 +75,14 @@ export const PLANS: Record<PlanId, Plan> = {
         description: "Unlock full AI transcription power",
         badge: "Most Popular",
         price: {
-            monthly: 12,
-            yearly: 10,
+            monthly: 19,
+            yearly: 9, // $108/year
         },
         limits: {
             dailyTranscriptionLimit: null,
             maxMinutesPerFile: 300,
-            maxFileSizeMB: 1024,
-            maxFilesPerUpload: 50,
+            maxFileSizeMB: 1024, // 1073741824 bytes = 1GB
+            maxFilesPerUpload: 20,
             maxConcurrentJobs: 5,
             priorityProcessing: true,
             translation: true,
@@ -91,7 +91,7 @@ export const PLANS: Record<PlanId, Plan> = {
         },
         features: [
             { icon: "Infinity", text: "Unlimited transcriptions, 20+ files at once" },
-            { icon: "Upload", text: "Files up to 3 hours / 2GB" },
+            { icon: "Upload", text: "Files up to 5 hours / 1GB" },
             { icon: "Zap", text: "Priority queue — faster processing" },
             { icon: "Download", text: "Multi-format export (TXT, DOCX, SRT, CSV, MP3)" },
             { icon: "Users", text: "Speaker recognition & timestamps" },

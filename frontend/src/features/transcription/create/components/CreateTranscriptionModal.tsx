@@ -1,13 +1,15 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { cn, formatFileSize } from "@/lib/utils";
-import { Xmark, CloudUpload, Youtube, Microphone, Folder, Trash, CheckCircle, WarningCircle } from "iconoir-react";
+import { Xmark, CloudUpload, Youtube, Microphone, Folder, Trash, CheckCircle, WarningCircle, Crown } from "iconoir-react";
 import { Button } from "@/components/ui";
 import { VoiceRecordingTab } from "./VoiceRecordingTab";
 import { UploadProgressOverlay } from "./UploadProgressOverlay";
 import { TranscriptionQuality } from "@/types/api/transcription";
 import { useFileUpload } from "@/hooks/useFileUpload";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
 import type { UploadStatus } from "@/types/models/upload";
 
 // ─────────────────────────────────────────────────────────────
@@ -90,8 +92,10 @@ export function CreateTranscriptionModal({
     const [sourceLanguage, setSourceLanguage] = React.useState("auto");
     const [quality, setQuality] = React.useState<TranscriptionQuality>(TranscriptionQuality.Balanced);
     const [enableSpeakerDiarization, setEnableSpeakerDiarization] = React.useState(false);
+    const [fileSizeError, setFileSizeError] = React.useState<string | null>(null);
 
     const { upload, abort, reset, progress, status, error, isUploading } = useFileUpload();
+    const { isPro, remainingToday, dailyLimit, canTranscribe, isFileSizeValid, maxFileSizeMB } = usePlanLimits();
 
     // Reset state when modal opens or closes
     React.useEffect(() => {
@@ -100,6 +104,7 @@ export function CreateTranscriptionModal({
         setAudioBlob(null);
         setActiveTab("file");
         setEnableSpeakerDiarization(false);
+        setFileSizeError(null);
         reset();
     }, [isOpen, reset]);
 
@@ -115,6 +120,7 @@ export function CreateTranscriptionModal({
     };
 
     const handleClear = () => {
+        setFileSizeError(null);
         switch (activeTab) {
             case "file":
                 setFile(null);
@@ -126,6 +132,18 @@ export function CreateTranscriptionModal({
                 setAudioBlob(null);
                 break;
         }
+    };
+
+    // File selection with size validation
+    const handleFileSelect = (selectedFile: File) => {
+        setFileSizeError(null);
+        if (!isFileSizeValid(selectedFile.size)) {
+            setFileSizeError(`File exceeds ${maxFileSizeMB}MB limit. ${isPro ? "" : "Upgrade to Pro for up to 2GB."}`
+            );
+            setFile(null);
+            return;
+        }
+        setFile(selectedFile);
     };
 
     const handleSubmit = async () => {
@@ -316,10 +334,44 @@ export function CreateTranscriptionModal({
 
                         {/* Tab Content */}
                         <div className="p-6">
+                            {/* Usage limit warning for Free users */}
+                            {!isPro && dailyLimit !== null && (
+                                <div className={cn(
+                                    "mb-4 p-3 rounded-lg flex items-center gap-3",
+                                    remainingToday === 0
+                                        ? "bg-destructive/10 border border-destructive/20"
+                                        : "bg-warning/10 border border-warning/20"
+                                )}>
+                                    <Crown className={cn(
+                                        "h-5 w-5 shrink-0",
+                                        remainingToday === 0 ? "text-destructive" : "text-warning"
+                                    )} />
+                                    <div className="flex-1 text-sm">
+                                        {remainingToday === 0 ? (
+                                            <span className="text-destructive font-medium">
+                                                Daily limit reached. <Link href="/pricing" className="underline hover:no-underline">Upgrade to Pro</Link> for unlimited transcriptions.
+                                            </span>
+                                        ) : (
+                                            <span className="text-warning-foreground">
+                                                <span className="font-medium">{remainingToday}/{dailyLimit}</span> free transcriptions remaining today.
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* File size error */}
+                            {fileSizeError && (
+                                <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center gap-3">
+                                    <WarningCircle className="h-5 w-5 text-destructive shrink-0" />
+                                    <span className="text-sm text-destructive">{fileSizeError}</span>
+                                </div>
+                            )}
+
                             {activeTab === "file" && (
                                 <FileUploadTab
                                     file={file}
-                                    onFileSelect={setFile}
+                                    onFileSelect={handleFileSelect}
                                     onClear={handleClear}
                                 />
                             )}
@@ -425,7 +477,7 @@ export function CreateTranscriptionModal({
                             </Button>
                             <Button
                                 onClick={handleSubmit}
-                                disabled={!hasContent()}
+                                disabled={!hasContent() || !canTranscribe() || !!fileSizeError}
                                 className="min-w-[120px]"
                             >
                                 Transcribe

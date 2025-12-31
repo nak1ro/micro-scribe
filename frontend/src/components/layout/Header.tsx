@@ -3,7 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Menu, X, Mic2, LayoutDashboard, CreditCard, User, LogOut, Sun, Moon } from "lucide-react";
+import { Menu, X, LayoutDashboard, CreditCard, User, LogOut, Sun, Moon } from "lucide-react";
+import { Rocket } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -40,7 +41,7 @@ export function Header() {
                             href="/"
                             className="flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity"
                         >
-                            <Mic2 className="h-7 w-7 text-primary" />
+                            <Rocket className="h-7 w-7 text-primary" />
                             <span className="hidden sm:block text-lg font-semibold">
                                 ScribeRocket
                             </span>

@@ -225,7 +225,7 @@ export function ProblemSolutionSection() {
                                             <span className="w-6 h-6 rounded-full bg-destructive/20 flex items-center justify-center shrink-0">
                                                 <Xmark className="w-3 h-3 text-destructive" />
                                             </span>
-                                            <span className="text-lg text-muted-foreground line-through decoration-destructive/30">
+                                            <span className="text-lg text-muted-foreground">
                                                 {item}
                                             </span>
                                         </li>
