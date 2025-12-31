@@ -1,4 +1,5 @@
 using ScribeApi.Core.Exceptions;
+using ScribeApi.Infrastructure.Persistence.Entities;
 
 namespace ScribeApi.Core.Domain.Plans;
 
@@ -9,7 +10,7 @@ public interface IPlanGuard
     void EnsureDailyTranscriptionLimit(PlanDefinition plan, int currentDailyCount);
     void EnsureConcurrentJobs(PlanDefinition plan, int activeJobsCount);
     void EnsureTranslationAllowed(PlanDefinition plan);
-    void EnsureModelAllowed(PlanDefinition plan);
+    void EnsureQualityAllowed(PlanDefinition plan, TranscriptionQuality quality);
 }
 
 public class PlanGuard : IPlanGuard
@@ -55,15 +56,17 @@ public class PlanGuard : IPlanGuard
     {
         if (!plan.AllowTranslation)
         {
-            throw new PlanLimitExceededException("Translation is not allowed on your current plan.");
+            throw new PlanLimitExceededException("Translation is not available on your plan. Upgrade to Pro.");
         }
     }
 
-    public void EnsureModelAllowed(PlanDefinition plan)
+    public void EnsureQualityAllowed(PlanDefinition plan, TranscriptionQuality quality)
     {
-        if (!plan.AllowAllModels)
+        if (!plan.AllowAllModels && quality != TranscriptionQuality.Balanced)
         {
-            throw new PlanLimitExceededException("Model selection is not allowed on your current plan.");
+            throw new PlanLimitExceededException(
+                "Only Balanced quality is available on your plan. Upgrade to Pro for Fast/Accurate.");
         }
     }
 }
+

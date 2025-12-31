@@ -156,12 +156,7 @@ export const pricingFAQContent = {
 };
 
 // Trust signals
-export const trustSignals = [
-    { icon: "Shield", text: "Bank-level Security" },
-    { icon: "CreditCard", text: "Secure Payments via Stripe" },
-    { icon: "RefreshCw", text: "14-Day Money Back" },
-    { icon: "Lock", text: "GDPR Compliant" },
-];
+
 
 // Final CTA
 export const pricingCTAContent = {

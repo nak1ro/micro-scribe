@@ -15,7 +15,6 @@ import { PricingToggle } from "./PricingToggle";
 import { PricingCard } from "./PricingCard";
 import { FeatureComparisonTable } from "./FeatureComparisonTable";
 import { PricingFAQ } from "./PricingFAQ";
-import { TrustBadges } from "./TrustBadges";
 
 // Main pricing page component with all sections
 export function PricingPage() {
@@ -105,10 +104,17 @@ export function PricingPage() {
                 </div>
             </section>
 
-            {/* Trust Signals */}
-            <section className="py-10 bg-muted/30">
-                <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-                    <TrustBadges />
+
+            {/* FAQ Section */}
+            <section className="py-16 sm:py-20">
+                <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-10">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
+                            {pricingFAQContent.heading}
+                        </h2>
+                    </div>
+
+                    <PricingFAQ />
                 </div>
             </section>
 
