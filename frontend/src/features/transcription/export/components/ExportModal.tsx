@@ -1,11 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { X, Check, RefreshDouble, Plus, Download } from "iconoir-react";
+import Link from "next/link";
+import { X, Check, RefreshDouble, Plus, Download, Lock, Code } from "iconoir-react";
 import { Page, TextBox, MediaVideo, Table2Columns, MusicDoubleNote } from "iconoir-react";
 import { cn, getLanguageName } from "@/lib/utils";
 import { Button } from "@/components/ui";
 import { useTranscriptionJob } from "@/hooks/useTranscriptions";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { transcriptionApi } from "@/services/transcription";
 import { handleExport } from "@/features/transcription/utils/exportUtils";
 import type { ExportFormat, TranscriptionData } from "@/features/transcription/types";
@@ -34,12 +36,15 @@ const EXPORT_FORMATS: { id: ExportFormat; label: string; description: string; ic
     { id: "txt", label: "Plain Text", description: "Simple text file", icon: Page },
     { id: "docx", label: "Word Document", description: "Microsoft Word format", icon: TextBox },
     { id: "srt", label: "SRT Subtitles", description: "Standard subtitle format", icon: MediaVideo },
+    { id: "vtt", label: "VTT Subtitles", description: "Web Video Text Tracks", icon: MediaVideo },
+    { id: "json", label: "JSON Data", description: "Full transcription data", icon: Code },
     { id: "csv", label: "CSV Spreadsheet", description: "Comma-separated values", icon: Table2Columns },
     { id: "mp3", label: "Audio (MP3)", description: "Download original audio", icon: MusicDoubleNote },
 ];
 
 export function ExportModal({ isOpen, onClose, jobId }: ExportModalProps) {
     const { data: job, refetch: refetchJob } = useTranscriptionJob(jobId);
+    const { limits, canExport } = usePlanLimits();
 
     const [selectedFormat, setSelectedFormat] = React.useState<ExportFormat | null>(null);
     const [selectedLanguage, setSelectedLanguage] = React.useState<string | null>(null);
@@ -117,32 +122,7 @@ export function ExportModal({ isOpen, onClose, jobId }: ExportModalProps) {
         setError(null);
 
         try {
-            // Map job to TranscriptionData format for exportUtils
-            const data: TranscriptionData = {
-                id: job.jobId,
-                fileName: job.originalFileName,
-                status: job.status.toLowerCase() as TranscriptionData["status"],
-                processingStep: job.processingStep,
-                durationSeconds: job.durationSeconds || 0,
-                sourceLanguage: job.sourceLanguage || "en",
-                translatedLanguages: job.translatedLanguages || [],
-                translationStatus: job.translationStatus,
-                translatingToLanguage: job.translatingToLanguage,
-                enableSpeakerDiarization: job.enableSpeakerDiarization,
-                speakers: job.speakers || [],
-                segments: job.segments.map((s) => ({
-                    id: s.id,
-                    text: s.text,
-                    startSeconds: s.startSeconds,
-                    endSeconds: s.endSeconds,
-                    speaker: s.speaker,
-                    translations: s.translations || {},
-                    isEdited: s.isEdited
-                })),
-                audioUrl: job.presignedUrl
-            };
-
-            await handleExport(selectedFormat, data, selectedLanguage);
+            await handleExport(selectedFormat, job.jobId, selectedLanguage, job.presignedUrl);
             onClose();
         } catch (err) {
             const message = err instanceof Error ? err.message : "Export failed";
@@ -154,7 +134,7 @@ export function ExportModal({ isOpen, onClose, jobId }: ExportModalProps) {
 
     if (!isOpen) return null;
 
-    const canExport = selectedFormat !== null && !isExporting && !isTranslating && !isJobTranslating;
+    const canStartExport = selectedFormat !== null && !isExporting && !isTranslating && !isJobTranslating;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -264,28 +244,32 @@ export function ExportModal({ isOpen, onClose, jobId }: ExportModalProps) {
                                     <div className="max-h-32 overflow-y-auto">
                                         {untranslatedLanguages.map((lang) => {
                                             const isCurrentlyTranslating = translatingToLanguage === lang.code;
+                                            const isRestricted = !limits.translation;
 
                                             return (
                                                 <button
                                                     key={lang.code}
-                                                    onClick={() => handleTranslate(lang.code)}
-                                                    disabled={isTranslating || isJobTranslating}
+                                                    onClick={() => !isRestricted && handleTranslate(lang.code)}
+                                                    disabled={isTranslating || isJobTranslating || isRestricted}
                                                     className={cn(
-                                                        "w-full flex items-center gap-2 px-4 py-2.5",
+                                                        "w-full flex items-center justify-between gap-2 px-4 py-2.5",
                                                         "text-left transition-colors border-t border-border",
-                                                        (isTranslating || isJobTranslating)
+                                                        (isTranslating || isJobTranslating || isRestricted)
                                                             ? "opacity-50 cursor-not-allowed"
                                                             : "hover:bg-muted cursor-pointer"
                                                     )}
                                                 >
-                                                    {isCurrentlyTranslating ? (
-                                                        <RefreshDouble className="h-3.5 w-3.5 text-info animate-spin" />
-                                                    ) : (
-                                                        <Plus className="h-3.5 w-3.5 text-muted-foreground" />
-                                                    )}
-                                                    <span className="text-sm text-muted-foreground">
-                                                        {lang.name}
-                                                    </span>
+                                                    <div className="flex items-center gap-2">
+                                                        {isCurrentlyTranslating ? (
+                                                            <RefreshDouble className="h-3.5 w-3.5 text-info animate-spin" />
+                                                        ) : (
+                                                            <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                                                        )}
+                                                        <span className="text-sm text-muted-foreground">
+                                                            {lang.name}
+                                                        </span>
+                                                    </div>
+                                                    {isRestricted && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
                                                 </button>
                                             );
                                         })}
@@ -302,17 +286,21 @@ export function ExportModal({ isOpen, onClose, jobId }: ExportModalProps) {
                             {EXPORT_FORMATS.map((format) => {
                                 const Icon = format.icon;
                                 const isSelected = selectedFormat === format.id;
+                                const isRestricted = !canExport(format.id);
 
                                 return (
                                     <button
                                         key={format.id}
-                                        onClick={() => setSelectedFormat(format.id)}
+                                        onClick={() => !isRestricted && setSelectedFormat(format.id)}
+                                        disabled={isRestricted}
                                         className={cn(
                                             "flex items-center gap-3 px-4 py-3 rounded-lg",
                                             "border transition-all text-left",
                                             isSelected
                                                 ? "border-primary bg-primary/5"
-                                                : "border-border hover:border-primary/30 hover:bg-muted/50"
+                                                : "border-border",
+                                            !isSelected && !isRestricted && "hover:border-primary/30 hover:bg-muted/50",
+                                            isRestricted && "opacity-50 cursor-not-allowed bg-muted border-transparent"
                                         )}
                                     >
                                         <Icon className={cn(
@@ -320,11 +308,18 @@ export function ExportModal({ isOpen, onClose, jobId }: ExportModalProps) {
                                             isSelected ? "text-primary" : "text-muted-foreground"
                                         )} />
                                         <div className="flex-1 min-w-0">
-                                            <div className="text-sm font-medium text-foreground">
+                                            <div className="text-sm font-medium text-foreground flex items-center gap-1.5">
                                                 {format.label}
+                                                {isRestricted && <Lock className="h-3.5 w-3.5 ml-auto text-muted-foreground" />}
                                             </div>
                                             <div className="text-xs text-muted-foreground">
-                                                {format.description}
+                                                {isRestricted ? (
+                                                    <Link href="/pricing" className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
+                                                        Upgrade to Pro
+                                                    </Link>
+                                                ) : (
+                                                    format.description
+                                                )}
                                             </div>
                                         </div>
                                         {isSelected && (
@@ -353,7 +348,7 @@ export function ExportModal({ isOpen, onClose, jobId }: ExportModalProps) {
                     </Button>
                     <Button
                         onClick={handleExportClick}
-                        disabled={!canExport}
+                        disabled={!canStartExport}
                     >
                         {isExporting ? "Exporting..." : "Export"}
                     </Button>

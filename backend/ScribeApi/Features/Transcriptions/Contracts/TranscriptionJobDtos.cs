@@ -75,7 +75,10 @@ namespace ScribeApi.Features.Transcriptions.Contracts
         Txt,
         Srt,
         Vtt,
-        Json
+        Json,
+        Word,
+        Csv,
+        Audio
     }
 
     // List item for job list response

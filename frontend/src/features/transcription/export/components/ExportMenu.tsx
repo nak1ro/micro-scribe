@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { NavArrowDown, Page, TextBox, MediaVideo, Table2Columns, MusicDoubleNote, Lock } from "iconoir-react";
+import { NavArrowDown, Page, TextBox, MediaVideo, Table2Columns, MusicDoubleNote, Lock, Code } from "iconoir-react";
 import { getLanguageName } from "@/lib/utils";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import type { ExportFormat, ExportOption } from "@/features/transcription/types";
@@ -36,6 +36,18 @@ const exportOptions: ExportOption[] = [
         icon: "Subtitles",
     },
     {
+        id: "vtt",
+        label: "VTT Subtitles",
+        description: "Web Video Text Tracks",
+        icon: "Subtitles",
+    },
+    {
+        id: "json",
+        label: "JSON Data",
+        description: "Full transcription data",
+        icon: "Code",
+    },
+    {
         id: "csv",
         label: "CSV Spreadsheet",
         description: "Comma-separated values",
@@ -55,6 +67,7 @@ const iconMap = {
     Subtitles: MediaVideo,
     Table: Table2Columns,
     Music: MusicDoubleNote,
+    Code: Code,
 };
 
 export function ExportMenu({ onExport, displayLanguage, sourceLanguage, disabled, className }: ExportMenuProps) {

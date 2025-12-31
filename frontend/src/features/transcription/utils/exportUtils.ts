@@ -1,155 +1,83 @@
 
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from "docx";
 import { saveAs } from "file-saver";
-import type { TranscriptionData, ExportFormat, ViewerSegment } from "../types";
-
-// Helper to format seconds into HH:MM:SS,mmm
-const formatTimestamp = (seconds: number, separator: string = ","): string => {
-    const date = new Date(seconds * 1000);
-    const hh = date.getUTCHours().toString().padStart(2, "0");
-    const mm = date.getUTCMinutes().toString().padStart(2, "0");
-    const ss = date.getUTCSeconds().toString().padStart(2, "0");
-    const ms = date.getUTCMilliseconds().toString().padStart(3, "0");
-    return `${hh}:${mm}:${ss}${separator}${ms}`;
-};
-
-// Helper to get text in the selected language
-const getSegmentText = (segment: ViewerSegment, displayLanguage: string | null): string => {
-    if (displayLanguage && segment.translations?.[displayLanguage]) {
-        return segment.translations[displayLanguage];
-    }
-    return segment.text;
-};
-
-// plain text export
-const exportToTxt = (data: TranscriptionData, displayLanguage: string | null): Blob => {
-    const lines = data.segments.map(s => {
-        const time = `[${formatTimestamp(s.startSeconds, ".")}]`;
-        const speaker = s.speaker ? `${s.speaker}: ` : "";
-        return `${time} ${speaker}${getSegmentText(s, displayLanguage)}`;
-    });
-    return new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
-};
-
-// SRT export
-const exportToSrt = (data: TranscriptionData, displayLanguage: string | null): Blob => {
-    const content = data.segments.map((s, index) => {
-        const start = formatTimestamp(s.startSeconds, ",");
-        const end = formatTimestamp(s.endSeconds, ",");
-        const speaker = s.speaker ? `${s.speaker}: ` : "";
-        return `${index + 1}\n${start} --> ${end}\n${speaker}${getSegmentText(s, displayLanguage)}\n`;
-    }).join("\n");
-    return new Blob([content], { type: "text/plain;charset=utf-8" });
-};
-
-// CSV export
-const exportToCsv = (data: TranscriptionData, displayLanguage: string | null): Blob => {
-    const headers = ["Start Time", "End Time", "Speaker", "Text"];
-    const rows = data.segments.map(s => [
-        formatTimestamp(s.startSeconds, "."),
-        formatTimestamp(s.endSeconds, "."),
-        s.speaker || "",
-        `"${getSegmentText(s, displayLanguage).replace(/"/g, '""')}"` // Escape quotes
-    ]);
-
-    const csvContent = [
-        headers.join(","),
-        ...rows.map(r => r.join(","))
-    ].join("\n");
-
-    return new Blob([csvContent], { type: "text/csv;charset=utf-8" });
-};
-
-// DOCX export
-const exportToDocx = async (data: TranscriptionData, displayLanguage: string | null): Promise<Blob> => {
-    const doc = new Document({
-        sections: [{
-            properties: {},
-            children: [
-                new Paragraph({
-                    text: data.fileName,
-                    heading: HeadingLevel.TITLE,
-                    alignment: AlignmentType.CENTER,
-                    spacing: { after: 400 },
-                }),
-                ...data.segments.flatMap(s => {
-                    const time = `[${formatTimestamp(s.startSeconds, ".")}]`;
-                    const speaker = s.speaker ? `${s.speaker}: ` : "";
-
-                    return [
-                        new Paragraph({
-                            children: [
-                                new TextRun({
-                                    text: time + " ",
-                                    color: "888888",
-                                    size: 20, // 10pt
-                                }),
-                                new TextRun({
-                                    text: speaker,
-                                    bold: true,
-                                    size: 24, // 12pt
-                                }),
-                                new TextRun({
-                                    text: getSegmentText(s, displayLanguage),
-                                    size: 24, // 12pt
-                                }),
-                            ],
-                            spacing: { after: 200 },
-                        })
-                    ];
-                })
-            ],
-        }],
-    });
-
-    return await Packer.toBlob(doc);
-};
+import type { ExportFormat } from "../types";
+import { transcriptionApi } from "@/services/transcription";
+import { API_ENDPOINTS } from "@/services/api";
 
 export const handleExport = async (
     format: ExportFormat,
-    data: TranscriptionData,
-    displayLanguage: string | null = null
+    jobId: string,
+    language: string | null = null,
+    audioUrl?: string | null
 ) => {
-    const filename = data.fileName.replace(/\.[^/.]+$/, ""); // Remove extension
-    let blob: Blob | null = null;
     let extension = "";
+    let backendFormat = "";
 
     try {
         switch (format) {
             case "txt":
-                blob = exportToTxt(data, displayLanguage);
+                backendFormat = "Txt";
                 extension = "txt";
                 break;
-            case "srt":
-                blob = exportToSrt(data, displayLanguage);
-                extension = "srt";
-                break;
-            case "csv":
-                blob = exportToCsv(data, displayLanguage);
-                extension = "csv";
-                break;
             case "docx":
-                blob = await exportToDocx(data, displayLanguage);
+                backendFormat = "Word";
                 extension = "docx";
                 break;
-            case "mp3":
-                if (data.audioUrl) {
-                    const response = await fetch(data.audioUrl);
-                    if (!response.ok) throw new Error("Failed to fetch audio file");
-                    blob = await response.blob();
-                    // Try to get extension from url or content-type, default to mp3
-                    extension = "mp3";
-                }
+            case "srt":
+                backendFormat = "Srt";
+                extension = "srt";
                 break;
+            case "vtt":
+                backendFormat = "Vtt";
+                extension = "vtt";
+                break;
+            case "json":
+                backendFormat = "Json";
+                extension = "json";
+                break;
+            case "csv":
+                backendFormat = "Csv";
+                extension = "csv";
+                break;
+            case "mp3":
+                if (!audioUrl) {
+                    console.warn("No audio URL provided for MP3 export");
+                    // Fallback to backend redirect if no URL provided (though UI restricts this)
+                    const fallbackUrl = `${process.env.NEXT_PUBLIC_API_URL || ""}${API_ENDPOINTS.TRANSCRIPTIONS.EXPORT(jobId)}?format=Audio`;
+                    window.location.href = fallbackUrl;
+                } else {
+                    // Direct download from Azure
+                    const response = await fetch(audioUrl);
+                    if (!response.ok) throw new Error("Failed to fetch audio file");
+                    const blob = await response.blob();
+                    saveAs(blob, `audio.mp3`);
+                }
+                return;
         }
 
-        if (blob) {
-            saveAs(blob, `${filename}.${extension}`);
-        }
+        // For non-audio formats, fetch the blob from the API
+        const blob = await transcriptionApi.exportTranscript(
+            jobId,
+            backendFormat,
+            language || undefined
+        );
+
+        // Use file-saver to download the blob
+        // The backend sets Content-Disposition, but we can set a fallback filename if needed
+        // However, saveAs with a Blob usually requires a filename.
+        // If we don't provide one, it might default to "download".
+        // Ideally we should extract filename from headers, but that's hard with the current API wrapper returning Blob directly.
+        // Let's rely on browser handling or provide a generic name + extension.
+        // Since we don't have the original filename here (we only have jobId), we'll let user rename or rely on browser.
+        // Better: The user wanted us to use the backend. The backend sets Content-Disposition.
+        // If we use axios (apiClient), we can't easily get headers if `response.data` is returned.
+        // But `transcriptionApi.exportTranscript` returns `response.data`.
+        // Let's assume we can provide a default name like "transcript".
+
+        saveAs(blob, `transcript.${extension}`);
+
     } catch (error) {
         console.error("Export failed:", error);
-        // You might want to handle this error in the UI
         throw error;
     }
 };
-

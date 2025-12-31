@@ -19,7 +19,7 @@ export interface PlanLimits {
     translation: boolean;
     allModels: boolean;
     unlimitedStorage: boolean;
-    allowedExportFormats: ("txt" | "docx" | "srt" | "csv" | "mp3")[];
+    allowedExportFormats: ("txt" | "docx" | "srt" | "vtt" | "json" | "csv" | "mp3")[];
 }
 
 export interface Plan {
@@ -90,7 +90,7 @@ export const PLANS: Record<PlanId, Plan> = {
             translation: true,
             allModels: true,
             unlimitedStorage: true,
-            allowedExportFormats: ["txt", "docx", "srt", "csv", "mp3"],
+            allowedExportFormats: ["txt", "docx", "srt", "vtt", "json", "csv", "mp3"],
         },
         features: [
             { icon: "Infinity", text: "Unlimited transcriptions, 20+ files at once" },

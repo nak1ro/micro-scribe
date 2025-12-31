@@ -120,12 +120,18 @@ public class TranscriptionsController : ControllerBase
     public async Task<IActionResult> ExportTranscript(
         Guid jobId,
         [FromQuery] ExportFormat format = ExportFormat.Txt,
+        [FromQuery] string? language = null,
         CancellationToken ct = default)
     {
         var userId = User.GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        var result = await _exportService.ExportAsync(jobId, userId, format, ct);
+        var result = await _exportService.ExportAsync(jobId, userId, format, language, ct);
+
+        if (!string.IsNullOrEmpty(result.RedirectUrl))
+        {
+            return Redirect(result.RedirectUrl);
+        }
 
         return File(result.Content, result.ContentType, result.FileName);
     }

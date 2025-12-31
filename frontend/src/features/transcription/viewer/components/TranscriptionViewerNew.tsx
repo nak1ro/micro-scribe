@@ -168,7 +168,7 @@ export function TranscriptionViewerNew({
 
         try {
             // Export in the currently displayed language
-            await exportFile(format, data, displayLanguage);
+            await exportFile(format, data.id, displayLanguage, data.audioUrl);
         } catch (error) {
             console.error("Export failed:", error);
             // TODO: Add toast notification here

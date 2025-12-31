@@ -23,8 +23,11 @@ public class PlanDefinition
     // Does a user get priority in job transcription
     public bool TranscriptionJobPriority { get; set; }
 
-    // Future flags - don't implement now 
+    // Feature flags
     public bool AllowTranslation { get; set; }
     public bool AllowAllModels { get; set; }
     public bool UnlimitedStorage { get; set; }
+    
+    // Allowed export formats (Txt, Srt, Vtt, Json, Word, Csv, Audio)
+    public List<string> AllowedExportFormats { get; set; } = new();
 }

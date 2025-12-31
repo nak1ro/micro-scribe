@@ -11,6 +11,7 @@ public interface IPlanGuard
     void EnsureConcurrentJobs(PlanDefinition plan, int activeJobsCount);
     void EnsureTranslationAllowed(PlanDefinition plan);
     void EnsureQualityAllowed(PlanDefinition plan, TranscriptionQuality quality);
+    void EnsureExportAllowed(PlanDefinition plan, string formatName);
 }
 
 public class PlanGuard : IPlanGuard
@@ -68,5 +69,15 @@ public class PlanGuard : IPlanGuard
                 "Only Balanced quality is available on your plan. Upgrade to Pro for Fast/Accurate.");
         }
     }
+
+    public void EnsureExportAllowed(PlanDefinition plan, string formatName)
+    {
+        if (!plan.AllowedExportFormats.Contains(formatName, StringComparer.OrdinalIgnoreCase))
+        {
+            throw new PlanLimitExceededException(
+                $"Export format '{formatName}' is not available on your plan. Upgrade to Pro.");
+        }
+    }
 }
+
 
