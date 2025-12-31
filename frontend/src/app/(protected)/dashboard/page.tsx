@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { CreateTranscriptionModal } from "@/features/transcription";
 import { DashboardContent, useDashboardModal } from "@/features/workspace/dashboard";
 import { useTranscriptions, useFolderItems, useFolder } from "@/hooks";
@@ -10,10 +10,22 @@ import { uploadAbortRegistry } from "@/services/upload/uploadAbortRegistry";
 import type { TranscriptionListItem } from "@/types/models/transcription";
 
 function DashboardPageContent() {
+    const router = useRouter();  // Add useRouter hook
     const searchParams = useSearchParams();
     const folderId = searchParams.get("folder");
 
     const { isModalOpen, openModal, closeModal } = useDashboardModal();
+
+    // Clean up URL when closing modal
+    const handleCloseModal = () => {
+        closeModal();
+        const params = new URLSearchParams(searchParams.toString());
+        if (params.get("action") === "new") {
+            params.delete("action");
+            router.replace(`/dashboard?${params.toString()}`);
+        }
+    };
+
     const {
         items: allItems,
         isLoading: isLoadingAll,
@@ -99,7 +111,7 @@ function DashboardPageContent() {
 
             <CreateTranscriptionModal
                 isOpen={isModalOpen}
-                onClose={closeModal}
+                onClose={handleCloseModal}
                 onSuccess={handleUploadSuccess}
                 onOptimisticAdd={addOptimisticItem}
                 onOptimisticUpdate={updateOptimisticItem}

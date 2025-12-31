@@ -7,6 +7,7 @@ import { RefreshDouble, WarningCircle } from "iconoir-react";
 import { Button } from "@/components/ui";
 import { useTranscriptionJob } from "@/hooks/useTranscriptions";
 import { useAnalysis } from "@/hooks/useAnalysis";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
 
 import { ViewerHeader } from "./ViewerHeader";
 import { ViewerLayout } from "./ViewerLayout";
@@ -36,6 +37,7 @@ export function TranscriptionViewerNew({
     className
 }: TranscriptionViewerNewProps) {
     const router = useRouter();
+    const { limits } = usePlanLimits();
 
     // Fetch data if jobId is provided
     const { data: job, isLoading, error, refetch } = useTranscriptionJob(jobId || "");
@@ -345,6 +347,7 @@ export function TranscriptionViewerNew({
                         translatedLanguages={data.translatedLanguages}
                         translationStatus={data.translationStatus}
                         translatingToLanguage={data.translatingToLanguage}
+                        canTranslate={limits.translation}
                         sourceLanguage={data.sourceLanguage}
                         displayLanguage={displayLanguage}
                         onDisplayLanguageChange={setDisplayLanguage}

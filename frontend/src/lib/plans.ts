@@ -19,6 +19,7 @@ export interface PlanLimits {
     translation: boolean;
     allModels: boolean;
     unlimitedStorage: boolean;
+    allowedExportFormats: ("txt" | "docx" | "srt" | "csv" | "mp3")[];
 }
 
 export interface Plan {
@@ -54,9 +55,10 @@ export const PLANS: Record<PlanId, Plan> = {
             maxFilesPerUpload: 1,
             maxConcurrentJobs: 1,
             priorityProcessing: false,
-            translation: true,
+            translation: false,
             allModels: false,
             unlimitedStorage: false,
+            allowedExportFormats: ["txt"],
         },
         features: [
             { icon: "Upload", text: "3 files per day, up to 10 minutes each" },
@@ -88,6 +90,7 @@ export const PLANS: Record<PlanId, Plan> = {
             translation: true,
             allModels: true,
             unlimitedStorage: true,
+            allowedExportFormats: ["txt", "docx", "srt", "csv", "mp3"],
         },
         features: [
             { icon: "Infinity", text: "Unlimited transcriptions, 20+ files at once" },

@@ -4,9 +4,7 @@ import { useUsage } from "@/hooks/useUsage";
 import { PLANS, type PlanId } from "@/lib/plans";
 import type { ExportFormat } from "@/features/transcription/types";
 
-// Export formats available to each plan
-const FREE_EXPORT_FORMATS: ExportFormat[] = ["txt"];
-const PRO_EXPORT_FORMATS: ExportFormat[] = ["txt", "docx", "srt", "csv", "mp3"];
+
 
 export function usePlanLimits() {
     const { data: usage, isLoading } = useUsage();
@@ -35,14 +33,15 @@ export function usePlanLimits() {
     };
 
     // Check if export format is available for current plan
+    // Check if export format is available for current plan
     const canExport = (format: ExportFormat): boolean => {
-        if (isPro) return PRO_EXPORT_FORMATS.includes(format);
-        return FREE_EXPORT_FORMATS.includes(format);
+        return limits.allowedExportFormats.includes(format);
     };
 
     // Get list of available export formats
+    // Get list of available export formats
     const getAvailableExportFormats = (): ExportFormat[] => {
-        return isPro ? PRO_EXPORT_FORMATS : FREE_EXPORT_FORMATS;
+        return limits.allowedExportFormats;
     };
 
     // Check if translation is available

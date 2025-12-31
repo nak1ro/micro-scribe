@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { cn, formatFileSize } from "@/lib/utils";
-import { Xmark, CloudUpload, Youtube, Microphone, Folder, Trash, CheckCircle, WarningCircle, Crown } from "iconoir-react";
+import { Xmark, CloudUpload, Youtube, Microphone, Folder, Trash, CheckCircle, WarningCircle, Crown, Lock } from "iconoir-react";
 import { Button } from "@/components/ui";
 import { VoiceRecordingTab } from "./VoiceRecordingTab";
 import { UploadProgressOverlay } from "./UploadProgressOverlay";
@@ -559,22 +559,34 @@ export function CreateTranscriptionModal({
                                         Model Speed
                                     </label>
                                     <div className="flex-1 flex gap-2">
-                                        {QUALITY_OPTIONS.map((opt) => (
-                                            <button
-                                                key={opt.value}
-                                                type="button"
-                                                onClick={() => setQuality(opt.value)}
-                                                className={cn(
-                                                    "flex-1 px-3 py-2 rounded-md text-sm border transition-all",
-                                                    quality === opt.value
-                                                        ? "border-primary bg-primary/10 text-primary"
-                                                        : "border-input bg-background text-muted-foreground hover:border-primary/50"
-                                                )}
-                                            >
-                                                <div className="font-medium">{opt.label}</div>
-                                                <div className="text-xs opacity-70">{opt.description}</div>
-                                            </button>
-                                        ))}
+                                        {QUALITY_OPTIONS.map((opt) => {
+                                            const isRestricted = !limits.allModels && opt.value !== TranscriptionQuality.Balanced;
+                                            const isSelected = quality === opt.value;
+
+                                            return (
+                                                <button
+                                                    key={opt.value}
+                                                    type="button"
+                                                    onClick={() => !isRestricted && setQuality(opt.value)}
+                                                    disabled={isRestricted}
+                                                    className={cn(
+                                                        "flex-1 px-3 py-2 rounded-md text-sm border transition-all relative",
+                                                        "flex flex-col items-start gap-0.5",
+                                                        isSelected
+                                                            ? "border-primary bg-primary/10 text-primary"
+                                                            : "border-input bg-background text-muted-foreground",
+                                                        !isSelected && !isRestricted && "hover:border-primary/50",
+                                                        isRestricted && "opacity-50 cursor-not-allowed bg-muted border-transparent"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-1.5 w-full">
+                                                        <span className="font-medium">{opt.label}</span>
+                                                        {isRestricted && <Lock className="h-3.5 w-3.5 ml-auto" />}
+                                                    </div>
+                                                    <div className="text-xs opacity-70 text-left">{opt.description}</div>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>

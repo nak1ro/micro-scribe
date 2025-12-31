@@ -28,6 +28,7 @@ interface ActionsSidebarProps {
     translatedLanguages: string[];
     translationStatus: string | null;
     translatingToLanguage: string | null;
+    canTranslate?: boolean;
     // Language display
     sourceLanguage: string;
     displayLanguage: string | null;
@@ -95,6 +96,7 @@ export function ActionsSidebar({
     translatedLanguages,
     translationStatus,
     translatingToLanguage,
+    canTranslate,
     sourceLanguage,
     displayLanguage,
     onDisplayLanguageChange,
@@ -134,6 +136,7 @@ export function ActionsSidebar({
                     displayLanguage={displayLanguage}
                     onDisplayLanguageChange={onDisplayLanguageChange}
                     onTranslate={onTranslate}
+                    canTranslate={canTranslate}
                     disabled={disabled}
                 />
 

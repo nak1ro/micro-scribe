@@ -60,6 +60,7 @@ export function TranscriptionCard({
     };
 
     const handleCardClick = () => {
+        if (IN_PROGRESS_STATUSES.includes(item.status)) return;
         router.push(`/transcriptions/${item.id}`);
     };
 
@@ -89,10 +90,13 @@ export function TranscriptionCard({
             onMouseEnter={() => setShowActions(true)}
             onMouseLeave={() => setShowActions(false)}
             className={cn(
-                "relative flex flex-col p-4 rounded-xl cursor-pointer",
+                "relative flex flex-col p-4 rounded-xl",
                 "bg-card border border-border",
-                "hover:border-primary/30 hover:shadow-lg",
                 "transition-all duration-200",
+                // Interactive state (not in progress)
+                !isInProgress && "cursor-pointer hover:border-primary/30 hover:shadow-lg",
+                // Disabled state (in progress)
+                isInProgress && "cursor-default opacity-80 bg-muted/5",
                 isSelected && "ring-2 ring-primary border-primary"
             )}
         >

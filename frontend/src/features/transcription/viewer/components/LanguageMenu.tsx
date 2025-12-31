@@ -12,6 +12,7 @@ interface LanguageMenuProps {
     displayLanguage: string | null;
     onDisplayLanguageChange: (lang: string | null) => void;
     onTranslate: (targetLanguage: string) => void;
+    canTranslate?: boolean;
     disabled?: boolean;
     className?: string;
 }
@@ -38,6 +39,7 @@ export function LanguageMenu({
     displayLanguage,
     onDisplayLanguageChange,
     onTranslate,
+    canTranslate = true,
     disabled,
     className,
 }: LanguageMenuProps) {
@@ -187,7 +189,7 @@ export function LanguageMenu({
                     )}
 
                     {/* Add translation section */}
-                    {untranslatedLanguages.length > 0 && (
+                    {untranslatedLanguages.length > 0 && canTranslate && (
                         <>
                             <div className="h-px bg-border my-1" />
                             <div className="px-3 py-1.5">
