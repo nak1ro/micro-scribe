@@ -80,8 +80,8 @@ export const PLANS: Record<PlanId, Plan> = {
         },
         limits: {
             dailyTranscriptionLimit: null,
-            maxMinutesPerFile: 300,
-            maxFileSizeMB: 1024, // 1073741824 bytes = 1GB
+            maxMinutesPerFile: 180, // 3 hours
+            maxFileSizeMB: 2048, // 2GB
             maxFilesPerUpload: 20,
             maxConcurrentJobs: 5,
             priorityProcessing: true,
@@ -91,7 +91,7 @@ export const PLANS: Record<PlanId, Plan> = {
         },
         features: [
             { icon: "Infinity", text: "Unlimited transcriptions, 20+ files at once" },
-            { icon: "Upload", text: "Files up to 5 hours / 1GB" },
+            { icon: "Upload", text: "Files up to 3 hours / 2GB" },
             { icon: "Zap", text: "Priority queue — faster processing" },
             { icon: "Download", text: "Multi-format export (TXT, DOCX, SRT, CSV, MP3)" },
             { icon: "Users", text: "Speaker recognition & timestamps" },

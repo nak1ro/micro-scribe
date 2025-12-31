@@ -10,6 +10,7 @@ import { UploadProgressOverlay } from "./UploadProgressOverlay";
 import { TranscriptionQuality } from "@/types/api/transcription";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { PLANS } from "@/lib/plans";
 import type { UploadStatus } from "@/types/models/upload";
 
 // ─────────────────────────────────────────────────────────────
@@ -86,32 +87,59 @@ export function CreateTranscriptionModal({
     onOptimisticRemove,
 }: CreateTranscriptionModalProps) {
     const [activeTab, setActiveTab] = React.useState<TabType>("file");
-    const [file, setFile] = React.useState<File | null>(null);
+    const [files, setFiles] = React.useState<File[]>([]);
+    const [fileErrors, setFileErrors] = React.useState<Map<string, string>>(new Map());
     const [youtubeUrl, setYoutubeUrl] = React.useState("");
     const [audioBlob, setAudioBlob] = React.useState<Blob | null>(null);
     const [sourceLanguage, setSourceLanguage] = React.useState("auto");
     const [quality, setQuality] = React.useState<TranscriptionQuality>(TranscriptionQuality.Balanced);
     const [enableSpeakerDiarization, setEnableSpeakerDiarization] = React.useState(false);
-    const [fileSizeError, setFileSizeError] = React.useState<string | null>(null);
+    const [generalError, setGeneralError] = React.useState<string | null>(null);
+    const [isValidatingFiles, setIsValidatingFiles] = React.useState(false);
 
     const { upload, abort, reset, progress, status, error, isUploading } = useFileUpload();
-    const { isPro, remainingToday, dailyLimit, canTranscribe, isFileSizeValid, maxFileSizeMB } = usePlanLimits();
+    const { isPro, remainingToday, dailyLimit, canTranscribe, isFileSizeValid, maxFileSizeMB, maxMinutesPerFile, limits } = usePlanLimits();
+    const maxFilesPerUpload = limits.maxFilesPerUpload;
 
     // Reset state when modal opens or closes
     React.useEffect(() => {
-        setFile(null);
+        setFiles([]);
+        setFileErrors(new Map());
         setYoutubeUrl("");
         setAudioBlob(null);
         setActiveTab("file");
         setEnableSpeakerDiarization(false);
-        setFileSizeError(null);
+        setGeneralError(null);
         reset();
     }, [isOpen, reset]);
+
+    // Get duration of audio/video file in minutes
+    const getMediaDuration = (file: File): Promise<number | null> => {
+        return new Promise((resolve) => {
+            const url = URL.createObjectURL(file);
+            const media = file.type.startsWith("video/")
+                ? document.createElement("video")
+                : document.createElement("audio");
+
+            media.onloadedmetadata = () => {
+                URL.revokeObjectURL(url);
+                const durationMinutes = media.duration / 60;
+                resolve(isFinite(durationMinutes) ? durationMinutes : null);
+            };
+
+            media.onerror = () => {
+                URL.revokeObjectURL(url);
+                resolve(null); // Can't determine duration, let backend handle it
+            };
+
+            media.src = url;
+        });
+    };
 
     const hasContent = () => {
         switch (activeTab) {
             case "file":
-                return file !== null;
+                return files.length > 0;
             case "youtube":
                 return youtubeUrl.trim().length > 0;
             case "voice":
@@ -120,10 +148,11 @@ export function CreateTranscriptionModal({
     };
 
     const handleClear = () => {
-        setFileSizeError(null);
+        setGeneralError(null);
+        setFileErrors(new Map());
         switch (activeTab) {
             case "file":
-                setFile(null);
+                setFiles([]);
                 break;
             case "youtube":
                 setYoutubeUrl("");
@@ -134,27 +163,83 @@ export function CreateTranscriptionModal({
         }
     };
 
-    // File selection with size validation
-    const handleFileSelect = (selectedFile: File) => {
-        setFileSizeError(null);
-        if (!isFileSizeValid(selectedFile.size)) {
-            setFileSizeError(`File exceeds ${maxFileSizeMB}MB limit. ${isPro ? "" : "Upgrade to Pro for up to 2GB."}`
+    // Remove a specific file from the list
+    const handleRemoveFile = (index: number) => {
+        setFiles(prev => prev.filter((_, i) => i !== index));
+        // Remove error for this file if any
+        const fileName = files[index]?.name;
+        if (fileName) {
+            setFileErrors(prev => {
+                const next = new Map(prev);
+                next.delete(fileName);
+                return next;
+            });
+        }
+    };
+
+    // File selection with size and duration validation for multiple files
+    const handleFilesSelect = async (selectedFiles: File[], append: boolean = false) => {
+        setGeneralError(null);
+
+        // Calculate total files after addition
+        const existingCount = append ? files.length : 0;
+        const totalAfterAdd = existingCount + selectedFiles.length;
+
+        // Check max files limit
+        if (totalAfterAdd > maxFilesPerUpload) {
+            setGeneralError(
+                `You can upload up to ${maxFilesPerUpload} file${maxFilesPerUpload > 1 ? "s" : ""} at once. ${!isPro ? "Upgrade to Pro for up to 20 files." : ""}`
             );
-            setFile(null);
             return;
         }
-        setFile(selectedFile);
+
+        setIsValidatingFiles(true);
+        const newValidFiles: File[] = [];
+        const newErrors = new Map<string, string>();
+
+        for (const file of selectedFiles) {
+            // Check file size
+            if (!isFileSizeValid(file.size)) {
+                newErrors.set(file.name, `Exceeds ${maxFileSizeMB}MB limit`);
+                continue;
+            }
+
+            // Check file duration
+            const durationMinutes = await getMediaDuration(file);
+            if (durationMinutes !== null && durationMinutes > maxMinutesPerFile) {
+                newErrors.set(file.name, `Exceeds ${maxMinutesPerFile} min limit`);
+                continue;
+            }
+
+            newValidFiles.push(file);
+        }
+
+        setIsValidatingFiles(false);
+
+        if (append) {
+            // Append new files to existing
+            setFiles(prev => [...prev, ...newValidFiles]);
+            setFileErrors(prev => {
+                const merged = new Map(prev);
+                newErrors.forEach((v, k) => merged.set(k, v));
+                return merged;
+            });
+        } else {
+            // Replace files
+            setFiles(newValidFiles);
+            setFileErrors(newErrors);
+        }
     };
 
     const handleSubmit = async () => {
         if (!hasContent()) return;
 
         // Helper to run upload in background with optimistic updates
-        const runBackgroundUpload = async (uploadFile: File) => {
-            // Create a temporary ID for optimistic item
-            const tempId = `temp-${Date.now()}`;
+        const runBackgroundUpload = async (uploadFile: File, index: number) => {
+            // Create a unique temporary ID for optimistic item
+            const tempId = `temp-${Date.now()}-${index}`;
 
-            // Add optimistic item to list and close modal immediately
+            // Add optimistic item to list
             onOptimisticAdd?.({
                 id: tempId,
                 fileName: uploadFile.name,
@@ -164,9 +249,6 @@ export function CreateTranscriptionModal({
                 language: sourceLanguage === "auto" ? null : sourceLanguage,
                 preview: null,
             });
-
-            onClose();
-            reset();
 
             // Run upload in background
             try {
@@ -190,16 +272,26 @@ export function CreateTranscriptionModal({
             }
         };
 
-        if (activeTab === "file" && file) {
-            runBackgroundUpload(file);
+
+        if (activeTab === "file" && files.length > 0) {
+            // Close modal and reset immediately, then upload all files in parallel
+            onClose();
+            reset();
+
+            // Upload all valid files in parallel
+            files.forEach((file, index) => {
+                runBackgroundUpload(file, index);
+            });
         } else if (activeTab === "youtube") {
             // TODO: Implement YouTube handling
             console.log("YouTube URL:", youtubeUrl);
         } else if (activeTab === "voice" && audioBlob) {
+            onClose();
+            reset();
             const voiceFile = new File([audioBlob], "voice-recording.webm", {
                 type: "audio/webm",
             });
-            runBackgroundUpload(voiceFile);
+            runBackgroundUpload(voiceFile, 0);
         }
     };
 
@@ -360,19 +452,37 @@ export function CreateTranscriptionModal({
                                 </div>
                             )}
 
-                            {/* File size error */}
-                            {fileSizeError && (
+                            {/* General error (like max files exceeded) */}
+                            {generalError && (
                                 <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center gap-3">
                                     <WarningCircle className="h-5 w-5 text-destructive shrink-0" />
-                                    <span className="text-sm text-destructive">{fileSizeError}</span>
+                                    <span className="text-sm text-destructive">{generalError}</span>
+                                </div>
+                            )}
+
+                            {/* File validation errors */}
+                            {fileErrors.size > 0 && (
+                                <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <WarningCircle className="h-4 w-4 text-destructive shrink-0" />
+                                        <span className="text-sm font-medium text-destructive">Some files couldn't be added:</span>
+                                    </div>
+                                    <ul className="text-sm text-destructive/80 space-y-1 ml-6">
+                                        {Array.from(fileErrors.entries()).map(([name, error]) => (
+                                            <li key={name}>{name}: {error}</li>
+                                        ))}
+                                    </ul>
                                 </div>
                             )}
 
                             {activeTab === "file" && (
-                                <FileUploadTab
-                                    file={file}
-                                    onFileSelect={handleFileSelect}
+                                <MultiFileUploadTab
+                                    files={files}
+                                    onFilesSelect={handleFilesSelect}
+                                    onRemoveFile={handleRemoveFile}
                                     onClear={handleClear}
+                                    maxFilesPerUpload={maxFilesPerUpload}
+                                    isValidating={isValidatingFiles}
                                 />
                             )}
                             {activeTab === "youtube" && (
@@ -477,7 +587,7 @@ export function CreateTranscriptionModal({
                             </Button>
                             <Button
                                 onClick={handleSubmit}
-                                disabled={!hasContent() || !canTranscribe() || !!fileSizeError}
+                                disabled={!hasContent() || !canTranscribe() || !!generalError || isValidatingFiles}
                                 className="min-w-[120px]"
                             >
                                 Transcribe
@@ -619,6 +729,193 @@ function FileUploadTab({ file, onFileSelect, onClear }: FileUploadTabProps) {
                 onChange={handleFileChange}
                 className="hidden"
             />
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Multi-File Upload Tab (Pro Feature)
+// ─────────────────────────────────────────────────────────────
+
+interface MultiFileUploadTabProps {
+    files: File[];
+    onFilesSelect: (files: File[], append?: boolean) => void;
+    onRemoveFile: (index: number) => void;
+    onClear: () => void;
+    maxFilesPerUpload: number;
+    isValidating: boolean;
+}
+
+function MultiFileUploadTab({
+    files,
+    onFilesSelect,
+    onRemoveFile,
+    onClear,
+    maxFilesPerUpload,
+    isValidating
+}: MultiFileUploadTabProps) {
+    const inputRef = React.useRef<HTMLInputElement>(null);
+    const addMoreInputRef = React.useRef<HTMLInputElement>(null);
+    const [isDragging, setIsDragging] = React.useState(false);
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const droppedFiles = Array.from(e.dataTransfer.files);
+        if (droppedFiles.length > 0) {
+            // If files already selected, append; otherwise replace
+            onFilesSelect(droppedFiles, files.length > 0);
+        }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFiles = Array.from(e.target.files || []);
+        if (selectedFiles.length > 0) {
+            onFilesSelect(selectedFiles, false); // Replace mode for initial selection
+        }
+        e.target.value = "";
+    };
+
+    const handleAddMoreFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFiles = Array.from(e.target.files || []);
+        if (selectedFiles.length > 0) {
+            onFilesSelect(selectedFiles, true); // Append mode
+        }
+        e.target.value = "";
+    };
+
+    // If files are selected, show the file list
+    if (files.length > 0) {
+        return (
+            <div className="space-y-3">
+                {/* File count header */}
+                <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                        {files.length} file{files.length !== 1 ? "s" : ""} selected
+                        {maxFilesPerUpload > 1 && ` (max ${maxFilesPerUpload})`}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={onClear}
+                        className="text-sm text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                        Clear all
+                    </button>
+                </div>
+
+                {/* File list */}
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {files.map((file, index) => (
+                        <div
+                            key={`${file.name}-${index}`}
+                            className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border border-border"
+                        >
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                <CloudUpload className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-foreground truncate">{file.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                    {formatFileSize(file.size)}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => onRemoveFile(index)}
+                                className="p-1.5 text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                                title="Remove file"
+                            >
+                                <Trash className="h-4 w-4" />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Add more files button - only for Pro users (maxFilesPerUpload > 1) */}
+                {maxFilesPerUpload > 1 && files.length < maxFilesPerUpload && (
+                    <>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addMoreInputRef.current?.click()}
+                            className="w-full gap-2"
+                        >
+                            <Folder className="h-4 w-4" />
+                            Add more files
+                        </Button>
+                        <input
+                            ref={addMoreInputRef}
+                            type="file"
+                            multiple
+                            accept={SUPPORTED_FORMATS.join(",")}
+                            onChange={handleAddMoreFiles}
+                            className="hidden"
+                        />
+                    </>
+                )}
+            </div>
+        );
+    }
+
+    // Empty state - drag & drop zone
+    return (
+        <div
+            onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+            className={cn(
+                "flex flex-col items-center justify-center gap-4 py-12 px-6",
+                "border-2 border-dashed rounded-xl transition-colors",
+                isDragging
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/50"
+            )}
+        >
+            {isValidating ? (
+                <div className="text-center">
+                    <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">Validating files...</p>
+                </div>
+            ) : (
+                <>
+                    <div className="text-center">
+                        <h3 className="text-lg font-semibold text-foreground mb-1">
+                            Drag & Drop
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                            {maxFilesPerUpload > 1
+                                ? `Up to ${maxFilesPerUpload} files`
+                                : "Drop your file here"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            {SUPPORTED_FORMATS.join(", ")}
+                        </p>
+                    </div>
+
+                    <div className="text-muted-foreground">or</div>
+
+                    <Button
+                        variant="outline"
+                        onClick={() => inputRef.current?.click()}
+                        className="gap-2"
+                    >
+                        <Folder className="h-4 w-4" />
+                        Browse {maxFilesPerUpload > 1 ? "files" : "file"}
+                    </Button>
+
+                    <input
+                        ref={inputRef}
+                        type="file"
+                        multiple={maxFilesPerUpload > 1}
+                        accept={SUPPORTED_FORMATS.join(",")}
+                        onChange={handleFileChange}
+                        className="hidden"
+                    />
+                </>
+            )}
         </div>
     );
 }
