@@ -3,6 +3,8 @@
 import * as React from "react";
 import { Check, Sparks, MagicWand, Page, Clock, Group, Language } from "iconoir-react";
 import { cn } from "@/lib/utils";
+import { CTAButton } from "@/components/ui";
+import { useInView } from "@/hooks";
 import Image from "next/image";
 
 // Primary features with mockup images - zigzag layout
@@ -171,13 +173,20 @@ const secondaryFeatures = [
 
 export function FeaturesSection() {
     const [isExpanded, setIsExpanded] = React.useState(false);
+    const { ref, isInView } = useInView(0.1);
 
     return (
-        <section className="relative py-24 overflow-hidden">
+        <section className="relative py-24 overflow-hidden" ref={ref}>
 
             <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 {/* Header */}
-                <div className="text-center mb-20">
+                <div
+                    className={cn(
+                        "text-center mb-20",
+                        "transition-all duration-700",
+                        isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                    )}
+                >
                     <span className="inline-block px-4 py-1.5 mb-6 text-sm font-medium text-primary bg-primary/10 rounded-full">
                         Powerful Features
                     </span>
@@ -195,8 +204,11 @@ export function FeaturesSection() {
                             key={feature.id}
                             className={cn(
                                 "grid grid-cols-1 lg:grid-cols-2 gap-12 items-center",
-                                index % 2 === 1 && "lg:grid-flow-dense"
+                                index % 2 === 1 && "lg:grid-flow-dense",
+                                "transition-all duration-700",
+                                isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                             )}
+                            style={{ transitionDelay: `${200 + index * 150}ms` }}
                         >
                             {/* Content */}
                             <div className={cn(index % 2 === 1 && "lg:col-start-2")}>
@@ -370,6 +382,16 @@ export function FeaturesSection() {
                             </div>
                         ))}
                     </div>
+                </div>
+
+                {/* CTA */}
+                <div className="text-center mt-16">
+                    <CTAButton size="lg">
+                        Start Transcribing Free
+                    </CTAButton>
+                    <p className="mt-4 text-muted-foreground text-sm">
+                        No credit card required
+                    </p>
                 </div>
             </div>
         </section>

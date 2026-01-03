@@ -1,37 +1,11 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import { Sparks, Shield, CreditCard, ArrowRight, Flash } from "iconoir-react";
+import { Sparks, Flash } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { CTAButton } from "@/components/ui";
 import { finalCTAContent } from "../data/content";
-
-// Hook for intersection observer
-function useInView(threshold = 0.3) {
-    const ref = React.useRef<HTMLDivElement>(null);
-    const [isInView, setIsInView] = React.useState(false);
-
-    React.useEffect(() => {
-        const element = ref.current;
-        if (!element) return;
-
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setIsInView(true);
-                    observer.disconnect();
-                }
-            },
-            { threshold }
-        );
-
-        observer.observe(element);
-        return () => observer.disconnect();
-    }, [threshold]);
-
-    return { ref, isInView };
-}
+import { useInView } from "@/hooks";
 
 // Pre-calculated heights to avoid hydration mismatch from Math.sin/cos
 const WAVEFORM_HEIGHTS = [40, 55, 65, 70, 68, 60, 48, 35, 30, 38, 50, 62];
@@ -139,23 +113,6 @@ export function FinalCTASection() {
                     {finalCTAContent.note}
                 </p>
 
-                {/* Trust badges - Enhanced */}
-                <div
-                    className={cn(
-                        "mt-10 flex flex-wrap justify-center gap-8 text-sm",
-                        "transition-all duration-700 delay-500",
-                        isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                    )}
-                >
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/30 border border-border">
-                        <Shield className="h-4 w-4 text-success" />
-                        <span className="text-muted-foreground">Secure & Encrypted</span>
-                    </div>
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/30 border border-border">
-                        <CreditCard className="h-4 w-4 text-success" />
-                        <span className="text-muted-foreground">No Credit Card Required</span>
-                    </div>
-                </div>
             </div>
         </section>
     );

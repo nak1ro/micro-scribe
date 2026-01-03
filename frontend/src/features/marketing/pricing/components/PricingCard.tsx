@@ -64,8 +64,14 @@ export function PricingCard({
     return (
         <div
             className={cn(
-                "relative rounded-2xl overflow-hidden bg-card shadow-lg",
-                "hover:shadow-[0_0_25px_hsl(var(--primary)/0.15)] transition-all duration-200",
+                "relative rounded-2xl bg-card shadow-lg",
+                "border border-border/50",
+                // Hover glow effect using box-shadow
+                "hover:border-primary/50",
+                highlighted
+                    ? "hover:shadow-[0_0_30px_hsl(var(--primary)/0.4)]"
+                    : "hover:shadow-[0_0_25px_hsl(var(--primary)/0.25)]",
+                "transition-all duration-300",
                 animationClass
             )}
             style={animationDelay ? { transitionDelay: animationDelay } : undefined}
@@ -73,7 +79,7 @@ export function PricingCard({
             {/* Header with gradient for highlighted/Pro */}
             <div
                 className={cn(
-                    "px-6 py-6 text-center",
+                    "px-6 py-6 text-center rounded-t-2xl",
                     highlighted
                         ? "bg-gradient-to-br from-primary to-primary/65 text-primary-foreground"
                         : "bg-card border-b border-border"
@@ -124,7 +130,7 @@ export function PricingCard({
             </div>
 
             {/* Features */}
-            <div className="bg-card px-6 py-6">
+            <div className="bg-card px-6 py-6 rounded-b-2xl">
                 <div className="space-y-5 mb-6">
                     {features.map((feature, index) => {
                         const Icon = iconMap[feature.icon] || CheckCircle;

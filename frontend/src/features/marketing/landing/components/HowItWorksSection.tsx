@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Upload, Sparks, Download, ArrowRight } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { CTAButton } from "@/components/ui";
+import { useInView } from "@/hooks";
 
 // Steps data
 const steps = [
@@ -33,32 +34,6 @@ const steps = [
         bg: "bg-cyan-500/10",
     },
 ];
-
-// Hook for intersection observer
-function useInView(threshold = 0.3) {
-    const ref = React.useRef<HTMLDivElement>(null);
-    const [isInView, setIsInView] = React.useState(false);
-
-    React.useEffect(() => {
-        const element = ref.current;
-        if (!element) return;
-
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setIsInView(true);
-                    observer.disconnect();
-                }
-            },
-            { threshold }
-        );
-
-        observer.observe(element);
-        return () => observer.disconnect();
-    }, [threshold]);
-
-    return { ref, isInView };
-}
 
 export function HowItWorksSection() {
     const { ref: sectionRef, isInView } = useInView(0.2);

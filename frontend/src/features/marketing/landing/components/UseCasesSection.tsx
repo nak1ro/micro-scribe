@@ -1,5 +1,8 @@
+"use client";
+
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { useInView } from "@/hooks";
 import Image from "next/image";
 
 // Use cases with real stock photos - asymmetric bento grid
@@ -55,12 +58,20 @@ const useCases = [
 ];
 
 export function UseCasesSection() {
+    const { ref, isInView } = useInView(0.1);
+
     return (
-        <section className="relative py-24 overflow-hidden">
+        <section className="relative py-24 overflow-hidden" ref={ref}>
 
             <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 {/* Header */}
-                <div className="text-center mb-16">
+                <div
+                    className={cn(
+                        "text-center mb-16",
+                        "transition-all duration-700",
+                        isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                    )}
+                >
                     <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4 tracking-tight">
                         Built for{" "}
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/65">
@@ -74,17 +85,22 @@ export function UseCasesSection() {
 
                 {/* Bento Grid - Asymmetric Layout */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-[200px]">
-                    {useCases.map((useCase) => (
+                    {useCases.map((useCase, index) => (
                         <div
                             key={useCase.id}
                             className={cn(
                                 "group relative rounded-2xl overflow-hidden cursor-pointer",
-                                "transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl",
+                                "hover:scale-[1.02] hover:shadow-2xl",
                                 // Size variants for asymmetric layout
                                 useCase.size === "large" && "md:col-span-2 md:row-span-2",
                                 useCase.size === "medium" && "lg:col-span-2",
-                                useCase.size === "small" && "col-span-1"
+                                useCase.size === "small" && "col-span-1",
+                                // Scroll animation
+                                isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                             )}
+                            style={{
+                                transition: `opacity 700ms ${150 + index * 100}ms, transform 700ms ${150 + index * 100}ms, box-shadow 500ms, scale 500ms`,
+                            }}
                         >
                             {/* Background Image with Grayscale */}
                             <div className="absolute inset-0">
@@ -156,7 +172,7 @@ export function UseCasesSection() {
                 {/* Bottom tagline */}
                 <div className="text-center mt-12">
                     <p className="text-muted-foreground">
-                        <span className="font-semibold text-foreground">50,000+</span> professionals trust ScribeRocket daily
+                        From solo creators to enterprise teams, ScribeRocket adapts to your workflow
                     </p>
                 </div>
             </div>

@@ -171,7 +171,7 @@ export function HeroSection() {
                     )}
                 >
                     <CTAButton size="md">
-                        Start transcribing
+                        Try Free Transcription
                     </CTAButton>
                     <span className="text-sm text-muted-foreground">
                         Free to start · No credit card

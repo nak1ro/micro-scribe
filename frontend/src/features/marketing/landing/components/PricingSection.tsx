@@ -7,32 +7,7 @@ import { pricingContent } from "../data/content";
 import { PricingToggle } from "@/features/marketing/pricing/components/PricingToggle";
 import { PricingCard } from "@/features/marketing/pricing/components/PricingCard";
 import { BillingInterval } from "@/features/marketing/pricing/data";
-
-// Hook for intersection observer
-function useInView(threshold = 0.2) {
-    const ref = React.useRef<HTMLDivElement>(null);
-    const [isInView, setIsInView] = React.useState(false);
-
-    React.useEffect(() => {
-        const element = ref.current;
-        if (!element) return;
-
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setIsInView(true);
-                    observer.disconnect();
-                }
-            },
-            { threshold }
-        );
-
-        observer.observe(element);
-        return () => observer.disconnect();
-    }, [threshold]);
-
-    return { ref, isInView };
-}
+import { useInView } from "@/hooks";
 
 export function PricingSection() {
     const [billingInterval, setBillingInterval] = React.useState<BillingInterval>("monthly");
@@ -41,7 +16,7 @@ export function PricingSection() {
     return (
         <section
             id="pricing"
-            className="relative min-h-screen flex items-center py-12 scroll-mt-16 overflow-hidden"
+            className="relative py-24 scroll-mt-16 overflow-hidden"
             ref={ref}
         >
             {/* Left decorative elements */}

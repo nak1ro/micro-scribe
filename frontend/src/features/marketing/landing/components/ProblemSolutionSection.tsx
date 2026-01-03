@@ -5,32 +5,7 @@ import { ArrowRight, Flash, Globe, Sparks, Xmark, Check } from "iconoir-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { CTAButton } from "@/components/ui";
-
-// Hook for intersection observer
-function useInView(threshold = 0.2) {
-    const ref = React.useRef<HTMLDivElement>(null);
-    const [isInView, setIsInView] = React.useState(false);
-
-    React.useEffect(() => {
-        const element = ref.current;
-        if (!element) return;
-
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setIsInView(true);
-                    observer.disconnect();
-                }
-            },
-            { threshold }
-        );
-
-        observer.observe(element);
-        return () => observer.disconnect();
-    }, [threshold]);
-
-    return { ref, isInView };
-}
+import { useInView } from "@/hooks";
 
 // Hook for counting animation
 function useCountUp(end: number, duration: number = 1500, isInView: boolean, suffix: string = "") {
