@@ -5,7 +5,11 @@ export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // Check for auth cookie - thin check, only verify presence
-    const token = request.cookies.get('token') || request.cookies.get('access_token');
+    // We check common cookie names since the backend might use different defaults
+    const token = request.cookies.get('token') ||
+        request.cookies.get('access_token') ||
+        request.cookies.get('.AspNetCore.Identity.Application') ||
+        request.cookies.get('.AspNetCore.Cookies');
 
     if (!token) {
         // Redirect unauthenticated users to landing page

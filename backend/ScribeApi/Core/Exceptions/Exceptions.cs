@@ -58,3 +58,9 @@ public class ConcurrencyException : Exception
     public ConcurrencyException(string message) : base(message) { }
     public ConcurrencyException(string message, Exception inner) : base(message, inner) { }
 }
+
+public class RequestTimeoutException : Exception
+{
+    public RequestTimeoutException(string message) : base(message) { }
+    public RequestTimeoutException(string message, Exception inner) : base(message, inner) { }
+}

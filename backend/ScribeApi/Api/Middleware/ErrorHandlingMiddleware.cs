@@ -94,6 +94,8 @@ public sealed class ExceptionHandlingMiddleware
             StorageException => (HttpStatusCode.ServiceUnavailable, "Storage service error"),
             DbUpdateConcurrencyException => (HttpStatusCode.Conflict, "Data was modified by another request"),
             ConcurrencyException => (HttpStatusCode.Conflict, "Data was modified by another request"),
+            RequestTimeoutException => (HttpStatusCode.RequestTimeout, "Request timeout"),
+            OperationCanceledException => (HttpStatusCode.RequestTimeout, "Operation canceled"),
             _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred")
         };
     }
