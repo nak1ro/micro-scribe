@@ -2,7 +2,15 @@ using ScribeApi.Infrastructure.Persistence.Entities;
 
 namespace ScribeApi.Infrastructure.Persistence.Entities;
 
-public class TranscriptionAnalysis
+public enum AnalysisStatus
+{
+    Pending = 0,
+    Processing = 1,
+    Completed = 2,
+    Failed = 3
+}
+
+public class TranscriptionAnalysisJob
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     
@@ -13,7 +21,7 @@ public class TranscriptionAnalysis
     public required string AnalysisType { get; set; }
     
     // Content in Source Language
-    public required string Content { get; set; }
+    public string? Content { get; set; }
 
     // Translations: { "es": "Resumen...", "fr": "Résumé..." }
     // Stored as JSONB
@@ -22,4 +30,7 @@ public class TranscriptionAnalysis
     public string? ModelUsed { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime? LastUpdatedAtUtc { get; set; }
+    
+    public AnalysisStatus Status { get; set; } = AnalysisStatus.Pending;
+    public string? ErrorMessage { get; set; }
 }

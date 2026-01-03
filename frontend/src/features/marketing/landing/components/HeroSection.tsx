@@ -53,7 +53,7 @@ export function HeroSection() {
     };
 
     return (
-        <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+        <section className="relative min-h-[30vh] flex items-center overflow-hidden">
             {/* Background gradient accents */}
             <div className="absolute top-1/4 -left-32 w-96 h-96 bg-primary/20 rounded-full blur-3xl opacity-50" />
             <div className="absolute bottom-1/4 -right-32 w-80 h-80 bg-secondary/20 rounded-full blur-3xl opacity-40" />

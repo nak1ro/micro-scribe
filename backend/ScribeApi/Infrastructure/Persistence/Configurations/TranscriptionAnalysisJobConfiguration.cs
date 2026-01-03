@@ -4,11 +4,11 @@ using ScribeApi.Infrastructure.Persistence.Entities;
 
 namespace ScribeApi.Infrastructure.Persistence.Configurations;
 
-public class TranscriptionAnalysisConfiguration : IEntityTypeConfiguration<TranscriptionAnalysis>
+public class TranscriptionAnalysisJobConfiguration : IEntityTypeConfiguration<TranscriptionAnalysisJob>
 {
-    public void Configure(EntityTypeBuilder<TranscriptionAnalysis> builder)
+    public void Configure(EntityTypeBuilder<TranscriptionAnalysisJob> builder)
     {
-        builder.ToTable("TranscriptionAnalyses");
+        builder.ToTable("TranscriptionAnalysisJobs");
 
         builder.HasKey(x => x.Id);
 
@@ -24,13 +24,6 @@ public class TranscriptionAnalysisConfiguration : IEntityTypeConfiguration<Trans
             .HasForeignKey(x => x.TranscriptionJobId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Unique constraint: One analysis of a type per job (initially, wait, what if we have multiple versions? No, user requested just type)
-        // User requested: "ShortSummary", "LongSummary". These are types.
-        // But what about "Language"?
-        // Wait, my new entity definition treats "Content" as Source Language and "Translations" as dictionary.
-        // So ONE row per Type per Job. 
-        // e.g. Job 1, Type "ShortSummary" -> Row 1.
-        
         builder.HasIndex(x => new { x.TranscriptionJobId, x.AnalysisType })
             .IsUnique();
     }

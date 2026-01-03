@@ -188,9 +188,9 @@ public class TranscriptionsController : ControllerBase
         var userId = User.GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        var result = await _analysisService.GenerateAnalysisAsync(jobId, userId, request, ct);
+        var result = await _analysisService.EnqueueAnalysisGenerationAsync(jobId, userId, request, ct);
 
-        return Ok(result);
+        return Accepted(result);
     }
 
     [HttpPost("{jobId:guid}/analysis/translate")]

@@ -36,10 +36,46 @@ export function AnalysisContentView({
 
     // Render based on type
     const renderContent = () => {
-        if (!content) {
+        if (!analysis) {
             return (
                 <p className="text-center text-muted-foreground py-8">
                     No {analysisType} analysis available.
+                </p>
+            );
+        }
+
+        // Handle async states
+        if (analysis.status === "Pending" || analysis.status === "Processing") {
+            return (
+                <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                    <p className="text-muted-foreground animate-pulse">
+                        {analysis.status === "Pending" ? "Queued for analysis..." : "Generating analysis..."}
+                    </p>
+                </div>
+            );
+        }
+
+        if (analysis.status === "Failed") {
+            return (
+                <div className="flex flex-col items-center justify-center py-8 space-y-3 text-center">
+                    <div className="p-3 bg-destructive/10 rounded-full text-destructive">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" x2="12.01" y1="8" y2="8" /><line x1="12" y1="12" x2="12" y2="16" /></svg>
+                    </div>
+                    <div>
+                        <p className="font-semibold text-foreground">Analysis Failed</p>
+                        <p className="text-sm text-muted-foreground max-w-xs mx-auto mt-1">
+                            {analysis.errorMessage || "An unexpected error occurred while generating this analysis."}
+                        </p>
+                    </div>
+                </div>
+            );
+        }
+
+        if (!content) {
+            return (
+                <p className="text-center text-muted-foreground py-8">
+                    No content available.
                 </p>
             );
         }

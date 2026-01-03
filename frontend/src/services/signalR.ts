@@ -24,11 +24,32 @@ export interface TranslationStatusUpdateEvent {
     translatingToLanguage: string | null;
 }
 
+// Analytics Events
+// The payload is likely just TranscriptionAnalysisDto, so jobId might be missing if not expanded.
+export interface AnalysisEventPayload {
+    id: string;
+    // jobId: string; // Removing strict requirement for jobId as it's not in the DTO
+    analysisType: string;
+    content: string;
+    translations: Record<string, string>;
+    createdAtUtc: string;
+    status: "Pending" | "Processing" | "Completed" | "Failed";
+    errorMessage?: string | null;
+}
+
+export type AnalysisProcessingEvent = AnalysisEventPayload;
+export type AnalysisCompletedEvent = AnalysisEventPayload;
+export type AnalysisFailedEvent = AnalysisEventPayload;
+
 // Event handler types
 type JobStatusUpdateHandler = (event: JobStatusUpdateEvent) => void;
 type JobCompletedHandler = (event: JobCompletedEvent) => void;
 type JobFailedHandler = (event: JobFailedEvent) => void;
 type TranslationStatusUpdateHandler = (event: TranslationStatusUpdateEvent) => void;
+
+type AnalysisProcessingHandler = (event: AnalysisProcessingEvent) => void;
+type AnalysisCompletedHandler = (event: AnalysisCompletedEvent) => void;
+type AnalysisFailedHandler = (event: AnalysisFailedEvent) => void;
 
 // Singleton SignalR connection manager
 class SignalRService {
@@ -40,6 +61,10 @@ class SignalRService {
     private onJobCompleted: JobCompletedHandler | null = null;
     private onJobFailed: JobFailedHandler | null = null;
     private onTranslationStatusUpdate: TranslationStatusUpdateHandler | null = null;
+
+    private onAnalysisProcessing: AnalysisProcessingHandler | null = null;
+    private onAnalysisCompleted: AnalysisCompletedHandler | null = null;
+    private onAnalysisFailed: AnalysisFailedHandler | null = null;
 
     // Get hub URL from environment
     private getHubUrl(): string {
@@ -142,6 +167,21 @@ class SignalRService {
             console.log("[SignalR] TranslationStatusUpdate:", event);
             this.onTranslationStatusUpdate?.(event);
         });
+
+        this.connection.on("AnalysisProcessing", (event: AnalysisProcessingEvent) => {
+            console.log("[SignalR] AnalysisProcessing:", event);
+            this.onAnalysisProcessing?.(event);
+        });
+
+        this.connection.on("AnalysisCompleted", (event: AnalysisCompletedEvent) => {
+            console.log("[SignalR] AnalysisCompleted:", event);
+            this.onAnalysisCompleted?.(event);
+        });
+
+        this.connection.on("AnalysisFailed", (event: AnalysisFailedEvent) => {
+            console.log("[SignalR] AnalysisFailed:", event);
+            this.onAnalysisFailed?.(event);
+        });
     }
 
     // Set event handlers
@@ -159,6 +199,18 @@ class SignalRService {
 
     setOnTranslationStatusUpdate(handler: TranslationStatusUpdateHandler | null): void {
         this.onTranslationStatusUpdate = handler;
+    }
+
+    setOnAnalysisProcessing(handler: AnalysisProcessingHandler | null): void {
+        this.onAnalysisProcessing = handler;
+    }
+
+    setOnAnalysisCompleted(handler: AnalysisCompletedHandler | null): void {
+        this.onAnalysisCompleted = handler;
+    }
+
+    setOnAnalysisFailed(handler: AnalysisFailedHandler | null): void {
+        this.onAnalysisFailed = handler;
     }
 
     // Get connection state

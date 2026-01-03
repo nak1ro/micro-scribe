@@ -14,4 +14,6 @@ public class TranscriptionAnalysisDto
     public string Content { get; init; } = string.Empty;
     public Dictionary<string, string> Translations { get; init; } = new();
     public DateTime CreatedAtUtc { get; init; }
+    public string Status { get; init; } = "Pending";
+    public string? ErrorMessage { get; init; }
 }

@@ -1,5 +1,7 @@
 using System.Text.Json;
 using AutoMapper;
+using Hangfire;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using ScribeApi.Core.Exceptions;
 using ScribeApi.Core.Interfaces;
@@ -7,6 +9,7 @@ using ScribeApi.Features.Analysis.Contracts;
 using ScribeApi.Infrastructure.AI;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
+using ScribeApi.Infrastructure.SignalR;
 
 namespace ScribeApi.Features.Analysis.Services;
 
@@ -17,6 +20,8 @@ public class AnalysisService : IAnalysisService
     private readonly ITranslationService _translationService;
     private readonly IMapper _mapper;
     private readonly ILogger<AnalysisService> _logger;
+    private readonly IBackgroundJobClient _backgroundJobClient;
+    private readonly IHubContext<TranscriptionHub> _hubContext;
     
     // Available analysis types
     private static readonly List<string> AllTypes = new()
@@ -34,70 +39,150 @@ public class AnalysisService : IAnalysisService
         IGenerativeAiService aiService,
         ITranslationService translationService,
         IMapper mapper,
-        ILogger<AnalysisService> logger)
+        ILogger<AnalysisService> logger,
+        IBackgroundJobClient backgroundJobClient,
+        IHubContext<TranscriptionHub> hubContext)
     {
         _context = context;
         _aiService = aiService;
         _translationService = translationService;
         _mapper = mapper;
         _logger = logger;
+        _backgroundJobClient = backgroundJobClient;
+        _hubContext = hubContext;
     }
 
-    public async Task<List<TranscriptionAnalysisDto>> GenerateAnalysisAsync(
+    public async Task<List<TranscriptionAnalysisDto>> EnqueueAnalysisGenerationAsync(
         Guid jobId, 
         string userId, 
         GenerateAnalysisRequest request, 
         CancellationToken ct)
     {
-        // Load job data for reading (untracked to avoid concurrency issues)
-        var jobData = await _context.TranscriptionJobs
-            .AsNoTracking()
-            .Where(j => j.Id == jobId && j.UserId == userId)
-            .Select(j => new 
-            {
-                j.Id,
-                j.Transcript,
-                j.SourceLanguage,
-                j.Segments
-            })
-            .FirstOrDefaultAsync(ct);
+        // validate job exists
+        var jobExists = await _context.TranscriptionJobs
+            .AnyAsync(j => j.Id == jobId && j.UserId == userId, ct);
 
-        if (jobData == null) throw new NotFoundException($"Job {jobId} not found");
-        if (string.IsNullOrEmpty(jobData.Transcript)) throw new ValidationException("Job has no transcript to analyze");
+        if (!jobExists) throw new NotFoundException($"Job {jobId} not found");
 
-        // Load existing analyses separately (tracked for updates)
-        var existingAnalyses = await _context.TranscriptionAnalyses
+        // Load existing analyses
+        var existingAnalyses = await _context.TranscriptionAnalysisJobs
             .Where(a => a.TranscriptionJobId == jobId)
             .ToListAsync(ct);
 
-        // Expand "All"
         var typesToProcess = request.Types.Contains("All") 
             ? AllTypes 
             : request.Types.Intersect(AllTypes).ToList();
-
-        var sourceLanguage = jobData.SourceLanguage ?? "English";
         
-        // Detect additional languages from segments
-        var distinctLanguages = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { sourceLanguage };
-        
-        var sampleSegment = jobData.Segments.FirstOrDefault();
-        if (sampleSegment != null)
-        {
-            foreach (var key in sampleSegment.Translations.Keys)
-            {
-                distinctLanguages.Add(key);
-            }
-        }
+        var newJobs = new List<TranscriptionAnalysisJob>();
 
         foreach (var type in typesToProcess)
         {
             var existing = existingAnalyses.FirstOrDefault(a => a.AnalysisType == type);
-            if (existing != null) continue; // Skip already generated analyses
-            
-            // Parallelize generation for all languages
-            var generationTasks = distinctLanguages.Select(async lang => 
+            if (existing != null)
             {
-                var prompt = GetPromptForType(type, lang);
+                // If failed, maybe reset? For now, skip specific retry logic here, assume new request implies retry if failed?
+                // Or just return existing.
+                continue; 
+            }
+
+            var analysisJob = new TranscriptionAnalysisJob
+            {
+                TranscriptionJobId = jobId,
+                AnalysisType = type,
+                Status = AnalysisStatus.Pending,
+                Content = null, // Will be filled by background job
+                ModelUsed = "gpt-4o-mini"
+            };
+            
+            _context.TranscriptionAnalysisJobs.Add(analysisJob);
+            newJobs.Add(analysisJob);
+        }
+
+        await _context.SaveChangesAsync(ct);
+        
+        // Enqueue background jobs
+        foreach (var job in newJobs)
+        {
+            _backgroundJobClient.Enqueue<IAnalysisService>(s => s.ProcessAnalysisJobAsync(jobId, job.Id, CancellationToken.None));
+        }
+        
+        // Merge new and existing for return
+        var resultList = existingAnalyses.Concat(newJobs).ToList();
+        return MapToDtos(resultList);
+    }
+
+    public async Task ProcessAnalysisJobAsync(Guid jobId, Guid analysisJobId, CancellationToken ct)
+    {
+        var analysisJob = await _context.TranscriptionAnalysisJobs
+            .Include(a => a.TranscriptionJob)
+            .FirstOrDefaultAsync(a => a.Id == analysisJobId, ct);
+
+        if (analysisJob == null)
+        {
+            _logger.LogError("Analysis Job {JobId} not found", analysisJobId);
+            return;
+        }
+
+        var userId = analysisJob.TranscriptionJob.UserId;
+
+        try
+        {
+            // Update Status to Processing
+            analysisJob.Status = AnalysisStatus.Processing;
+            await _context.SaveChangesAsync(ct);
+            
+            // Notify Frontend
+            await _hubContext.Clients.Group($"user-{userId}")
+                .SendAsync("AnalysisProcessing", MapToDto(analysisJob), ct);
+
+            // Fetch Transcript securely (could be large, read from DB or Storage?) 
+            // Currently getting from DB per logic.
+            // Re-fetch job data securely
+            // Fetch Transcript and Segments for language detection
+            // Fetch Transcript and translated languages
+            // We don't need Segments anymore, which improves performance
+            var jobData = await _context.TranscriptionJobs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(j => j.Id == jobId, ct);
+
+            if (jobData == null || string.IsNullOrEmpty(jobData.Transcript))
+            {
+                throw new ValidationException("Transcript not found or empty.");
+            }
+
+            var sourceLanguage = jobData.SourceLanguage ?? "English";
+            var allLanguages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            
+            // Add source language
+            if (!string.IsNullOrWhiteSpace(jobData.SourceLanguage))
+            {
+                allLanguages.Add(jobData.SourceLanguage);
+            }
+            else
+            {
+                allLanguages.Add("English");
+            }
+
+            // Add translated languages from property
+            if (jobData.TranslatedLanguages != null)
+            {
+                foreach (var lang in jobData.TranslatedLanguages)
+                {
+                    allLanguages.Add(lang);
+                }
+                _logger.LogInformation("Job {JobId}: Detected languages from TranslatedLanguages property: {Langs}", 
+                    jobId, string.Join(", ", allLanguages));
+            }
+            else
+            {
+               _logger.LogInformation("Job {JobId}: No TranslatedLanguages found (null).", jobId);
+            }
+
+            
+            // Generate Content for all languages
+            var generationTasks = allLanguages.Select(async lang => 
+            {
+                var prompt = GetPromptForType(analysisJob.AnalysisType, lang);
                 if (string.IsNullOrEmpty(prompt)) return (Lang: lang, Text: string.Empty);
 
                 try 
@@ -106,9 +191,10 @@ public class AnalysisService : IAnalysisService
                     text = CleanAiOutput(text); 
                     return (Lang: lang, Text: text);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    return (Lang: lang, Text: string.Empty);
+                   _logger.LogWarning(ex, "Failed to generate analysis for language {Lang}", lang);
+                   return (Lang: lang, Text: string.Empty);
                 }
             });
 
@@ -119,22 +205,41 @@ public class AnalysisService : IAnalysisService
                 .Where(x => !x.Lang.Equals(sourceLanguage, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(x.Text))
                 .ToDictionary(k => k.Lang, v => v.Text);
 
-            if (string.IsNullOrEmpty(sourceContent)) continue;
-
-            var analysis = new TranscriptionAnalysis
-            {
-                TranscriptionJobId = jobId,
-                AnalysisType = type,
-                Content = sourceContent,
-                ModelUsed = "gpt-4o-mini",
-                Translations = translations
-            };
-            _context.TranscriptionAnalyses.Add(analysis);
-            existingAnalyses.Add(analysis);
+            // Update Completion
+            analysisJob.Content = sourceContent;
+            analysisJob.Translations = translations;
+            analysisJob.Status = AnalysisStatus.Completed;
+            analysisJob.LastUpdatedAtUtc = DateTime.UtcNow;
+            
+            await _context.SaveChangesAsync(ct);
+            
+            // Notify Frontend
+            await _hubContext.Clients.Group($"user-{userId}")
+                .SendAsync("AnalysisCompleted", MapToDto(analysisJob), ct);
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to process analysis job {AnalysisJobId}", analysisJobId);
+            
+            analysisJob.Status = AnalysisStatus.Failed;
+            
+            // Sanitize error message: Only expose messages from known safe domain exceptions
+            if (ex is ValidationException or PlanLimitExceededException or RequestTimeoutException)
+            {
+                analysisJob.ErrorMessage = ex.Message;
+            }
+            else
+            {
+                analysisJob.ErrorMessage = "An unexpected error occurred while processing the analysis.";
+            }
+            
+            await _context.SaveChangesAsync(ct);
 
-        await _context.SaveChangesAsync(ct);
-        return MapToDtos(existingAnalyses);
+            await _hubContext.Clients.Group($"user-{userId}")
+                .SendAsync("AnalysisFailed", MapToDto(analysisJob), ct);
+            
+            throw; // Rethrow to let Hangfire handle retry or failure state
+        }
     }
 
     public async Task<List<TranscriptionAnalysisDto>> TranslateAnalysisAsync(
@@ -155,6 +260,8 @@ public class AnalysisService : IAnalysisService
         {
             if (analysis.Translations.ContainsKey(targetLang))
                 continue; // Already translated
+            
+            if (string.IsNullOrEmpty(analysis.Content)) continue; // Can't translate empty
 
             var prompt = AiPrompts.Translate(analysis.Content, targetLang);
             
@@ -177,7 +284,7 @@ public class AnalysisService : IAnalysisService
         string targetLanguage,
         CancellationToken ct)
     {
-        var analyses = await _context.TranscriptionAnalyses
+        var analyses = await _context.TranscriptionAnalysisJobs
             .Where(a => a.TranscriptionJobId == jobId)
             .ToListAsync(ct);
 
@@ -186,6 +293,7 @@ public class AnalysisService : IAnalysisService
         foreach (var analysis in analyses)
         {
             if (analysis.Translations.ContainsKey(targetLanguage)) continue;
+            if (string.IsNullOrEmpty(analysis.Content)) continue;
 
             var translatedContent = await TranslateJsonContentAsync(
                 analysis.Content, sourceLanguage, targetLanguage, ct);
@@ -236,16 +344,23 @@ public class AnalysisService : IAnalysisService
         return text.Trim();
     }
 
-    private List<TranscriptionAnalysisDto> MapToDtos(IEnumerable<TranscriptionAnalysis> entities)
+    private List<TranscriptionAnalysisDto> MapToDtos(IEnumerable<TranscriptionAnalysisJob> entities)
     {
-        return entities.Select(e => new TranscriptionAnalysisDto
+        return entities.Select(MapToDto).ToList();
+    }
+
+    private TranscriptionAnalysisDto MapToDto(TranscriptionAnalysisJob e)
+    {
+        return new TranscriptionAnalysisDto
         {
             Id = e.Id,
             AnalysisType = e.AnalysisType,
-            Content = e.Content,
+            Content = e.Content ?? string.Empty,
             Translations = e.Translations,
-            CreatedAtUtc = e.CreatedAtUtc
-        }).ToList();
+            CreatedAtUtc = e.CreatedAtUtc,
+            Status = e.Status.ToString(),
+            ErrorMessage = e.ErrorMessage
+        };
     }
 
     private async Task<string> TranslateJsonContentAsync(

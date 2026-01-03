@@ -86,7 +86,17 @@ public class TranslationJobRunner
 
             // Force EF Core to detect JSONB changes by reassigning the collection
             job.Segments = orderedSegments;
+            job.Segments = orderedSegments;
             _context.Entry(job).Property(j => j.Segments).IsModified = true;
+
+            // Update list of translated languages
+            if (job.TranslatedLanguages == null) job.TranslatedLanguages = new List<string>();
+            if (!job.TranslatedLanguages.Contains(targetLanguage))
+            {
+                job.TranslatedLanguages.Add(targetLanguage);
+            }
+            // Force EF update for JSONB
+            _context.Entry(job).Property(j => j.TranslatedLanguages).IsModified = true;
 
             // Clear translation status
             job.TranslationStatus = null;

@@ -21,7 +21,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<WebhookDelivery> WebhookDeliveries => Set<WebhookDelivery>();
     public DbSet<Folder> Folders => Set<Folder>();
     public DbSet<FolderTranscriptionJob> FolderTranscriptionJobs => Set<FolderTranscriptionJob>();
-    public DbSet<TranscriptionAnalysis> TranscriptionAnalyses => Set<TranscriptionAnalysis>();
+    public DbSet<TranscriptionAnalysisJob> TranscriptionAnalysisJobs => Set<TranscriptionAnalysisJob>();
     public DbSet<ExternalLogin> ExternalLogins => Set<ExternalLogin>();
     public DbSet<ProcessedStripeEvent> ProcessedStripeEvents => Set<ProcessedStripeEvent>();
 

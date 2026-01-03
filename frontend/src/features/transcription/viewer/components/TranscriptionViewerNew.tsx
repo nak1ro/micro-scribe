@@ -22,7 +22,7 @@ import { handleExport as exportFile } from "@/features/transcription/utils/expor
 import { getProcessingStepText } from "@/features/transcription/utils";
 import { transcriptionApi } from "@/services/transcription";
 import type { TranscriptionData, ExportFormat } from "@/features/transcription/types";
-import type { AnalysisType } from "@/types/api/analysis";
+import type { AnalysisType, TranscriptionAnalysisDto } from "@/types/api/analysis";
 
 interface TranscriptionViewerNewProps {
     // For now, use mock data. Later, this will accept jobId and fetch real data
@@ -85,7 +85,17 @@ export function TranscriptionViewerNew({
     // Track the language being translated to auto-switch when complete
     const prevTranslatingRef = React.useRef<string | null>(null);
 
-    // Analysis hook (placed before translation effect so refetch is available)
+    // Active analysis view state ("transcript" or AnalysisType)
+    const [currentAnalysisView, setCurrentAnalysisView] = React.useState<string>("transcript");
+
+    // Handler to switch analysis view
+    const handleSelectAnalysisView = React.useCallback((view: "transcript" | AnalysisType | TranscriptionAnalysisDto) => {
+        const targetView = typeof view === 'string' ? view : view.analysisType;
+        console.log("[TranscriptionViewerNew] Switching to view:", targetView);
+        setCurrentAnalysisView(targetView);
+    }, []);
+
+    // Analysis hook
     const {
         analyses,
         isGenerating: isAnalysisGenerating,
@@ -94,7 +104,11 @@ export function TranscriptionViewerNew({
         generateAll: generateAllAnalysis,
         getAnalysisByType,
         refetch: refetchAnalysis,
-    } = useAnalysis({ jobId: jobId || "", enabled: !!jobId && data?.status === "completed" });
+    } = useAnalysis({
+        jobId: jobId || "",
+        enabled: !!jobId && data?.status === "completed",
+        onAnalysisCompleted: handleSelectAnalysisView
+    });
 
     // Auto-switch to translated language when translation completes
     React.useEffect(() => {
@@ -135,15 +149,6 @@ export function TranscriptionViewerNew({
         data?.segments.some(seg => seg.speaker !== null) || false,
         [data?.segments]
     );
-
-    // Active analysis view state ("transcript" or AnalysisType)
-    const [currentAnalysisView, setCurrentAnalysisView] = React.useState<string>("transcript");
-
-    // Handler to switch analysis view
-    const handleSelectAnalysisView = (view: "transcript" | AnalysisType) => {
-        console.log("[TranscriptionViewerNew] Switching to view:", view);
-        setCurrentAnalysisView(view);
-    };
 
     // Handlers
     const handleBack = () => {
