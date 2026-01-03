@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowRight } from "iconoir-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks";
 
 // CTA Button sizes - consistent padding and text sizing
 const sizeVariants = {
@@ -33,13 +34,26 @@ export interface CTAButtonProps {
 
 export function CTAButton({
     children,
-    href = "/auth?mode=signup",
+    href,
     size = "md",
     showArrow = true,
     leftIcon,
     className,
     onClick,
 }: CTAButtonProps) {
+    const { isAuthenticated } = useAuth();
+
+    // Compute target href based on auth state
+    // If no explicit href or href points to signup, redirect based on auth
+    const targetHref = React.useMemo(() => {
+        if (href && !href.includes("/auth")) {
+            // Explicit non-auth href provided, use it
+            return href;
+        }
+        // No href or auth-related href: redirect based on auth state
+        return isAuthenticated ? "/dashboard" : "/auth?mode=signup";
+    }, [href, isAuthenticated]);
+
     const buttonClasses = cn(
         "inline-flex items-center justify-center gap-2 rounded-full",
         "bg-gradient-primary",
@@ -73,8 +87,9 @@ export function CTAButton({
     }
 
     return (
-        <Link href={href} className={buttonClasses}>
+        <Link href={targetHref} className={buttonClasses}>
             {content}
         </Link>
     );
 }
+

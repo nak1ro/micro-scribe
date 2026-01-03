@@ -6,7 +6,6 @@ import { Button } from "@/components/ui";
 import { FormField } from "./FormField";
 
 interface SignUpFormData {
-    name: string;
     email: string;
     password: string;
 }
@@ -16,14 +15,12 @@ interface SignUpFormProps {
 }
 
 export function SignUpForm({ onSubmit }: SignUpFormProps) {
-    const [name, setName] = React.useState("");
     const [email, setEmail] = React.useState("");
     const [password, setPassword] = React.useState("");
     const [confirmPassword, setConfirmPassword] = React.useState("");
     const [acceptTerms, setAcceptTerms] = React.useState(false);
     const [isLoading, setIsLoading] = React.useState(false);
     const [errors, setErrors] = React.useState<{
-        name?: string;
         email?: string;
         password?: string;
         confirmPassword?: string;
@@ -32,10 +29,6 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
 
     const validate = () => {
         const newErrors: typeof errors = {};
-
-        if (!name.trim()) {
-            newErrors.name = "Name is required";
-        }
 
         if (!email) {
             newErrors.email = "Email is required";
@@ -69,7 +62,7 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
 
         setIsLoading(true);
         try {
-            await onSubmit?.({ name, email, password });
+            await onSubmit?.({ email, password });
         } finally {
             setIsLoading(false);
         }
@@ -77,17 +70,6 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            <FormField
-                id="signup-name"
-                label="Full name"
-                type="text"
-                placeholder="John Doe"
-                value={name}
-                onChange={setName}
-                error={errors.name}
-                autoComplete="name"
-            />
-
             <FormField
                 id="signup-email"
                 label="Email"

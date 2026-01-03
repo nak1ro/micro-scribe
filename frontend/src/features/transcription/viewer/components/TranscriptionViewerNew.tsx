@@ -80,6 +80,7 @@ export function TranscriptionViewerNew({
     const [showSpeakers, setShowSpeakers] = React.useState(true);
     const [copied, setCopied] = React.useState(false);
     const [displayLanguage, setDisplayLanguage] = React.useState<string | null>(null);
+    const [isExporting, setIsExporting] = React.useState(false);
 
     // Track the language being translated to auto-switch when complete
     const prevTranslatingRef = React.useRef<string | null>(null);
@@ -166,12 +167,15 @@ export function TranscriptionViewerNew({
     const handleExport = async (format: ExportFormat) => {
         if (!data) return;
 
+        setIsExporting(true);
         try {
             // Export in the currently displayed language
             await exportFile(format, data.id, displayLanguage, data.audioUrl);
         } catch (error) {
             console.error("Export failed:", error);
             // TODO: Add toast notification here
+        } finally {
+            setIsExporting(false);
         }
     };
 
@@ -320,6 +324,14 @@ export function TranscriptionViewerNew({
     // Completed state - full viewer
     return (
         <div className={cn("h-full", className)}>
+            {/* Export Notification */}
+            {isExporting && (
+                <div className="fixed bottom-6 right-6 z-[100] bg-card text-foreground px-5 py-4 rounded-xl shadow-xl flex items-center gap-3 border border-border">
+                    <RefreshDouble className="h-5 w-5 animate-spin text-primary" />
+                    <span className="text-sm font-semibold">Preparing download...</span>
+                </div>
+            )}
+
             {/* Hidden audio element */}
             {data.audioUrl && (
                 <audio

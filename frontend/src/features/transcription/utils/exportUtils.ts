@@ -46,7 +46,9 @@ export const handleExport = async (
                     const fallbackUrl = `${process.env.NEXT_PUBLIC_API_URL || ""}${API_ENDPOINTS.TRANSCRIPTIONS.EXPORT(jobId)}?format=Audio`;
                     window.location.href = fallbackUrl;
                 } else {
-                    // Direct download from Azure
+                    // Direct download from Azure (Client-side)
+                    // Fetch blob and save to trigger download. This avoids the "play in browser" issue
+                    // but causes a delay while buffering. The UI should show a notification.
                     const response = await fetch(audioUrl);
                     if (!response.ok) throw new Error("Failed to fetch audio file");
                     const blob = await response.blob();
