@@ -19,27 +19,7 @@ export function PricingSection() {
             className="relative py-24 scroll-mt-16 overflow-hidden"
             ref={ref}
         >
-            {/* Left decorative elements */}
-            <div className="absolute left-8 lg:left-16 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center gap-6 opacity-40">
-                <div className="w-3 h-3 rounded-full bg-primary animate-bounce" style={{ animationDuration: "2s" }} />
-                <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDuration: "2.5s", animationDelay: "0.3s" }} />
-                <div className="relative w-10 h-10">
-                    <div className="absolute inset-0 rounded-full border border-primary/40 animate-ping" style={{ animationDuration: "3s" }} />
-                    <div className="absolute inset-3 rounded-full bg-primary/30" />
-                </div>
-                <div className="w-2 h-2 rounded-full bg-secondary/50 animate-bounce" style={{ animationDuration: "2.2s", animationDelay: "0.5s" }} />
-            </div>
 
-            {/* Right decorative elements */}
-            <div className="absolute right-8 lg:right-16 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center gap-6 opacity-40">
-                <div className="w-2 h-2 rounded-full bg-secondary/50 animate-bounce" style={{ animationDuration: "2.3s" }} />
-                <div className="relative w-10 h-10">
-                    <div className="absolute inset-0 rounded-full border border-secondary/40 animate-ping" style={{ animationDuration: "3.5s" }} />
-                    <div className="absolute inset-3 rounded-full bg-secondary/30" />
-                </div>
-                <div className="w-3 h-3 rounded-full bg-secondary animate-bounce" style={{ animationDuration: "2s", animationDelay: "0.2s" }} />
-                <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDuration: "2.6s", animationDelay: "0.4s" }} />
-            </div>
 
             <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 {/* Heading */}

@@ -137,12 +137,8 @@ export const pricingFAQContent = {
             answer: "You'll keep access to Pro features until your current billing period ends. After that, you'll be on the Free plan with standard limits. Your transcriptions are never deleted.",
         },
         {
-            question: "Do you offer refunds?",
-            answer: "Yes, we offer a 14-day money-back guarantee on all paid plans. If you're not satisfied, contact us for a full refund.",
-        },
-        {
             question: "What payment methods do you accept?",
-            answer: "We accept all major credit cards (Visa, Mastercard, American Express) and PayPal. All payments are processed securely through Stripe.",
+            answer: "We accept all major credit cards (Visa, Mastercard, American Express etc.). All payments are processed securely through Stripe.",
         },
         {
             question: "Is there a limit on file size or duration?",
@@ -150,7 +146,7 @@ export const pricingFAQContent = {
         },
         {
             question: "What happens if I exceed my daily limit?",
-            answer: "Free users are limited to 10 transcriptions per day. Once you reach the limit, you can upgrade to Pro for unlimited transcriptions or wait until the next day.",
+            answer: "Free users are limited to 3 transcriptions per day. Once you reach the limit, you can upgrade to Pro for unlimited transcriptions or wait until the next day.",
         },
     ],
 };

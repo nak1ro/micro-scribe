@@ -11,3 +11,12 @@ Components for the authentication feature.
 - `OAuthButtons.tsx` - Social login buttons (Google, Microsoft)
 - `AuthTabs.tsx` - Tab navigation between Login/SignUp
 - `AuthCard.tsx` - Styled container for auth forms
+
+## OAuth Configuration
+
+To make social login work, you need to add the following **Authorized redirect URIs** in your Google/Microsoft Cloud Console:
+
+- **Google:** `http://localhost:3000/auth/callback/google`
+- **Microsoft:** `http://localhost:3000/auth/callback/microsoft`
+
+If deploying to production, allow `https://your-domain.com/auth/callback/provider-id` as well.

@@ -36,7 +36,6 @@ export function PricingPage() {
             <section className="relative py-16 sm:py-24 overflow-hidden" ref={heroRef}>
                 {/* Decorative elements */}
                 <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute inset-0 bg-dot-grid opacity-50" />
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] rounded-full bg-primary/5 blur-3xl" />
                     {/* Floating orbs */}
                     <div className="absolute top-20 left-10 w-32 h-32 rounded-full bg-primary/10 blur-2xl animate-pulse" />
@@ -165,15 +164,13 @@ export function PricingPage() {
                 </div>
             </section>
 
-            {/* Final CTA - Enhanced with gradient */}
+            {/* Final CTA */}
             <section
                 className="relative py-16 sm:py-24 overflow-hidden"
                 ref={ctaRef}
             >
                 {/* Gradient background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5" />
-                <div className="absolute inset-0 bg-dot-grid opacity-30" />
-
+                <div className="absolute inset-0 bg-gradient-to-t from-primary/10 via-primary/5 to-transparent" />
                 <div className="relative mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 text-center">
                     <h2
                         className={cn(

@@ -105,11 +105,11 @@ export function PricingCard({
             className={cn(
                 "relative rounded-2xl bg-card shadow-lg",
                 "border border-border/50",
-                // Hover glow effect using box-shadow
-                "hover:border-primary/50",
+                // Subtle hover effect
+                "hover:border-primary/30",
                 highlighted
-                    ? "hover:shadow-[0_0_30px_hsl(var(--primary)/0.4)]"
-                    : "hover:shadow-[0_0_25px_hsl(var(--primary)/0.25)]",
+                    ? "hover:shadow-[0_0_20px_hsl(var(--primary)/0.2)]"
+                    : "hover:shadow-[0_0_15px_hsl(var(--primary)/0.15)]",
                 "transition-all duration-300",
                 animationClass
             )}
@@ -170,20 +170,23 @@ export function PricingCard({
 
             {/* Features */}
             <div className="bg-card px-6 py-6 rounded-b-2xl">
-                <div className="space-y-5 mb-6">
+                <div className="divide-y divide-border/50">
                     {features.map((feature, index) => {
                         const Icon = iconMap[feature.icon] || CheckCircle;
                         return (
-                            <div key={index} className="flex items-center gap-3">
+                            <div key={index} className="flex items-center gap-3 py-4 first:pt-0 last:pb-0">
                                 <div
                                     className={cn(
-                                        "shrink-0 w-9 h-9 rounded-xl flex items-center justify-center",
-                                        highlighted ? "bg-primary/10" : "bg-muted"
+                                        "shrink-0 w-10 h-10 rounded-xl flex items-center justify-center",
+                                        "border",
+                                        highlighted
+                                            ? "bg-primary/20 border-primary/30"
+                                            : "bg-muted border-border"
                                     )}
                                 >
                                     <Icon
-                                        width={24}
-                                        height={24}
+                                        width={22}
+                                        height={22}
                                         className="text-primary"
                                     />
                                 </div>
@@ -196,9 +199,11 @@ export function PricingCard({
                 </div>
 
                 {/* CTA */}
-                <PricingButton href={cta.href} highlighted={highlighted}>
-                    {cta.label}
-                </PricingButton>
+                <div className="mt-6">
+                    <PricingButton href={cta.href} highlighted={highlighted}>
+                        {cta.label}
+                    </PricingButton>
+                </div>
             </div>
         </div>
     );
