@@ -113,7 +113,7 @@ export function getPlan(id: PlanId): Plan {
 }
 
 // Pricing helpers
-export const ANNUAL_SAVINGS_PERCENT = 17;
+export const ANNUAL_SAVINGS_PERCENT = 47;
 
 export function formatPrice(cents: number): string {
     return `$${cents}`;

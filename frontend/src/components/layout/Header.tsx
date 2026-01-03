@@ -11,12 +11,11 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/hooks/useAuth";
 
-
-
 const navLinks = [
-    { href: "/features", label: "Features" },
+    { href: "/#features", label: "Features" },
+    { href: "/#how-it-works", label: "How it Works" },
     { href: "/pricing", label: "Pricing" },
-    { href: "/about", label: "About" },
+    { href: "/#faq", label: "FAQ" },
 ];
 
 export function Header() {
@@ -36,13 +35,36 @@ export function Header() {
                 <div className="flex h-full items-center justify-between">
                     {/* Left: Logo + Nav */}
                     <div className="flex items-center gap-8">
-                        {/* Logo */}
+                        {/* Logo with hover effects */}
                         <Link
                             href="/"
-                            className="flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity"
+                            className="group flex items-center gap-2 text-foreground"
                         >
-                            <Rocket className="h-7 w-7 text-primary" />
-                            <span className="hidden sm:block text-lg font-semibold">
+                            {/* Animated rocket icon */}
+                            <span className="relative">
+                                <Rocket
+                                    className={cn(
+                                        "h-7 w-7 text-primary",
+                                        "transition-transform duration-300 ease-out",
+                                        "group-hover:rotate-[-15deg] group-hover:scale-110"
+                                    )}
+                                />
+                                {/* Sparkle effect on hover */}
+                                <span className={cn(
+                                    "absolute -top-1 -right-1 w-2 h-2 rounded-full",
+                                    "bg-primary/80 opacity-0 scale-0",
+                                    "group-hover:opacity-100 group-hover:scale-100",
+                                    "transition-all duration-300 delay-100",
+                                    "animate-ping"
+                                )} />
+                            </span>
+                            {/* Gradient text on hover */}
+                            <span className={cn(
+                                "hidden sm:block text-lg font-semibold",
+                                "transition-all duration-300",
+                                "group-hover:bg-gradient-to-r group-hover:from-primary group-hover:to-primary/60",
+                                "group-hover:bg-clip-text group-hover:text-transparent"
+                            )}>
                                 ScribeRocket
                             </span>
                         </Link>

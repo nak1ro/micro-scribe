@@ -26,6 +26,43 @@ const iconMap: Record<string, React.ElementType> = {
     Users: Group,
 };
 
+// Hook for animating price changes
+function useAnimatedPrice(price: string, duration: number = 400) {
+    const numericPrice = parseInt(price.replace(/[^0-9]/g, ""), 10) || 0;
+    const [displayPrice, setDisplayPrice] = React.useState(numericPrice);
+    const previousPrice = React.useRef(numericPrice);
+
+    React.useEffect(() => {
+        // Skip animation on initial render
+        if (previousPrice.current === numericPrice) return;
+
+        const startPrice = previousPrice.current;
+        const endPrice = numericPrice;
+        const startTime = Date.now();
+
+        const animate = () => {
+            const now = Date.now();
+            const progress = Math.min((now - startTime) / duration, 1);
+            // Ease out cubic for smooth deceleration
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            const current = startPrice + (endPrice - startPrice) * easeOut;
+
+            setDisplayPrice(Math.round(current));
+
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                setDisplayPrice(endPrice);
+                previousPrice.current = endPrice;
+            }
+        };
+
+        requestAnimationFrame(animate);
+    }, [numericPrice, duration]);
+
+    return displayPrice;
+}
+
 export interface PricingFeature {
     icon: string;
     text: string;
@@ -61,6 +98,8 @@ export function PricingCard({
     animationClass,
     animationDelay,
 }: PricingCardProps) {
+    const animatedPrice = useAnimatedPrice(price);
+
     return (
         <div
             className={cn(
@@ -95,15 +134,15 @@ export function PricingCard({
                     {highlighted && description && " – " + description}
                 </h3>
 
-                {/* Price */}
+                {/* Price with animation */}
                 <div className="flex items-baseline justify-center gap-1">
                     <span
                         className={cn(
-                            "text-4xl sm:text-5xl font-bold",
+                            "text-4xl sm:text-5xl font-bold tabular-nums",
                             highlighted ? "text-white" : "text-foreground"
                         )}
                     >
-                        {price}
+                        ${animatedPrice}
                     </span>
                     {period && (
                         <span
