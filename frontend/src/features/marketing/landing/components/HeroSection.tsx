@@ -53,10 +53,10 @@ export function HeroSection() {
     };
 
     return (
-        <section className="relative min-h-[30vh] flex items-center overflow-hidden">
-            {/* Background gradient accents */}
-            <div className="absolute top-1/4 -left-32 w-96 h-96 bg-primary/20 rounded-full blur-3xl opacity-50" />
-            <div className="absolute bottom-1/4 -right-32 w-80 h-80 bg-secondary/20 rounded-full blur-3xl opacity-40" />
+        <section className="relative min-h-[90vh] w-full flex items-center overflow-hidden">
+            {/* Background gradient accents - hidden on mobile to prevent layout issues */}
+            <div className="absolute top-1/4 -left-32 w-96 h-96 bg-primary/20 rounded-full blur-3xl opacity-50 hidden sm:block" />
+            <div className="absolute bottom-1/4 -right-32 w-80 h-80 bg-secondary/20 rounded-full blur-3xl opacity-40 hidden sm:block" />
 
             {/* Left side decorative elements */}
             <div className="absolute left-4 lg:left-12 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center gap-8">
@@ -123,7 +123,7 @@ export function HeroSection() {
             </div>
 
 
-            <div className="relative mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8 text-center">
+            <div className="relative w-full mx-auto max-w-4xl px-4 py-12 sm:py-16 sm:px-6 lg:px-8 text-center">
                 {/* Tiny accent - stagger delay 0 */}
                 <div
                     className={cn(
@@ -139,7 +139,7 @@ export function HeroSection() {
                 {/* Headline - stagger delay 100ms */}
                 <h1
                     className={cn(
-                        "text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-foreground leading-[1.1]",
+                        "text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-foreground leading-[1.1]",
                         "transition-all duration-700 delay-100",
                         mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                     )}
@@ -152,7 +152,7 @@ export function HeroSection() {
                 {/* Subheadline - stagger delay 200ms */}
                 <p
                     className={cn(
-                        "mt-6 text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed",
+                        "mt-4 sm:mt-6 text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed px-2 sm:px-0",
                         "transition-all duration-700 delay-200",
                         mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                     )}
@@ -281,8 +281,8 @@ export function HeroSection() {
                         </div>
                     </div>
 
-                    {/* Floating stat */}
-                    <div className="absolute -bottom-4 right-4 sm:right-12 px-3 py-1.5 rounded-full bg-card border border-border shadow-md text-sm">
+                    {/* Floating stat - centered on mobile, right-aligned on larger screens */}
+                    <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-12 px-3 py-1.5 rounded-full bg-card border border-border shadow-md text-sm">
                         <span className="text-muted-foreground">50+ languages</span>
                     </div>
                 </div>

@@ -236,6 +236,9 @@ function UserMenu({ user }: UserMenuProps) {
                         <p className="text-xs text-muted-foreground">{user.email}</p>
                     </div>
                     <div className="p-1">
+                        <DropdownLink href="/dashboard" icon={LayoutDashboard}>
+                            Dashboard
+                        </DropdownLink>
                         <DropdownLink href="/dashboard/subscription" icon={CreditCard}>
                             Manage Subscription
                         </DropdownLink>

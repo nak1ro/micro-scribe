@@ -5,19 +5,14 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import {
     Microphone,
-    NavArrowLeft,
-    NavArrowRight,
     Sparks,
     SidebarCollapse,
     SidebarExpand,
-    Xmark,
-    Menu,
     MusicDoubleNote,
     Plus,
     User,
     Folder,
     NavArrowDown,
-    Flash,
     Check,
     MoreVert,
     EditPencil,
@@ -40,7 +35,7 @@ const SIDEBAR_WIDTH = 245;
 const SIDEBAR_COLLAPSED_WIDTH = 68;
 
 export function Sidebar({ onNewTranscription }: SidebarProps) {
-    const { isCollapsed, isMobileOpen, toggleCollapse, setCollapsed, closeMobile } = useSidebar();
+    const { isCollapsed, toggleCollapse, setCollapsed } = useSidebar();
     const { data: usage } = useUsage();
     const pathname = usePathname();
 
@@ -49,8 +44,6 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
         if (pathname?.includes("/transcriptions/")) {
             setCollapsed(true);
         } else {
-            // "When opens dashboard again, it becomes full again"
-            // This assumes we want to expand on ANY non-transcription page, or strictly checks for dashboard/root
             setCollapsed(false);
         }
     }, [pathname, setCollapsed]);
@@ -181,27 +174,13 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
                 {sidebarContent}
             </aside>
 
-            {/* Mobile Trigger */}
-            <MobileTrigger />
+            {/* Mobile Bottom Navigation */}
+            <MobileBottomNav
+                onNewTranscription={onNewTranscription}
+                isPremium={isPremium}
+            />
 
-            {/* Mobile Overlay */}
-            {isMobileOpen && (
-                <div className="lg:hidden fixed inset-0 z-50 bg-black/50" onClick={closeMobile}>
-                    <aside
-                        className="fixed left-0 top-0 h-full w-[260px] bg-card animate-slide-in-up"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="absolute top-3 right-3">
-                            <button onClick={closeMobile} className="p-1.5 text-muted-foreground hover:text-foreground">
-                                <Xmark className="h-5 w-5" />
-                            </button>
-                        </div>
-                        {sidebarContent}
-                    </aside>
-                </div>
-            )}
-
-            {/* Spacer */}
+            {/* Spacer for desktop */}
             <div
                 className="hidden lg:block shrink-0 transition-[width] duration-200"
                 style={{ width: isCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH }}
@@ -454,26 +433,123 @@ function NavItem(props: SidebarNavItemProps) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Mobile Trigger
+// Mobile Bottom Navigation
 // ─────────────────────────────────────────────────────────────
 
-function MobileTrigger() {
-    const { openMobile } = useSidebar();
+interface MobileBottomNavProps {
+    onNewTranscription?: () => void;
+    isPremium: boolean;
+}
+
+function MobileBottomNav({ onNewTranscription, isPremium }: MobileBottomNavProps) {
+    const pathname = usePathname();
+
+    const handleNewClick = (e: React.MouseEvent) => {
+        if (onNewTranscription) {
+            e.preventDefault();
+            onNewTranscription();
+        }
+    };
+
+    const isActive = (href: string) => {
+        if (href === "/dashboard") {
+            return pathname === "/dashboard" || pathname?.startsWith("/transcriptions/");
+        }
+        return pathname === href || pathname?.startsWith(href);
+    };
 
     return (
-        <button
-            type="button"
-            onClick={openMobile}
+        <nav
             className={cn(
-                "lg:hidden fixed top-3 left-3 z-40",
-                "p-2 rounded-lg",
-                "bg-card border border-border shadow-sm",
-                "text-muted-foreground hover:text-foreground",
-                "transition-colors"
+                "lg:hidden fixed bottom-0 left-0 right-0 z-50",
+                "bg-card/95 backdrop-blur-md border-t border-border",
+                "pb-[env(safe-area-inset-bottom)]"
             )}
         >
-            <Menu className="h-5 w-5" />
-        </button>
+            <div className="flex items-center justify-around h-18 px-2">
+                {/* Transcriptions */}
+                <Link
+                    href="/dashboard"
+                    className={cn(
+                        "flex flex-col items-center justify-center gap-1 min-w-[64px] rounded-lg relative",
+                        "text-muted-foreground hover:text-foreground transition-colors",
+                        isActive("/dashboard") && "text-primary"
+                    )}
+                >
+                    <MusicDoubleNote className="h-6 w-6" />
+                    <span className="text-[10px] font-medium">Files</span>
+                    {isActive("/dashboard") && (
+                        <span className="absolute -bottom-1 w-1 h-1 rounded-full bg-primary" />
+                    )}
+                </Link>
+
+                {/* New Transcription - Center Button */}
+                <Link
+                    href="/dashboard?action=new"
+                    onClick={handleNewClick}
+                    className={cn(
+                        "flex items-center justify-center",
+                        "w-12 h-12 rounded-full",
+                        "bg-gradient-primary text-primary-foreground",
+                        "shadow-lg shadow-primary/25",
+                        "active:scale-95 transition-transform"
+                    )}
+                    aria-label="New transcription"
+                >
+                    <Plus className="h-6 w-6" />
+                </Link>
+
+                {/* Account */}
+                <Link
+                    href="/account"
+                    className={cn(
+                        "flex flex-col items-center justify-center gap-1 min-w-[64px] rounded-lg relative",
+                        "text-muted-foreground hover:text-foreground transition-colors",
+                        (isActive("/account") && !isActive("/account/billing") && !isActive("/account/checkout")) && "text-primary"
+                    )}
+                >
+                    <User className="h-6 w-6" />
+                    <span className="text-[10px] font-medium">Account</span>
+                    {(isActive("/account") && !isActive("/account/billing") && !isActive("/account/checkout")) && (
+                        <span className="absolute -bottom-1 w-1 h-1 rounded-full bg-primary" />
+                    )}
+                </Link>
+
+                {/* Upgrade (for free users) / Premium badge */}
+                {/* Upgrade (for free users) / Premium badge */}
+                {!isPremium ? (
+                    <Link
+                        href="/account/checkout"
+                        className={cn(
+                            "flex flex-col items-center justify-center gap-1 min-w-[64px] rounded-lg relative",
+                            "text-muted-foreground hover:text-foreground transition-colors",
+                            isActive("/account/checkout") && "text-primary"
+                        )}
+                    >
+                        <Sparks className="h-6 w-6" />
+                        <span className="text-[10px] font-medium">Upgrade</span>
+                        {isActive("/account/checkout") && (
+                            <span className="absolute -bottom-1 w-1 h-1 rounded-full bg-primary" />
+                        )}
+                    </Link>
+                ) : (
+                    <Link
+                        href="/account/billing"
+                        className={cn(
+                            "flex flex-col items-center justify-center gap-1 min-w-[64px] rounded-lg relative",
+                            "text-muted-foreground hover:text-foreground transition-colors",
+                            isActive("/account/billing") && "text-primary"
+                        )}
+                    >
+                        <Sparks className="h-6 w-6" />
+                        <span className="text-[10px] font-medium">Pro</span>
+                        {isActive("/account/billing") && (
+                            <span className="absolute -bottom-1 w-1 h-1 rounded-full bg-primary" />
+                        )}
+                    </Link>
+                )}
+            </div>
+        </nav>
     );
 }
 
