@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using ScribeApi.Infrastructure.Persistence;
 
 namespace ScribeApi.Api.Extensions;
 
@@ -27,6 +29,24 @@ public static class WebApplicationExtensions
         {
             var logger = services.GetRequiredService<ILogger<WebApplication>>();
             logger.LogError(ex, "An error occurred while seeding Identity roles.");
+        }
+    }
+
+    public static async Task ApplyMigrationsAsync(this WebApplication app)
+    {
+        using var scope = app.Services.CreateScope();
+        var services = scope.ServiceProvider;
+
+        try
+        {
+            var context = services.GetRequiredService<AppDbContext>();
+            await context.Database.MigrateAsync();
+        }
+        catch (Exception ex)
+        {
+            var logger = services.GetRequiredService<ILogger<WebApplication>>();
+            logger.LogError(ex, "An error occurred while applying database migrations.");
+            throw; // Fail startup if migrations fail
         }
     }
 

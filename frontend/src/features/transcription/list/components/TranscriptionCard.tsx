@@ -155,7 +155,13 @@ export function TranscriptionCard({
 
             {/* Icon + Title */}
             <div className="flex items-center gap-3 mb-3 pr-16">
-                <div className="relative p-2 rounded-lg bg-primary/10 shrink-0 h-9 w-9 flex items-center justify-center">
+                <div
+                    className="relative p-2 rounded-lg bg-primary/10 shrink-0 h-9 w-9 flex items-center justify-center cursor-pointer"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onSelect?.(item.id);
+                    }}
+                >
                     <MusicDoubleNote
                         className={cn(
                             "h-5 w-5 text-primary transition-opacity duration-200",

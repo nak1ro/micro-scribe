@@ -3,8 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Menu, X, LayoutDashboard, CreditCard, User, LogOut, Sun, Moon } from "lucide-react";
-import { Rocket } from "iconoir-react";
+import { Rocket, Menu, Xmark, ViewGrid, CreditCard, User, LogOut, SunLight, HalfMoon } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -97,7 +96,7 @@ export function Header() {
                             <>
                                 <Link href="/dashboard" className="hidden sm:block">
                                     <Button variant="ghost" size="md" className="gap-2">
-                                        <LayoutDashboard className="h-4 w-4" />
+                                        <ViewGrid className="h-4 w-4" />
                                         Dashboard
                                     </Button>
                                 </Link>
@@ -132,7 +131,7 @@ export function Header() {
                             aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
                         >
                             {isMobileMenuOpen ? (
-                                <X className="h-6 w-6" />
+                                <Xmark className="h-6 w-6" />
                             ) : (
                                 <Menu className="h-6 w-6" />
                             )}
@@ -236,14 +235,11 @@ function UserMenu({ user }: UserMenuProps) {
                         <p className="text-xs text-muted-foreground">{user.email}</p>
                     </div>
                     <div className="p-1">
-                        <DropdownLink href="/dashboard" icon={LayoutDashboard}>
+                        <DropdownLink href="/dashboard" icon={ViewGrid}>
                             Dashboard
                         </DropdownLink>
                         <DropdownLink href="/dashboard/subscription" icon={CreditCard}>
                             Manage Subscription
-                        </DropdownLink>
-                        <DropdownLink href="/dashboard/account" icon={User}>
-                            Account
                         </DropdownLink>
                         <ThemeMenuButton />
                     </div>
@@ -301,7 +297,7 @@ function ThemeMenuButton() {
     if (!mounted) {
         return (
             <div className="flex items-center gap-2 px-3 py-2 text-sm rounded-md text-foreground">
-                <Sun className="h-4 w-4 text-muted-foreground" />
+                <SunLight className="h-4 w-4 text-muted-foreground" />
                 Theme
             </div>
         );
@@ -319,9 +315,9 @@ function ThemeMenuButton() {
             )}
         >
             {isDark ? (
-                <Sun className="h-4 w-4 text-muted-foreground" />
+                <SunLight className="h-4 w-4 text-muted-foreground" />
             ) : (
-                <Moon className="h-4 w-4 text-muted-foreground" />
+                <HalfMoon className="h-4 w-4 text-muted-foreground" />
             )}
             {isDark ? "Light mode" : "Dark mode"}
         </button>

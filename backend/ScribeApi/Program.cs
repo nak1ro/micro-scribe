@@ -36,6 +36,7 @@ app.MapControllers();
 app.MapHub<TranscriptionHub>("/hubs/transcription");
 
 // Seeding
+await app.ApplyMigrationsAsync();
 await app.SeedIdentityRolesAsync();
 
 app.Run();

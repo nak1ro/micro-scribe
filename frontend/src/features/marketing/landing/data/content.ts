@@ -319,8 +319,7 @@ export const faqContent = {
         },
         {
             question: "Do you offer refunds?",
-            answer:
-                "Yes, we offer a 14-day money-back guarantee on all paid plans. If you're not satisfied, contact us for a full refund.",
+            answer: "We don't provide refunds;",
         },
         {
             question: "Can I transcribe YouTube videos?",

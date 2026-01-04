@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Clock, Globe, Menu } from "iconoir-react";
+import Link from "next/link";
+import { Clock, Globe, Menu, ArrowLeft } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
 import { formatTime, getLanguageName } from "@/lib/utils";
@@ -52,6 +53,13 @@ export function ViewerHeader({
         >
             {/* Title Section */}
             <div className="min-w-0 flex items-center gap-2">
+                {/* Back Button (Mobile only) */}
+                <Link href="/dashboard" className="lg:hidden mr-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 -ml-2 text-muted-foreground">
+                        <ArrowLeft className="h-5 w-5" />
+                    </Button>
+                </Link>
+
                 {/* Title - consistent structure for both views */}
                 <h1 className="text-base md:text-lg font-semibold text-foreground truncate">
                     {isInAnalysisView ? analysisTitle : data.fileName}

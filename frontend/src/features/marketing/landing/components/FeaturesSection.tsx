@@ -361,27 +361,6 @@ export function FeaturesSection() {
                             And much more...
                         </h3>
                     </div>
-
-                    {/* All features grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        {secondaryFeatures.map((feature, index) => (
-                            <div
-                                key={index}
-                                className={cn(
-                                    "group flex flex-col items-center text-center p-6 rounded-2xl",
-                                    "bg-card border border-border",
-                                    "hover-subtle"
-                                )}
-                            >
-                                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 hover-icon-pop">
-                                    <feature.icon className="w-6 h-6 text-primary" />
-                                </div>
-                                <span className="text-sm font-medium text-foreground">
-                                    {feature.text}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
                 </div>
 
                 {/* CTA */}

@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Mail, Lock, FileText, CreditCard, Trash } from "lucide-react";
-import { Button } from "@/components/ui";
+import { Mail, Lock, FileText, CreditCard, Trash, Palette } from "lucide-react";
+import { Button, ThemeToggle } from "@/components/ui";
 import { useAuth } from "@/hooks/useAuth";
 
 // Account settings page content
@@ -74,6 +74,21 @@ export function AccountContent() {
                         Manage Subscription
                     </Button>
                 </Link>
+            </SettingsCard>
+
+            {/* Appearance Section */}
+            <SettingsCard
+                icon={Palette}
+                title="Appearance"
+                description="Customize your interface theme"
+            >
+                <div className="flex items-center justify-between">
+                    <span className="text-sm text-foreground font-medium">Interface Theme</span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground mr-2">Toggle mode</span>
+                        <ThemeToggle />
+                    </div>
+                </div>
             </SettingsCard>
 
             {/* Danger Zone - Delete Account */}
