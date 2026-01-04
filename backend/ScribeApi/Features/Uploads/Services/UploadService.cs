@@ -47,7 +47,6 @@ public class UploadService : IUploadService
 
     public async Task<UploadSessionResponse> InitiateUploadAsync(InitiateUploadRequest request, string userId, CancellationToken ct)
     {
-        // Use Serializable transaction to prevent race conditions on plan limits (e.g. concurrent large uploads)
         await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
         try
         {
@@ -56,7 +55,6 @@ public class UploadService : IUploadService
             var existingSession = await CheckIdempotencyAsync(request.ClientRequestId, userId, ct);
             if (existingSession != null)
             {
-                // Optimization: Rollback transaction early since we are just reading/returning existing
                 await transaction.RollbackAsync(ct);
                 return await RefreshAndReturnExistingSessionAsync(existingSession, request, ct);
             }
@@ -165,7 +163,6 @@ public class UploadService : IUploadService
         string? uploadUrl = null;
         if (session.Status is UploadSessionStatus.Created or UploadSessionStatus.Uploading && session.UploadId == null)
         {
-            // Regenerate URL if expired or for immediate use
             if (session.UrlExpiresAtUtc == null || session.UrlExpiresAtUtc < DateTime.UtcNow)
             {
                 var urlResult = await _storageService.GenerateUploadUrlAsync(session.StorageKey, session.DeclaredContentType, session.SizeBytes, ct);
@@ -254,8 +251,9 @@ public class UploadService : IUploadService
             if (request.Parts == null || !request.Parts.Any())
                 throw new ValidationException("Parts list is required for multipart upload completion.");
 
-            var internalParts = request.Parts.Select(p => new UploadPartInfo(p.PartNumber, p.ETag)).ToList();
-            await _storageService.CompleteMultipartUploadAsync(session.StorageKey, session.UploadId, internalParts, ct);
+            // Extract part numbers and pass to storage service
+            var partNumbers = request.Parts.Select(p => p.PartNumber).ToList();
+            await _storageService.CompleteMultipartUploadAsync(session.StorageKey, session.UploadId, partNumbers, ct);
         }
 
         return await _storageService.GetObjectInfoAsync(session.StorageKey, ct)

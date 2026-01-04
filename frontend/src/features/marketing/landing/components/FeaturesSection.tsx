@@ -3,6 +3,8 @@
 import * as React from "react";
 import { Check, Sparks, MagicWand, Page, Clock, Group, Language } from "iconoir-react";
 import { cn } from "@/lib/utils";
+import { CTAButton } from "@/components/ui";
+import { useInView } from "@/hooks";
 import Image from "next/image";
 
 // Primary features with mockup images - zigzag layout
@@ -12,7 +14,7 @@ const primaryFeatures = [
         title: "Transcribe in seconds",
         subtitle: "Lightning fast AI",
         description:
-            "Upload any audio or video file and get accurate transcripts with timestamps and speaker labels. Our AI handles accents, background noise, and multiple speakers with ease.",
+            "Upload any file — get accurate transcripts with timestamps and speaker labels in minutes.",
         image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80",
         checks: [
             "Automatic speaker detection",
@@ -25,7 +27,7 @@ const primaryFeatures = [
         title: "Edit with precision",
         subtitle: "Smart inline editor",
         description:
-            "Click any word to jump to that exact moment in the audio. Make corrections seamlessly with our synchronized playback view.",
+            "Click any word to jump to that moment. Make corrections with synchronized playback.",
         image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&q=80",
         checks: [
             "Click-to-seek audio sync",
@@ -38,7 +40,7 @@ const primaryFeatures = [
         title: "Export anywhere",
         subtitle: "Multiple formats",
         description:
-            "Download your transcripts in any format you need. Perfect for subtitles, documentation, or further processing.",
+            "Download transcripts in any format — perfect for subtitles, docs, or further processing.",
         image: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=1200&q=80",
         checks: [
             "SRT, VTT, TXT, DOCX, PDF",
@@ -171,14 +173,20 @@ const secondaryFeatures = [
 
 export function FeaturesSection() {
     const [isExpanded, setIsExpanded] = React.useState(false);
-    const [showAllFeatures, setShowAllFeatures] = React.useState(false);
+    const { ref, isInView } = useInView(0.1);
 
     return (
-        <section className="relative py-24 overflow-hidden">
+        <section className="relative py-24 overflow-hidden" ref={ref}>
 
             <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 {/* Header */}
-                <div className="text-center mb-20">
+                <div
+                    className={cn(
+                        "text-center mb-20",
+                        "transition-all duration-700",
+                        isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                    )}
+                >
                     <span className="inline-block px-4 py-1.5 mb-6 text-sm font-medium text-primary bg-primary/10 rounded-full">
                         Powerful Features
                     </span>
@@ -196,8 +204,11 @@ export function FeaturesSection() {
                             key={feature.id}
                             className={cn(
                                 "grid grid-cols-1 lg:grid-cols-2 gap-12 items-center",
-                                index % 2 === 1 && "lg:grid-flow-dense"
+                                index % 2 === 1 && "lg:grid-flow-dense",
+                                "transition-all duration-700",
+                                isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                             )}
+                            style={{ transitionDelay: `${200 + index * 150}ms` }}
                         >
                             {/* Content */}
                             <div className={cn(index % 2 === 1 && "lg:col-start-2")}>
@@ -350,44 +361,16 @@ export function FeaturesSection() {
                             And much more...
                         </h3>
                     </div>
+                </div>
 
-                    {/* Always visible features */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        {secondaryFeatures.slice(0, showAllFeatures ? secondaryFeatures.length : 4).map((feature, index) => (
-                            <div
-                                key={index}
-                                className={cn(
-                                    "group flex flex-col items-center text-center p-6 rounded-2xl",
-                                    "bg-card border border-border",
-                                    "hover-subtle"
-                                )}
-                            >
-                                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 hover-icon-pop">
-                                    <feature.icon className="w-6 h-6 text-primary" />
-                                </div>
-                                <span className="text-sm font-medium text-foreground">
-                                    {feature.text}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Show more button */}
-                    {secondaryFeatures.length > 4 && (
-                        <div className="text-center mt-6">
-                            <button
-                                onClick={() => setShowAllFeatures(!showAllFeatures)}
-                                className={cn(
-                                    "inline-flex items-center gap-2 px-4 py-2 rounded-lg",
-                                    "text-sm font-medium text-primary",
-                                    "bg-primary/10 hover:bg-primary/20",
-                                    "transition-colors"
-                                )}
-                            >
-                                {showAllFeatures ? "Show less" : `+ ${secondaryFeatures.length - 4} more features`}
-                            </button>
-                        </div>
-                    )}
+                {/* CTA */}
+                <div className="text-center mt-16">
+                    <CTAButton size="lg">
+                        Start Transcribing Free
+                    </CTAButton>
+                    <p className="mt-4 text-muted-foreground text-sm">
+                        No credit card required
+                    </p>
                 </div>
             </div>
         </section>

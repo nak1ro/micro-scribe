@@ -34,7 +34,7 @@ function DashboardLayoutInner({
         <div className={cn("flex", noPadding ? "h-screen overflow-hidden" : "min-h-screen")}>
             <Sidebar />
             <main className="flex-1 min-w-0 flex flex-col">
-                {noPadding ? children : <div className="px-4 py-6 lg:px-8 flex-1">{children}</div>}
+                {noPadding ? children : <div className="px-4 py-6 pb-24 lg:px-8 lg:pb-6 flex-1">{children}</div>}
             </main>
         </div>
     );

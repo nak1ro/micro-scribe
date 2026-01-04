@@ -225,6 +225,9 @@ namespace ScribeApi.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
 
+                    b.Property<string>("StripeCustomerId")
+                        .HasColumnType("text");
+
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("boolean");
 
@@ -371,14 +374,13 @@ namespace ScribeApi.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<Guid>("CreatedFromUploadSessionId")
+                    b.Property<Guid?>("CreatedFromUploadSessionId")
                         .HasColumnType("uuid");
 
                     b.Property<double?>("DurationSeconds")
                         .HasColumnType("double precision");
 
                     b.Property<string>("ETag")
-                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
@@ -423,6 +425,25 @@ namespace ScribeApi.Migrations
                     b.HasIndex("UserId", "CreatedAtUtc");
 
                     b.ToTable("MediaFiles", (string)null);
+                });
+
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.ProcessedStripeEvent", b =>
+                {
+                    b.Property<string>("EventId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ProcessedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("EventId");
+
+                    b.HasIndex("ProcessedAtUtc");
+
+                    b.ToTable("ProcessedStripeEvents");
                 });
 
             modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.Subscription", b =>
@@ -508,7 +529,7 @@ namespace ScribeApi.Migrations
                     b.ToTable("TranscriptChapters", (string)null);
                 });
 
-            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.TranscriptionAnalysis", b =>
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.TranscriptionAnalysisJob", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -520,17 +541,22 @@ namespace ScribeApi.Migrations
                         .HasColumnType("character varying(50)");
 
                     b.Property<string>("Content")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("LastUpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("ModelUsed")
                         .HasColumnType("text");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<Guid>("TranscriptionJobId")
                         .HasColumnType("uuid");
@@ -544,7 +570,7 @@ namespace ScribeApi.Migrations
                     b.HasIndex("TranscriptionJobId", "AnalysisType")
                         .IsUnique();
 
-                    b.ToTable("TranscriptionAnalyses", (string)null);
+                    b.ToTable("TranscriptionAnalysisJobs", (string)null);
                 });
 
             modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.TranscriptionJob", b =>
@@ -573,6 +599,9 @@ namespace ScribeApi.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastEditedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("MediaFileId")
                         .HasColumnType("uuid");
@@ -610,6 +639,10 @@ namespace ScribeApi.Migrations
 
                     b.Property<string>("Transcript")
                         .HasColumnType("text");
+
+                    b.Property<List<string>>("TranslatedLanguages")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("TranslatingToLanguage")
                         .HasColumnType("text");
@@ -960,7 +993,7 @@ namespace ScribeApi.Migrations
                     b.Navigation("TranscriptionJob");
                 });
 
-            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.TranscriptionAnalysis", b =>
+            modelBuilder.Entity("ScribeApi.Infrastructure.Persistence.Entities.TranscriptionAnalysisJob", b =>
                 {
                     b.HasOne("ScribeApi.Infrastructure.Persistence.Entities.TranscriptionJob", "TranscriptionJob")
                         .WithMany("Analyses")

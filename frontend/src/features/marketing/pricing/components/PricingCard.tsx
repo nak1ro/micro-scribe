@@ -26,6 +26,43 @@ const iconMap: Record<string, React.ElementType> = {
     Users: Group,
 };
 
+// Hook for animating price changes
+function useAnimatedPrice(price: string, duration: number = 400) {
+    const numericPrice = parseInt(price.replace(/[^0-9]/g, ""), 10) || 0;
+    const [displayPrice, setDisplayPrice] = React.useState(numericPrice);
+    const previousPrice = React.useRef(numericPrice);
+
+    React.useEffect(() => {
+        // Skip animation on initial render
+        if (previousPrice.current === numericPrice) return;
+
+        const startPrice = previousPrice.current;
+        const endPrice = numericPrice;
+        const startTime = Date.now();
+
+        const animate = () => {
+            const now = Date.now();
+            const progress = Math.min((now - startTime) / duration, 1);
+            // Ease out cubic for smooth deceleration
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            const current = startPrice + (endPrice - startPrice) * easeOut;
+
+            setDisplayPrice(Math.round(current));
+
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                setDisplayPrice(endPrice);
+                previousPrice.current = endPrice;
+            }
+        };
+
+        requestAnimationFrame(animate);
+    }, [numericPrice, duration]);
+
+    return displayPrice;
+}
+
 export interface PricingFeature {
     icon: string;
     text: string;
@@ -61,11 +98,19 @@ export function PricingCard({
     animationClass,
     animationDelay,
 }: PricingCardProps) {
+    const animatedPrice = useAnimatedPrice(price);
+
     return (
         <div
             className={cn(
-                "relative rounded-2xl overflow-hidden bg-card shadow-lg",
-                "hover:shadow-[0_0_25px_hsl(var(--primary)/0.15)] transition-all duration-200",
+                "relative rounded-2xl bg-card shadow-lg",
+                "border border-border/50",
+                // Subtle hover effect
+                "hover:border-primary/30",
+                highlighted
+                    ? "hover:shadow-[0_0_20px_hsl(var(--primary)/0.2)]"
+                    : "hover:shadow-[0_0_15px_hsl(var(--primary)/0.15)]",
+                "transition-all duration-300",
                 animationClass
             )}
             style={animationDelay ? { transitionDelay: animationDelay } : undefined}
@@ -73,7 +118,7 @@ export function PricingCard({
             {/* Header with gradient for highlighted/Pro */}
             <div
                 className={cn(
-                    "px-6 py-6 text-center",
+                    "px-6 py-6 text-center rounded-t-2xl",
                     highlighted
                         ? "bg-gradient-to-br from-primary to-primary/65 text-primary-foreground"
                         : "bg-card border-b border-border"
@@ -89,15 +134,15 @@ export function PricingCard({
                     {highlighted && description && " – " + description}
                 </h3>
 
-                {/* Price */}
+                {/* Price with animation */}
                 <div className="flex items-baseline justify-center gap-1">
                     <span
                         className={cn(
-                            "text-4xl sm:text-5xl font-bold",
+                            "text-4xl sm:text-5xl font-bold tabular-nums",
                             highlighted ? "text-white" : "text-foreground"
                         )}
                     >
-                        {price}
+                        ${animatedPrice}
                     </span>
                     {period && (
                         <span
@@ -124,21 +169,24 @@ export function PricingCard({
             </div>
 
             {/* Features */}
-            <div className="bg-card px-6 py-6">
-                <div className="space-y-5 mb-6">
+            <div className="bg-card px-6 py-6 rounded-b-2xl">
+                <div className="divide-y divide-border/50">
                     {features.map((feature, index) => {
                         const Icon = iconMap[feature.icon] || CheckCircle;
                         return (
-                            <div key={index} className="flex items-center gap-3">
+                            <div key={index} className="flex items-center gap-3 py-4 first:pt-0 last:pb-0">
                                 <div
                                     className={cn(
-                                        "shrink-0 w-9 h-9 rounded-xl flex items-center justify-center",
-                                        highlighted ? "bg-primary/10" : "bg-muted"
+                                        "shrink-0 w-10 h-10 rounded-xl flex items-center justify-center",
+                                        "border",
+                                        highlighted
+                                            ? "bg-primary/20 border-primary/30"
+                                            : "bg-muted border-border"
                                     )}
                                 >
                                     <Icon
-                                        width={24}
-                                        height={24}
+                                        width={22}
+                                        height={22}
                                         className="text-primary"
                                     />
                                 </div>
@@ -151,9 +199,11 @@ export function PricingCard({
                 </div>
 
                 {/* CTA */}
-                <PricingButton href={cta.href} highlighted={highlighted}>
-                    {cta.label}
-                </PricingButton>
+                <div className="mt-6">
+                    <PricingButton href={cta.href} highlighted={highlighted}>
+                        {cta.label}
+                    </PricingButton>
+                </div>
             </div>
         </div>
     );

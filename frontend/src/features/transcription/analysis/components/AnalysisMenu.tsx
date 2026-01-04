@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { NavArrowDown, Check, RefreshDouble, Plus, ReportColumns } from "iconoir-react";
+import { NavArrowDown, Check, RefreshDouble, Plus, ReportColumns, ArrowLeft } from "iconoir-react";
 import type { TranscriptionAnalysisDto, AnalysisType } from "@/types/api/analysis";
 
 interface AnalysisMenuProps {
@@ -54,34 +54,55 @@ export function AnalysisMenu({
     }, [isOpen]);
 
     // Check helpers
-    const isGenerated = (type: AnalysisType) => analyses.some(a => a.analysisType === type);
-    const isTypeGenerating = (type: AnalysisType) => generatingTypes.includes(type);
-    const generatedCount = ANALYSIS_TYPES.filter(t => isGenerated(t.type)).length;
+    // Check helpers
+    const getAnalysis = (type: AnalysisType) => analyses.find(a => a.analysisType === type);
+
+    // An item is "loading" if the API request is in flight OR if the background job is pending/processing
+    const isLoading = (type: AnalysisType) => {
+        const analysis = getAnalysis(type);
+        return generatingTypes.includes(type) ||
+            analysis?.status === "Pending" ||
+            analysis?.status === "Processing";
+    };
+
+    // An item is "complete" only if it exists and is marked Completed
+    const isCompleted = (type: AnalysisType) => getAnalysis(type)?.status === "Completed";
+
+    // An item is "failed"
+    const isFailed = (type: AnalysisType) => getAnalysis(type)?.status === "Failed";
+
+    const generatedCount = ANALYSIS_TYPES.filter(t => isCompleted(t.type)).length;
 
     // Handle item click
     const handleClick = (item: typeof ANALYSIS_TYPES[0]) => {
-        console.log("[AnalysisMenu] handleClick called", item.type, { isGenerated: isGenerated(item.type), isGenerating: isTypeGenerating(item.type) });
+        const loading = isLoading(item.type);
+        const complete = isCompleted(item.type);
+        const failed = isFailed(item.type);
 
-        // If generating, do nothing
-        if (isTypeGenerating(item.type)) {
-            console.log("[AnalysisMenu] Returning early - type is generating");
+        console.log("[AnalysisMenu] handleClick called", item.type, { loading, complete, failed });
+
+        // If loading, do nothing
+        if (loading) {
+            console.log("[AnalysisMenu] Returning early - type is loading");
             return;
         }
 
         // If has a view (ActionItems, MeetingMinutes)
         if (item.hasView) {
-            // Generate if needed, then switch view
-            if (!isGenerated(item.type)) {
-                console.log("[AnalysisMenu] Calling onGenerate for", item.type);
-                onGenerate([item.type]);
+            // If complete, open the view
+            if (complete) {
+                console.log("[AnalysisMenu] Opening view for", item.type);
+                onSelectView(item.type);
+                setIsOpen(false);
+                return;
             }
-            // Switch to that view
-            console.log("[AnalysisMenu] Calling onSelectView with", item.type);
-            onSelectView(item.type);
-            setIsOpen(false);
+
+            // If not complete (or failed), generate/retry
+            console.log("[AnalysisMenu] Generating/Retrying", item.type);
+            onGenerate([item.type]);
         } else {
-            // For other types, just generate if not already done
-            if (!isGenerated(item.type)) {
+            // For other types, generate if not complete
+            if (!complete) {
                 console.log("[AnalysisMenu] Calling onGenerate for non-view type", item.type);
                 onGenerate([item.type]);
             }
@@ -128,28 +149,49 @@ export function AnalysisMenu({
             {/* Dropdown */}
             {isOpen && (
                 <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-popover border border-border rounded-lg shadow-lg py-1">
+                    {/* View Transcript - shown when in analysis view */}
+                    {currentView !== "transcript" && (
+                        <>
+                            <button
+                                onClick={() => { onSelectView("transcript"); setIsOpen(false); }}
+                                className={cn(
+                                    "w-full flex items-center gap-2 px-3 py-2",
+                                    "text-left text-sm font-medium text-primary hover:bg-primary/5",
+                                    "transition-colors"
+                                )}
+                            >
+                                <ArrowLeft className="h-4 w-4" />
+                                <span>View Transcript</span>
+                            </button>
+                            <div className="h-px bg-border my-1" />
+                        </>
+                    )}
                     {ANALYSIS_TYPES.map((item) => {
-                        const generated = isGenerated(item.type);
-                        const generating = isTypeGenerating(item.type);
+                        const loading = isLoading(item.type);
+                        const complete = isCompleted(item.type);
+                        const failed = isFailed(item.type);
                         const isActive = currentView === item.type;
 
                         return (
                             <button
                                 key={item.type}
                                 onClick={() => handleClick(item)}
-                                disabled={generating || disabled}
+                                disabled={loading || disabled}
                                 className={cn(
                                     "w-full flex items-center justify-between px-3 py-2",
                                     "text-left transition-colors",
                                     isActive ? "bg-primary/10" : "hover:bg-muted",
-                                    (generating || disabled) && "opacity-50"
+                                    (loading || disabled) && "opacity-70 cursor-wait"
                                 )}
                             >
-                                <span className="text-sm text-foreground">{item.label}</span>
+                                <span className={cn("text-sm", failed ? "text-destructive" : "text-foreground")}>
+                                    {item.label}
+                                </span>
                                 <div className="flex items-center gap-1">
-                                    {generating && <RefreshDouble className="h-4 w-4 text-info animate-spin" />}
-                                    {generated && !generating && <Check className="h-4 w-4 text-success" />}
-                                    {!generated && !generating && <Plus className="h-4 w-4 text-muted-foreground" />}
+                                    {loading && <RefreshDouble className="h-4 w-4 text-info animate-spin" />}
+                                    {complete && <Check className="h-4 w-4 text-success" />}
+                                    {failed && <span className="text-xs text-destructive font-medium">Failed</span>}
+                                    {!complete && !loading && !failed && <Plus className="h-4 w-4 text-muted-foreground" />}
                                 </div>
                             </button>
                         );
@@ -174,18 +216,7 @@ export function AnalysisMenu({
                         </>
                     )}
 
-                    {/* Back to Transcript (if viewing analysis) */}
-                    {currentView !== "transcript" && (
-                        <>
-                            <div className="h-px bg-border my-1" />
-                            <button
-                                onClick={() => { onSelectView("transcript"); setIsOpen(false); }}
-                                className="w-full px-3 py-2 text-sm text-muted-foreground hover:bg-muted text-left"
-                            >
-                                ← Back to Transcript
-                            </button>
-                        </>
-                    )}
+
                 </div>
             )}
         </div>

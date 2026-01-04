@@ -72,7 +72,16 @@ public class WhisperXTranscriptionProvider : ITranscriptionProvider
 
         try
         {
-            var response = await _httpClient.PostAsync(url, content, ct);
+            using var request = new HttpRequestMessage(HttpMethod.Post, url);
+            request.Content = content;
+            
+            // Add API key header if configured
+            if (!string.IsNullOrEmpty(_settings.ApiKey))
+            {
+                request.Headers.Add("X-API-Key", _settings.ApiKey);
+            }
+            
+            var response = await _httpClient.SendAsync(request, ct);
 
             if (!response.IsSuccessStatusCode)
             {

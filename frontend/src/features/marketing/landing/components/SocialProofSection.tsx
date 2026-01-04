@@ -40,12 +40,30 @@ function useCountUp(end: number, duration: number = 2000, isInView: boolean) {
     return count;
 }
 
-// Hook for intersection observer
+// Hook for intersection observer - disabled on mobile for performance
 function useInView(threshold = 0.5) {
     const ref = React.useRef<HTMLDivElement>(null);
     const [isInView, setIsInView] = React.useState(false);
+    const [isMobile, setIsMobile] = React.useState(false);
+
+    // Detect mobile on mount
+    React.useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 640);
+        };
+
+        checkMobile();
+
+        // Skip animations on mobile - show content immediately
+        if (window.innerWidth < 640) {
+            setIsInView(true);
+        }
+    }, []);
 
     React.useEffect(() => {
+        // Skip intersection observer on mobile
+        if (isMobile) return;
+
         const element = ref.current;
         if (!element) return;
 
@@ -61,7 +79,7 @@ function useInView(threshold = 0.5) {
 
         observer.observe(element);
         return () => observer.disconnect();
-    }, [threshold]);
+    }, [threshold, isMobile]);
 
     return { ref, isInView };
 }

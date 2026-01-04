@@ -60,7 +60,8 @@ public class TranslationJobRunner
 
             // Get texts to translate
             var orderedSegments = job.Segments.OrderBy(s => s.StartSeconds).ToList();
-            var textsToTranslate = orderedSegments.Select(s => s.Text).ToList();
+            // Use OriginalText if available (source of truth), otherwise Text
+            var textsToTranslate = orderedSegments.Select(s => s.OriginalText ?? s.Text).ToList();
 
             if (textsToTranslate.Count == 0)
             {
@@ -86,7 +87,17 @@ public class TranslationJobRunner
 
             // Force EF Core to detect JSONB changes by reassigning the collection
             job.Segments = orderedSegments;
+            job.Segments = orderedSegments;
             _context.Entry(job).Property(j => j.Segments).IsModified = true;
+
+            // Update list of translated languages
+            if (job.TranslatedLanguages == null) job.TranslatedLanguages = new List<string>();
+            if (!job.TranslatedLanguages.Contains(targetLanguage))
+            {
+                job.TranslatedLanguages.Add(targetLanguage);
+            }
+            // Force EF update for JSONB
+            _context.Entry(job).Property(j => j.TranslatedLanguages).IsModified = true;
 
             // Clear translation status
             job.TranslationStatus = null;

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using ScribeApi.Core.Configuration;
+using ScribeApi.Core.Interfaces;
 using ScribeApi.Infrastructure.Persistence;
 using ScribeApi.Infrastructure.Persistence.Entities;
 
@@ -11,15 +12,21 @@ public class StripeWebhookHandler
 {
     private readonly AppDbContext _context;
     private readonly StripeSettings _settings;
+    private readonly StripeClient _stripeClient;
+    private readonly IWebhookIdempotencyService _idempotencyService;
     private readonly ILogger<StripeWebhookHandler> _logger;
 
     public StripeWebhookHandler(
         AppDbContext context,
         IOptions<StripeSettings> settings,
+        StripeClient stripeClient,
+        IWebhookIdempotencyService idempotencyService,
         ILogger<StripeWebhookHandler> logger)
     {
         _context = context;
         _settings = settings.Value;
+        _stripeClient = stripeClient;
+        _idempotencyService = idempotencyService;
         _logger = logger;
     }
 
@@ -37,16 +44,20 @@ public class StripeWebhookHandler
         }
     }
 
-    // Handle a Stripe webhook event
+    // Handle a Stripe webhook event (with database-backed idempotency)
     public async Task HandleEventAsync(Stripe.Event stripeEvent, CancellationToken ct = default)
     {
+        // Try to mark event as processed - returns false if already processed
+        if (!await _idempotencyService.TryMarkAsProcessedAsync(stripeEvent.Id, stripeEvent.Type, ct))
+        {
+            _logger.LogDebug("Skipping duplicate event {EventId}", stripeEvent.Id);
+            return;
+        }
+
         _logger.LogInformation("Handling Stripe event {EventType} ({EventId})", stripeEvent.Type, stripeEvent.Id);
 
         switch (stripeEvent.Type)
         {
-            case "checkout.session.completed":
-                await HandleCheckoutSessionCompletedAsync(stripeEvent, ct);
-                break;
             case "customer.subscription.created":
             case "customer.subscription.updated":
                 await HandleSubscriptionUpdatedAsync(stripeEvent, ct);
@@ -66,30 +77,12 @@ public class StripeWebhookHandler
         }
     }
 
-    private async Task HandleCheckoutSessionCompletedAsync(Stripe.Event stripeEvent, CancellationToken ct)
-    {
-        var session = stripeEvent.Data.Object as Stripe.Checkout.Session;
-        if (session == null) return;
-
-        _logger.LogInformation("Checkout completed for customer {CustomerId}", session.CustomerId);
-
-        var user = await FindUserByCustomerIdAsync(session.CustomerId, ct);
-
-        if (user == null)
-        {
-            _logger.LogWarning("No user found for Stripe customer {CustomerId}", session.CustomerId);
-            return;
-        }
-
-        user.Plan = PlanType.Pro;
-        await _context.SaveChangesAsync(ct);
-
-        _logger.LogInformation("User {UserId} upgraded to Pro via checkout", user.Id);
-    }
-
     private async Task HandleSubscriptionUpdatedAsync(Stripe.Event stripeEvent, CancellationToken ct)
     {
-        if (stripeEvent.Data.Object is not Stripe.Subscription stripeSub) return;
+        if (stripeEvent.Data.Object is not Stripe.Subscription eventSub) return;
+
+        // Fetch latest subscription from Stripe to ensure fresh state (events can arrive out of order)
+        var stripeSub = await _stripeClient.GetSubscriptionAsync(eventSub.Id, ct) ?? eventSub;
 
         var user = await FindUserByCustomerIdAsync(stripeSub.CustomerId, ct);
         if (user == null) return;
@@ -146,13 +139,36 @@ public class StripeWebhookHandler
         _logger.LogInformation("Subscription deleted, user {UserId} downgraded to Free", user.Id);
     }
 
-    private Task HandleInvoicePaidAsync(Stripe.Event stripeEvent, CancellationToken ct)
+    private async Task HandleInvoicePaidAsync(Stripe.Event stripeEvent, CancellationToken ct)
     {
         var invoice = stripeEvent.Data.Object as Stripe.Invoice;
-        if (invoice == null) return Task.CompletedTask;
+        if (invoice == null) return;
 
         _logger.LogInformation("Invoice {InvoiceId} paid for customer {CustomerId}", invoice.Id, invoice.CustomerId);
-        return Task.CompletedTask;
+
+        // Find user and update their subscription/plan
+        var user = await FindUserByCustomerIdAsync(invoice.CustomerId, ct);
+        if (user == null) return;
+
+        var localSub = await _context.Subscriptions
+            .Where(s => s.UserId == user.Id)
+            .OrderByDescending(s => s.CreatedAtUtc)
+            .FirstOrDefaultAsync(ct);
+
+        if (localSub != null)
+        {
+            localSub.Status = SubscriptionStatus.Active;
+            
+            // Update period dates from invoice
+            localSub.CurrentPeriodStartUtc = invoice.PeriodStart;
+            localSub.CurrentPeriodEndUtc = invoice.PeriodEnd;
+
+            user.Plan = PlanType.Pro;
+            await _context.SaveChangesAsync(ct);
+            
+            _logger.LogInformation("Invoice paid - user {UserId} upgraded to Pro, period: {Start} to {End}", 
+                user.Id, localSub.CurrentPeriodStartUtc, localSub.CurrentPeriodEndUtc);
+        }
     }
 
     private async Task HandleInvoicePaymentFailedAsync(Stripe.Event stripeEvent, CancellationToken ct)
@@ -172,25 +188,47 @@ public class StripeWebhookHandler
 
         if (localSub != null)
         {
-            localSub.Status = SubscriptionStatus.PastDue;
+            // Cancel subscription immediately on payment failure
+            localSub.Status = SubscriptionStatus.Canceled;
+            localSub.CanceledAtUtc = DateTime.UtcNow;
+            user.Plan = PlanType.Free;
             await _context.SaveChangesAsync(ct);
+
+            // Cancel in Stripe as well
+            if (!string.IsNullOrEmpty(localSub.StripeSubscriptionId))
+            {
+                await _stripeClient.CancelSubscriptionAsync(localSub.StripeSubscriptionId, true, ct);
+            }
+
+            _logger.LogInformation("Payment failed - user {UserId} downgraded to Free, subscription cancelled", user.Id);
         }
     }
 
-    // Find user by Stripe customer ID via the Subscription entity
+    // Find user by Stripe customer ID (checks ApplicationUser first, then Subscriptions for backward compatibility)
     private async Task<ApplicationUser?> FindUserByCustomerIdAsync(string customerId, CancellationToken ct)
     {
+        // First, check ApplicationUser.StripeCustomerId (primary source)
+        var user = await _context.Users
+            .OfType<ApplicationUser>()
+            .FirstOrDefaultAsync(u => u.StripeCustomerId == customerId, ct);
+
+        if (user != null)
+        {
+            return user;
+        }
+
+        // Fallback: check Subscriptions table (for backward compatibility)
         var subscription = await _context.Subscriptions
             .Include(s => s.User)
             .FirstOrDefaultAsync(s => s.StripeCustomerId == customerId, ct);
 
-        if (subscription?.User == null)
+        if (subscription?.User != null)
         {
-            _logger.LogWarning("No user found for Stripe customer {CustomerId}", customerId);
-            return null;
+            return subscription.User;
         }
 
-        return subscription.User;
+        _logger.LogWarning("No user found for Stripe customer {CustomerId}", customerId);
+        return null;
     }
 
     private static SubscriptionStatus MapStripeStatus(string status)

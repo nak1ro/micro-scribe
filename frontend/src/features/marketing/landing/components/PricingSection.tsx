@@ -7,32 +7,7 @@ import { pricingContent } from "../data/content";
 import { PricingToggle } from "@/features/marketing/pricing/components/PricingToggle";
 import { PricingCard } from "@/features/marketing/pricing/components/PricingCard";
 import { BillingInterval } from "@/features/marketing/pricing/data";
-
-// Hook for intersection observer
-function useInView(threshold = 0.2) {
-    const ref = React.useRef<HTMLDivElement>(null);
-    const [isInView, setIsInView] = React.useState(false);
-
-    React.useEffect(() => {
-        const element = ref.current;
-        if (!element) return;
-
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setIsInView(true);
-                    observer.disconnect();
-                }
-            },
-            { threshold }
-        );
-
-        observer.observe(element);
-        return () => observer.disconnect();
-    }, [threshold]);
-
-    return { ref, isInView };
-}
+import { useInView } from "@/hooks";
 
 export function PricingSection() {
     const [billingInterval, setBillingInterval] = React.useState<BillingInterval>("monthly");
@@ -41,30 +16,10 @@ export function PricingSection() {
     return (
         <section
             id="pricing"
-            className="relative min-h-screen flex items-center py-12 scroll-mt-16 overflow-hidden"
+            className="relative py-24 scroll-mt-16 overflow-hidden"
             ref={ref}
         >
-            {/* Left decorative elements */}
-            <div className="absolute left-8 lg:left-16 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center gap-6 opacity-40">
-                <div className="w-3 h-3 rounded-full bg-primary animate-bounce" style={{ animationDuration: "2s" }} />
-                <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDuration: "2.5s", animationDelay: "0.3s" }} />
-                <div className="relative w-10 h-10">
-                    <div className="absolute inset-0 rounded-full border border-primary/40 animate-ping" style={{ animationDuration: "3s" }} />
-                    <div className="absolute inset-3 rounded-full bg-primary/30" />
-                </div>
-                <div className="w-2 h-2 rounded-full bg-secondary/50 animate-bounce" style={{ animationDuration: "2.2s", animationDelay: "0.5s" }} />
-            </div>
 
-            {/* Right decorative elements */}
-            <div className="absolute right-8 lg:right-16 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center gap-6 opacity-40">
-                <div className="w-2 h-2 rounded-full bg-secondary/50 animate-bounce" style={{ animationDuration: "2.3s" }} />
-                <div className="relative w-10 h-10">
-                    <div className="absolute inset-0 rounded-full border border-secondary/40 animate-ping" style={{ animationDuration: "3.5s" }} />
-                    <div className="absolute inset-3 rounded-full bg-secondary/30" />
-                </div>
-                <div className="w-3 h-3 rounded-full bg-secondary animate-bounce" style={{ animationDuration: "2s", animationDelay: "0.2s" }} />
-                <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDuration: "2.6s", animationDelay: "0.4s" }} />
-            </div>
 
             <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 {/* Heading */}

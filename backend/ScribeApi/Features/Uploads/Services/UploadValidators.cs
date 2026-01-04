@@ -38,11 +38,11 @@ public class CompleteUploadRequestValidator : AbstractValidator<CompleteUploadRe
 {
     public CompleteUploadRequestValidator()
     {
+        // Azure only needs part numbers, no ETag validation required
         RuleForEach(x => x.Parts)
             .ChildRules(part =>
             {
                 part.RuleFor(p => p.PartNumber).GreaterThan(0);
-                part.RuleFor(p => p.ETag).NotEmpty();
             })
             .When(x => x.Parts != null && x.Parts.Any());
     }

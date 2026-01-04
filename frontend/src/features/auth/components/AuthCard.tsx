@@ -32,7 +32,7 @@ export function AuthCard() {
         }
     };
 
-    const handleSignUp = async (data: { name: string; email: string; password: string }) => {
+    const handleSignUp = async (data: { email: string; password: string }) => {
         setError(null);
         try {
             // Note: Backend RegisterRequest expects email, password, confirmPassword

@@ -27,16 +27,29 @@ public class BillingController : ControllerBase
         _webhookHandler = webhookHandler;
     }
 
-    // Create a checkout session for upgrading to Pro
-    [HttpPost("checkout")]
-    public async Task<ActionResult<CheckoutSessionResponse>> CreateCheckoutSession(
-        [FromBody] CreateCheckoutSessionRequest request,
+    // Create a SetupIntent for collecting payment method via Elements
+    [HttpPost("setup-intent")]
+    public async Task<ActionResult<SetupIntentResponse>> CreateSetupIntent(
+        [FromBody] CreateSetupIntentRequest request,
         CancellationToken ct)
     {
         var userId = User.GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        var result = await _billingService.CreateCheckoutSessionAsync(userId, request, ct);
+        var result = await _billingService.CreateSetupIntentAsync(userId, request, ct);
+        return Ok(result);
+    }
+
+    // Confirm subscription after payment method collected
+    [HttpPost("subscribe")]
+    public async Task<ActionResult<SubscriptionResponse>> ConfirmSubscription(
+        [FromBody] ConfirmSubscriptionRequest request,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var result = await _billingService.ConfirmSubscriptionAsync(userId, request, ct);
         return Ok(result);
     }
 
@@ -61,6 +74,61 @@ public class BillingController : ControllerBase
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         var result = await _billingService.GetSubscriptionStatusAsync(userId, ct);
+        return Ok(result);
+    }
+
+    // Cancel user's subscription
+    [HttpDelete("subscription")]
+    public async Task<IActionResult> CancelSubscription(
+        [FromQuery] bool cancelImmediately = false,
+        CancellationToken ct = default)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var success = await _billingService.CancelSubscriptionAsync(userId, cancelImmediately, ct);
+        if (!success) return NotFound("No active subscription found");
+
+        return Ok(new { Message = cancelImmediately ? "Subscription cancelled immediately" : "Subscription will cancel at period end" });
+    }
+
+    // Change subscription plan (Monthly ↔ Annual)
+    [HttpPut("subscription")]
+    public async Task<ActionResult<SubscriptionResponse>> ChangeSubscriptionPlan(
+        [FromBody] ChangeSubscriptionPlanRequest request,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var result = await _billingService.ChangeSubscriptionPlanAsync(userId, request.NewInterval, ct);
+        return Ok(result);
+    }
+
+    // Get user's default payment method
+    [HttpGet("payment-method")]
+    public async Task<ActionResult<PaymentMethodResponse>> GetPaymentMethod(CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var result = await _billingService.GetPaymentMethodAsync(userId, ct);
+        if (result == null) return NotFound("No payment method found");
+
+        return Ok(result);
+    }
+
+    // Get user's invoice history
+    [HttpGet("invoices")]
+    public async Task<ActionResult<InvoiceListResponse>> GetInvoices(
+        [FromQuery] int limit = 10,
+        [FromQuery] string? startingAfter = null,
+        CancellationToken ct = default)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var result = await _billingService.GetInvoicesAsync(userId, limit, startingAfter, ct);
         return Ok(result);
     }
 

@@ -25,6 +25,7 @@ public class TranscriptionsController : ControllerBase
     private readonly ITranscriptEditService _editService;
     private readonly IJobTranslationService _translationService;
     private readonly IAnalysisService _analysisService;
+    private readonly IYouTubeImportService _youTubeImportService;
     private readonly IMapper _mapper;
 
     public TranscriptionsController(
@@ -34,6 +35,7 @@ public class TranscriptionsController : ControllerBase
         ITranscriptEditService editService,
         IJobTranslationService translationService,
         IAnalysisService analysisService,
+        IYouTubeImportService youTubeImportService,
         IMapper mapper)
     {
         _jobService = jobService;
@@ -42,6 +44,7 @@ public class TranscriptionsController : ControllerBase
         _editService = editService;
         _translationService = translationService;
         _analysisService = analysisService;
+        _youTubeImportService = youTubeImportService;
         _mapper = mapper;
     }
 
@@ -74,6 +77,19 @@ public class TranscriptionsController : ControllerBase
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         var result = await _jobService.StartJobAsync(userId, request, ct);
+
+        return CreatedAtAction(nameof(GetJob), new { jobId = result.JobId }, result);
+    }
+
+    [HttpPost("youtube")]
+    public async Task<ActionResult<TranscriptionJobDetailResponse>> ImportFromYouTube(
+        [FromBody] YouTubeImportRequest request,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var result = await _youTubeImportService.ImportFromYouTubeAsync(request, userId, ct);
 
         return CreatedAtAction(nameof(GetJob), new { jobId = result.JobId }, result);
     }
@@ -120,12 +136,18 @@ public class TranscriptionsController : ControllerBase
     public async Task<IActionResult> ExportTranscript(
         Guid jobId,
         [FromQuery] ExportFormat format = ExportFormat.Txt,
+        [FromQuery] string? language = null,
         CancellationToken ct = default)
     {
         var userId = User.GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        var result = await _exportService.ExportAsync(jobId, userId, format, ct);
+        var result = await _exportService.ExportAsync(jobId, userId, format, language, ct);
+
+        if (!string.IsNullOrEmpty(result.RedirectUrl))
+        {
+            return Redirect(result.RedirectUrl);
+        }
 
         return File(result.Content, result.ContentType, result.FileName);
     }
@@ -182,9 +204,9 @@ public class TranscriptionsController : ControllerBase
         var userId = User.GetUserId();
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        var result = await _analysisService.GenerateAnalysisAsync(jobId, userId, request, ct);
+        var result = await _analysisService.EnqueueAnalysisGenerationAsync(jobId, userId, request, ct);
 
-        return Ok(result);
+        return Accepted(result);
     }
 
     [HttpPost("{jobId:guid}/analysis/translate")]

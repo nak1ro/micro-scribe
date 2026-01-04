@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { EditPencil } from "iconoir-react";
 import { formatTimestamp, getSpeakerColor, getSpeakerBgColor, getSpeakerDisplayName } from "@/lib/utils";
 import { hasSpeakerChanged } from "@/features/transcription/utils";
 import type { ViewerSegment, SpeakerInfo } from "@/features/transcription/types";
@@ -17,6 +18,9 @@ interface TranscriptSegmentProps {
     speakerInfo?: SpeakerInfo;
     onClick: (index: number) => void;
     segmentRef?: (el: HTMLDivElement | null) => void;
+    // Edit mode props
+    isEditMode?: boolean;
+    onEditClick?: (segment: ViewerSegment) => void;
 }
 
 export function TranscriptSegment({
@@ -30,6 +34,8 @@ export function TranscriptSegment({
     speakerInfo,
     onClick,
     segmentRef,
+    isEditMode = false,
+    onEditClick,
 }: TranscriptSegmentProps) {
     const speakerChanged = showSpeaker && hasSpeakerChanged(segment.speaker, previousSpeaker);
     const speakerColor = segment.speaker ? getSpeakerColor(segment.speaker, speakerInfo?.color) : "";
@@ -43,6 +49,15 @@ export function TranscriptSegment({
         }
         return segment.text;
     }, [displayLanguage, segment.translations, segment.text]);
+
+    // Handle click - either edit or seek
+    const handleClick = () => {
+        if (isEditMode && onEditClick) {
+            onEditClick(segment);
+        } else {
+            onClick(index);
+        }
+    };
 
     return (
         <>
@@ -88,20 +103,26 @@ export function TranscriptSegment({
             {/* Segment content */}
             <div
                 ref={segmentRef}
-                onClick={() => onClick(index)}
+                onClick={handleClick}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        onClick(index);
+                        handleClick();
                     }
                 }}
                 className={cn(
                     "group inline cursor-pointer transition-all duration-200",
                     "rounded-sm px-0.5 -mx-0.5",
-                    "hover:bg-highlight-hover",
-                    isActive && "bg-highlight"
+                    // Normal mode styles
+                    !isEditMode && "hover:bg-highlight-hover",
+                    !isEditMode && isActive && "bg-highlight",
+                    // Edit mode styles
+                    isEditMode && "hover:bg-primary/10 hover:ring-1 hover:ring-primary/30",
+                    isEditMode && "cursor-text",
+                    // Edited indicator background - more visible
+                    segment.isEdited && "bg-warning/10"
                 )}
             >
                 {/* Timestamp */}
@@ -113,10 +134,16 @@ export function TranscriptSegment({
 
                 {/* Text content */}
                 <span className="text-foreground">{displayText}</span>
+
+                {/* Edited indicator - after text so it stays on same line */}
+                {segment.isEdited && (
+                    <span className="inline-flex items-center ml-1 align-middle" title="Edited">
+                        <EditPencil className="h-3 w-3 text-warning" />
+                    </span>
+                )}
             </div>
             {/* Space after segment (outside highlight) */}
             <span> </span>
         </>
     );
 }
-

@@ -3,32 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { QuoteMessage } from "iconoir-react";
-
-// Hook for intersection observer
-function useInView(threshold = 0.15) {
-    const ref = React.useRef<HTMLDivElement>(null);
-    const [isInView, setIsInView] = React.useState(false);
-
-    React.useEffect(() => {
-        const element = ref.current;
-        if (!element) return;
-
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setIsInView(true);
-                    observer.disconnect();
-                }
-            },
-            { threshold }
-        );
-
-        observer.observe(element);
-        return () => observer.disconnect();
-    }, [threshold]);
-
-    return { ref, isInView };
-}
+import { useInView } from "@/hooks";
 
 // Reviews about Whisper AI technology from various sources
 const whisperReviews = [

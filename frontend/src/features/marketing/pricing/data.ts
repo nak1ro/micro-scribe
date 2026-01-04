@@ -1,7 +1,17 @@
-// Pricing page content - mirrors backend plan limits
-// No separate types file since billing backend not yet implemented
+// Pricing page content - derived from centralized PLANS config
 
-import { planLimits } from "@/features/marketing/landing/data/content";
+import { PLANS, ANNUAL_SAVINGS_PERCENT } from "@/lib/plans";
+import type { PlanFeature } from "@/lib/plans";
+
+// Re-export for convenience
+export { ANNUAL_SAVINGS_PERCENT };
+export type { PlanFeature };
+
+// Plan limits derived from centralized config
+export const planLimits = {
+    free: PLANS.free.limits,
+    pro: PLANS.pro.limits,
+};
 
 // Billing interval options
 export type BillingInterval = "monthly" | "annual";
@@ -14,17 +24,17 @@ export interface FeatureRow {
     tooltip?: string;
 }
 
-// Pricing configuration
+// Pricing configuration derived from PLANS
 export const pricingConfig = {
     monthly: {
-        free: 0,
-        pro: 12,
+        free: PLANS.free.price.monthly,
+        pro: PLANS.pro.price.monthly,
     },
     annual: {
-        free: 0,
-        pro: 10, // $10/mo when billed annually
+        free: PLANS.free.price.yearly,
+        pro: PLANS.pro.price.yearly,
     },
-    annualSavingsPercent: 17,
+    annualSavingsPercent: ANNUAL_SAVINGS_PERCENT,
 };
 
 // Hero section content
@@ -33,17 +43,11 @@ export const pricingHeroContent = {
     subheadline: "Start free, upgrade when you need more power. No hidden fees, cancel anytime.",
 };
 
-// Feature format for pricing cards
-export interface PlanFeature {
-    icon: string;
-    text: string;
-}
-
-// Plan card content
+// Plan card content derived from centralized PLANS
 export const planCardContent = {
     free: {
-        name: "Free",
-        description: "Perfect for getting started",
+        name: PLANS.free.name,
+        description: PLANS.free.description,
         features: [
             { icon: "Upload", text: `${planLimits.free.dailyTranscriptionLimit} transcriptions per day` },
             { icon: "Clock", text: `Up to ${planLimits.free.maxMinutesPerFile} minutes per file` },
@@ -51,13 +55,13 @@ export const planCardContent = {
             { icon: "CheckCircle", text: "Standard processing speed" },
             { icon: "CheckCircle", text: "Basic transcription models" },
         ] as PlanFeature[],
-        cta: "Start Free",
-        ctaHref: "/auth?mode=signup",
+        cta: PLANS.free.cta.label,
+        ctaHref: PLANS.free.cta.href,
     },
     pro: {
-        name: "Pro",
-        description: "Unlock full AI transcription power",
-        badge: "Most Popular",
+        name: PLANS.pro.name,
+        description: PLANS.pro.description,
+        badge: PLANS.pro.badge,
         features: [
             { icon: "Infinity", text: "Unlimited transcriptions" },
             { icon: "Upload", text: `Up to ${planLimits.pro.maxMinutesPerFile / 60} hours per file` },
@@ -66,8 +70,8 @@ export const planCardContent = {
             { icon: "Sparkles", text: "All AI models & translation" },
             { icon: "Users", text: "Unlimited storage" },
         ] as PlanFeature[],
-        cta: "Get Pro",
-        ctaHref: "/auth?mode=signup",
+        cta: PLANS.pro.cta.label,
+        ctaHref: PLANS.pro.cta.href,
     },
 };
 
@@ -133,12 +137,8 @@ export const pricingFAQContent = {
             answer: "You'll keep access to Pro features until your current billing period ends. After that, you'll be on the Free plan with standard limits. Your transcriptions are never deleted.",
         },
         {
-            question: "Do you offer refunds?",
-            answer: "Yes, we offer a 14-day money-back guarantee on all paid plans. If you're not satisfied, contact us for a full refund.",
-        },
-        {
             question: "What payment methods do you accept?",
-            answer: "We accept all major credit cards (Visa, Mastercard, American Express) and PayPal. All payments are processed securely through Stripe.",
+            answer: "We accept all major credit cards (Visa, Mastercard, American Express etc.). All payments are processed securely through Stripe.",
         },
         {
             question: "Is there a limit on file size or duration?",
@@ -146,18 +146,13 @@ export const pricingFAQContent = {
         },
         {
             question: "What happens if I exceed my daily limit?",
-            answer: "Free users are limited to 10 transcriptions per day. Once you reach the limit, you can upgrade to Pro for unlimited transcriptions or wait until the next day.",
+            answer: "Free users are limited to 3 transcriptions per day. Once you reach the limit, you can upgrade to Pro for unlimited transcriptions or wait until the next day.",
         },
     ],
 };
 
 // Trust signals
-export const trustSignals = [
-    { icon: "Shield", text: "Bank-level Security" },
-    { icon: "CreditCard", text: "Secure Payments via Stripe" },
-    { icon: "RefreshCw", text: "14-Day Money Back" },
-    { icon: "Lock", text: "GDPR Compliant" },
-];
+
 
 // Final CTA
 export const pricingCTAContent = {

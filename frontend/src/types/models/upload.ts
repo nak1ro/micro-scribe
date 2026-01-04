@@ -31,7 +31,7 @@ export interface UploadOptions {
 
 // Configuration for the upload orchestrator
 export interface UploadConfig {
-    // Chunk size in bytes for multipart upload. Default: 5MB (S3 minimum)
+    // Chunk size in bytes for multipart upload. Default: 5MB
     chunkSize: number;
     // Maximum retry attempts for failed requests. Default: 3
     maxRetries: number;

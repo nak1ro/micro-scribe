@@ -51,7 +51,7 @@ export function QueryProvider({ children }: QueryProviderProps) {
         <QueryClientProvider client={queryClient}>
             <SignalREventsInitializer />
             {children}
-            <ReactQueryDevtools initialIsOpen={false} />
+            {/* <ReactQueryDevtools initialIsOpen={false} /> */}
         </QueryClientProvider>
     );
 }

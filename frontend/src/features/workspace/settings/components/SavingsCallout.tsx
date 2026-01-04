@@ -9,10 +9,11 @@ import { billingCopy } from "../data";
 interface SavingsCalloutProps {
     isVisible: boolean;
     onSwitchToAnnual: () => void;
+    isLoading?: boolean;
 }
 
 // Banner showing potential savings from switching to annual billing
-export function SavingsCallout({ isVisible, onSwitchToAnnual }: SavingsCalloutProps) {
+export function SavingsCallout({ isVisible, onSwitchToAnnual, isLoading }: SavingsCalloutProps) {
     if (!isVisible) return null;
 
     return (
@@ -36,9 +37,10 @@ export function SavingsCallout({ isVisible, onSwitchToAnnual }: SavingsCalloutPr
                     variant="outline"
                     size="sm"
                     onClick={onSwitchToAnnual}
+                    disabled={isLoading}
                     className="border-primary/30 hover:bg-primary/10"
                 >
-                    Switch to Annual
+                    {isLoading ? "Switching..." : "Switch to Annual"}
                 </Button>
             </div>
         </div>

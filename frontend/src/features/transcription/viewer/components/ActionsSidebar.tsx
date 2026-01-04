@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { Copy, Check, Clock, Group, EditPencil, Settings } from "iconoir-react";
+import { Copy, Check, Clock, Group, EditPencil, Settings, Undo } from "iconoir-react";
 import { Button } from "@/components/ui";
 import { ExportMenu } from "@/features/transcription/export/components/ExportMenu";
 import { LanguageMenu } from "./LanguageMenu";
@@ -28,6 +28,7 @@ interface ActionsSidebarProps {
     translatedLanguages: string[];
     translationStatus: string | null;
     translatingToLanguage: string | null;
+    canTranslate?: boolean;
     // Language display
     sourceLanguage: string;
     displayLanguage: string | null;
@@ -40,8 +41,12 @@ interface ActionsSidebarProps {
     onGenerateAllAnalysis: () => void;
     onSelectAnalysisView: (view: "transcript" | AnalysisType) => void;
     currentAnalysisView: string;
-    // Edit
-    onEdit?: () => void;
+    // Edit mode
+    isEditMode: boolean;
+    onToggleEditMode: (enabled: boolean) => void;
+    hasEditedSegments: boolean;
+    onRevertAll: () => void;
+    isReverting: boolean;
     // Status
     disabled?: boolean;
     className?: string;
@@ -95,6 +100,7 @@ export function ActionsSidebar({
     translatedLanguages,
     translationStatus,
     translatingToLanguage,
+    canTranslate,
     sourceLanguage,
     displayLanguage,
     onDisplayLanguageChange,
@@ -105,7 +111,11 @@ export function ActionsSidebar({
     onGenerateAllAnalysis,
     onSelectAnalysisView,
     currentAnalysisView,
-    onEdit,
+    isEditMode,
+    onToggleEditMode,
+    hasEditedSegments,
+    onRevertAll,
+    isReverting,
     disabled,
     className,
 }: ActionsSidebarProps) {
@@ -134,6 +144,7 @@ export function ActionsSidebar({
                     displayLanguage={displayLanguage}
                     onDisplayLanguageChange={onDisplayLanguageChange}
                     onTranslate={onTranslate}
+                    canTranslate={canTranslate}
                     disabled={disabled}
                 />
 
@@ -218,24 +229,43 @@ export function ActionsSidebar({
                         />
                     </div>
                 )}
+
+                {/* Edit Mode Toggle */}
+                <div className="flex items-center justify-between gap-3 px-1">
+                    <div className="flex items-center gap-2">
+                        <EditPencil className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-foreground">Edit Mode</span>
+                    </div>
+                    <Toggle
+                        checked={isEditMode}
+                        onChange={onToggleEditMode}
+                        disabled={disabled}
+                    />
+                </div>
             </div>
 
             {/* Spacer */}
             <div className="flex-1" />
 
-            {/* Edit section */}
-            <div className="pt-6 border-t border-border">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onEdit}
-                    disabled={disabled || !onEdit}
-                    className="w-full justify-start gap-2"
-                >
-                    <EditPencil className="h-4 w-4" />
-                    <span>Edit transcript</span>
-                </Button>
-            </div>
+            {/* Edit actions - shown when there are edited segments */}
+            {hasEditedSegments && (
+                <div className="pt-6 border-t border-border">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onRevertAll}
+                        disabled={disabled || isReverting}
+                        className="w-full justify-start gap-2 text-warning hover:text-warning hover:border-warning/30"
+                    >
+                        {isReverting ? (
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        ) : (
+                            <Undo className="h-4 w-4" />
+                        )}
+                        <span>Revert All Edits</span>
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }

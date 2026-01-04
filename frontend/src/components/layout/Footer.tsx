@@ -7,7 +7,6 @@ const footerLinks = {
     product: [
         { href: "/features", label: "Features" },
         { href: "/pricing", label: "Pricing" },
-        { href: "/api-docs", label: "API Docs" },
     ],
     legal: [
         { href: "/terms", label: "Terms of Service" },
@@ -19,6 +18,8 @@ const footerLinks = {
         { href: "https://github.com", label: "GitHub", icon: Github },
     ],
 };
+
+const LINKS_DISABLED = true; // Set to false to enable footer links
 
 export function Footer() {
     return (
@@ -76,20 +77,33 @@ export function Footer() {
                         </h3>
                         <div className="flex items-center gap-4">
                             {footerLinks.social.map((link) => (
-                                <a
-                                    key={link.href}
-                                    href={link.href}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={cn(
-                                        "p-2 rounded-md",
-                                        "text-muted-foreground hover:text-foreground hover:bg-accent",
-                                        "transition-colors duration-[var(--transition-fast)]"
-                                    )}
-                                    aria-label={link.label}
-                                >
-                                    <link.icon className="h-5 w-5" />
-                                </a>
+                                LINKS_DISABLED ? (
+                                    <div
+                                        key={link.href}
+                                        className={cn(
+                                            "p-2 rounded-md",
+                                            "text-muted-foreground opacity-50 cursor-not-allowed"
+                                        )}
+                                        aria-label={link.label}
+                                    >
+                                        <link.icon className="h-5 w-5" />
+                                    </div>
+                                ) : (
+                                    <a
+                                        key={link.href}
+                                        href={link.href}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={cn(
+                                            "p-2 rounded-md",
+                                            "text-muted-foreground hover:text-foreground hover:bg-accent",
+                                            "transition-colors duration-[var(--transition-fast)]"
+                                        )}
+                                        aria-label={link.label}
+                                    >
+                                        <link.icon className="h-5 w-5" />
+                                    </a>
+                                )
                             ))}
                         </div>
                     </div>
@@ -113,6 +127,19 @@ function FooterLink({
     href: string;
     children: React.ReactNode;
 }) {
+    if (LINKS_DISABLED) {
+        return (
+            <span
+                className={cn(
+                    "text-sm text-muted-foreground",
+                    "cursor-not-allowed opacity-50"
+                )}
+            >
+                {children}
+            </span>
+        );
+    }
+
     return (
         <Link
             href={href}

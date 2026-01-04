@@ -18,6 +18,8 @@ interface DashboardContentProps {
     onOpenModal: () => void;
     onDownload?: (id: string) => void;
     onDelete: (id: string) => Promise<void>;
+    onCancelUpload?: (id: string) => void;
+    onCancelJob?: (id: string) => Promise<void>;
     onShare?: (id: string) => void;
     folderName?: string;
 }
@@ -29,6 +31,8 @@ export function DashboardContent({
     onOpenModal,
     onDownload,
     onDelete,
+    onCancelUpload,
+    onCancelJob,
     onShare,
     folderName,
 }: DashboardContentProps) {
@@ -164,6 +168,8 @@ export function DashboardContent({
                     isLoading={isLoading}
                     onDownload={handleDownloadClick}
                     onDelete={handleDeleteClick}
+                    onCancelUpload={onCancelUpload}
+                    onCancelJob={onCancelJob}
                     onShare={onShare}
                     onNewClick={onOpenModal}
                     onBulkDelete={handleBulkDelete}
@@ -261,12 +267,12 @@ function SearchFilterBar({ searchQuery, onSearchChange, sortBy, sortDirection, o
     const DirectionIcon = sortDirection === "asc" ? ArrowUp : ArrowDown;
 
     return (
-        <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative w-full sm:w-80">
+        <div className="flex flex-row gap-2">
+            <div className="relative flex-1 min-w-0">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                     type="text"
-                    placeholder="Search transcriptions..."
+                    placeholder="Search..."
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
                     aria-label="Search transcriptions"
@@ -286,13 +292,13 @@ function SearchFilterBar({ searchQuery, onSearchChange, sortBy, sortDirection, o
                     type="button"
                     onClick={() => setSortOpen(!sortOpen)}
                     className={cn(
-                        "flex items-center gap-2 px-4 h-10 rounded-lg",
+                        "flex items-center gap-2 px-3 h-10 rounded-lg whitespace-nowrap",
                         "bg-card border border-border shadow-sm",
                         "text-muted-foreground hover:text-foreground",
                         "transition-colors"
                     )}
                 >
-                    <span className="hidden sm:inline">
+                    <span className="text-sm font-medium">
                         {SORT_OPTIONS.find(o => o.value === sortBy)?.label}
                     </span>
                     <DirectionIcon className="h-3 w-3 text-primary" />

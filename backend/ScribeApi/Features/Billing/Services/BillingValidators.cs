@@ -4,25 +4,23 @@ using ScribeApi.Features.Billing.Contracts;
 namespace ScribeApi.Features.Billing.Services;
 
 // FluentValidation rules for billing requests
-public class CreateCheckoutSessionRequestValidator : AbstractValidator<CreateCheckoutSessionRequest>
+public class CreateSetupIntentRequestValidator : AbstractValidator<CreateSetupIntentRequest>
 {
-    public CreateCheckoutSessionRequestValidator()
+    public CreateSetupIntentRequestValidator()
     {
-        RuleFor(x => x.SuccessUrl)
-            .Must(BeAValidUrl)
-            .When(x => !string.IsNullOrEmpty(x.SuccessUrl))
-            .WithMessage("SuccessUrl must be a valid absolute URL (http or https).");
-
-        RuleFor(x => x.CancelUrl)
-            .Must(BeAValidUrl)
-            .When(x => !string.IsNullOrEmpty(x.CancelUrl))
-            .WithMessage("CancelUrl must be a valid absolute URL (http or https).");
+        RuleFor(x => x.Interval).IsInEnum();
     }
+}
 
-    private bool BeAValidUrl(string? url)
+public class ConfirmSubscriptionRequestValidator : AbstractValidator<ConfirmSubscriptionRequest>
+{
+    public ConfirmSubscriptionRequestValidator()
     {
-        return Uri.TryCreate(url, UriKind.Absolute, out var uriResult)
-               && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+        RuleFor(x => x.PaymentMethodId)
+            .NotEmpty()
+            .WithMessage("PaymentMethodId is required.");
+
+        RuleFor(x => x.Interval).IsInEnum();
     }
 }
 

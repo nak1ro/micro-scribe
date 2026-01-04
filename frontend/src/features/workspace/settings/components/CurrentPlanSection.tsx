@@ -7,16 +7,16 @@ import { planDisplayData, billingCopy } from "../data";
 
 interface CurrentPlanSectionProps {
     planType: "Free" | "Pro";
-    billingCycle?: "monthly" | "annual";
     nextBillingDate?: Date;
+    cancelAtPeriodEnd?: boolean;
     onUpgrade: () => void;
 }
 
 // Displays current plan status with billing details
 export function CurrentPlanSection({
     planType,
-    billingCycle,
     nextBillingDate,
+    cancelAtPeriodEnd,
     onUpgrade,
 }: CurrentPlanSectionProps) {
     const plan = planDisplayData[planType];
@@ -40,33 +40,33 @@ export function CurrentPlanSection({
                         >
                             {billingCopy.currentPlanLabel}
                         </span>
+                        {cancelAtPeriodEnd && (
+                            <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-destructive/10 text-destructive">
+                                Canceling
+                            </span>
+                        )}
                     </div>
-
-                    {isPro && billingCycle && (
-                        <p className="text-sm text-muted-foreground">
-                            {billingCopy.billingCycleLabel}:{" "}
-                            <span className="capitalize">{billingCycle}</span>
-                        </p>
-                    )}
 
                     {isPro && nextBillingDate && (
                         <p className="text-sm text-muted-foreground">
-                            {billingCopy.nextBillingLabel}:{" "}
+                            {cancelAtPeriodEnd ? "Access until" : billingCopy.nextBillingLabel}:{" "}
                             {nextBillingDate.toLocaleDateString()}
                         </p>
                     )}
                 </div>
 
-                {!isPro && (
-                    <Button onClick={onUpgrade} size="lg">
-                        Upgrade to Pro
-                    </Button>
-                )}
+                <div className="flex gap-2">
+                    {!isPro && (
+                        <Button onClick={onUpgrade} size="lg">
+                            Upgrade to Pro
+                        </Button>
+                    )}
+                </div>
             </div>
 
             {/* Plan limits summary */}
             <div className="mt-4 pt-4 border-t border-border">
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-4">
                     {plan.limits.map((limit, index) => (
                         <span
                             key={index}

@@ -9,6 +9,8 @@ interface ViewerLayoutProps {
     children: React.ReactNode;
     sidebar: React.ReactNode;
     audioPlayer: React.ReactNode;
+    isSidebarOpen: boolean;
+    onCloseSidebar: () => void;
     className?: string;
 }
 
@@ -16,10 +18,10 @@ export function ViewerLayout({
     children,
     sidebar,
     audioPlayer,
+    isSidebarOpen,
+    onCloseSidebar,
     className
 }: ViewerLayoutProps) {
-    const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
-
     return (
         <div className={cn("flex flex-col h-full bg-background", className)}>
             {/* Main content area */}
@@ -41,29 +43,13 @@ export function ViewerLayout({
                     {sidebar}
                 </aside>
 
-                {/* Mobile sidebar toggle */}
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsSidebarOpen(true)}
-                    className={cn(
-                        "lg:hidden fixed right-4 bottom-24 z-30",
-                        "h-12 w-12 rounded-full shadow-lg",
-                        "bg-primary text-primary-foreground",
-                        "hover:bg-primary/90"
-                    )}
-                    aria-label="Open actions menu"
-                >
-                    <Menu className="h-5 w-5" />
-                </Button>
-
                 {/* Mobile sidebar - slide from right */}
                 {isSidebarOpen && (
                     <>
                         {/* Backdrop */}
                         <div
                             className="lg:hidden fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
-                            onClick={() => setIsSidebarOpen(false)}
+                            onClick={onCloseSidebar}
                             aria-hidden="true"
                         />
 
@@ -73,7 +59,10 @@ export function ViewerLayout({
                                 "lg:hidden fixed right-0 top-0 bottom-0 z-50",
                                 "w-80 max-w-[85vw]",
                                 "bg-background border-l border-border",
-                                "animate-slide-in-right flex flex-col"
+                                "bg-background border-l border-border",
+                                "transition-transform duration-300 ease-in-out",
+                                "animate-in slide-in-from-right-full duration-300",
+                                "flex flex-col shadow-2xl"
                             )}
                         >
                             {/* Close button */}
@@ -82,7 +71,7 @@ export function ViewerLayout({
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => setIsSidebarOpen(false)}
+                                    onClick={onCloseSidebar}
                                     className="h-8 w-8 p-0"
                                     aria-label="Close actions menu"
                                 >

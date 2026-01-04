@@ -7,12 +7,15 @@ import { RefreshDouble, WarningCircle } from "iconoir-react";
 import { Button } from "@/components/ui";
 import { useTranscriptionJob } from "@/hooks/useTranscriptions";
 import { useAnalysis } from "@/hooks/useAnalysis";
+import { useSegmentEdit } from "@/hooks/useSegmentEdit";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
 
 import { ViewerHeader } from "./ViewerHeader";
 import { ViewerLayout } from "./ViewerLayout";
 import { TranscriptContent } from "./TranscriptContent";
 import { AudioPlayer } from "./AudioPlayer";
 import { ActionsSidebar } from "./ActionsSidebar";
+import { SegmentEditModal } from "./SegmentEditModal";
 import { ActionItemsView } from "@/features/transcription/analysis/components/ActionItemsView";
 import { MeetingMinutesView } from "@/features/transcription/analysis/components/MeetingMinutesView";
 import { AnalysisContentView } from "@/features/transcription/analysis/components/AnalysisContentView";
@@ -20,8 +23,8 @@ import { useAudioSync } from "@/features/transcription/hooks/useAudioSync";
 import { handleExport as exportFile } from "@/features/transcription/utils/exportUtils";
 import { getProcessingStepText } from "@/features/transcription/utils";
 import { transcriptionApi } from "@/services/transcription";
-import type { TranscriptionData, ExportFormat } from "@/features/transcription/types";
-import type { AnalysisType } from "@/types/api/analysis";
+import type { TranscriptionData, ExportFormat, ViewerSegment } from "@/features/transcription/types";
+import type { AnalysisType, TranscriptionAnalysisDto } from "@/types/api/analysis";
 
 interface TranscriptionViewerNewProps {
     // For now, use mock data. Later, this will accept jobId and fetch real data
@@ -36,6 +39,7 @@ export function TranscriptionViewerNew({
     className
 }: TranscriptionViewerNewProps) {
     const router = useRouter();
+    const { limits } = usePlanLimits();
 
     // Fetch data if jobId is provided
     const { data: job, isLoading, error, refetch } = useTranscriptionJob(jobId || "");
@@ -64,7 +68,8 @@ export function TranscriptionViewerNew({
                     endSeconds: s.endSeconds,
                     speaker: s.speaker,
                     translations: s.translations || {},
-                    isEdited: s.isEdited
+                    isEdited: s.isEdited,
+                    originalText: s.originalText
                 })),
                 audioUrl: job.presignedUrl
             };
@@ -74,15 +79,41 @@ export function TranscriptionViewerNew({
     }, [providedData, job]);
 
     // UI State
+    const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
     const [showTimecodes, setShowTimecodes] = React.useState(true);
     const [showSpeakers, setShowSpeakers] = React.useState(true);
     const [copied, setCopied] = React.useState(false);
     const [displayLanguage, setDisplayLanguage] = React.useState<string | null>(null);
+    const [isExporting, setIsExporting] = React.useState(false);
 
     // Track the language being translated to auto-switch when complete
     const prevTranslatingRef = React.useRef<string | null>(null);
 
-    // Analysis hook (placed before translation effect so refetch is available)
+    // Active analysis view state ("transcript" or AnalysisType)
+    const [currentAnalysisView, setCurrentAnalysisView] = React.useState<string>("transcript");
+
+    // Edit mode state
+    const [isEditMode, setIsEditMode] = React.useState(false);
+    const [editingSegment, setEditingSegment] = React.useState<ViewerSegment | null>(null);
+
+    // Segment editing hook
+    const {
+        updateSegment,
+        revertSegment,
+        revertAll,
+        isUpdating,
+        isReverting,
+        getEditedSegments,
+    } = useSegmentEdit({ jobId: jobId || "" });
+
+    // Handler to switch analysis view
+    const handleSelectAnalysisView = React.useCallback((view: "transcript" | AnalysisType | TranscriptionAnalysisDto) => {
+        const targetView = typeof view === 'string' ? view : view.analysisType;
+        console.log("[TranscriptionViewerNew] Switching to view:", targetView);
+        setCurrentAnalysisView(targetView);
+    }, []);
+
+    // Analysis hook
     const {
         analyses,
         isGenerating: isAnalysisGenerating,
@@ -91,7 +122,11 @@ export function TranscriptionViewerNew({
         generateAll: generateAllAnalysis,
         getAnalysisByType,
         refetch: refetchAnalysis,
-    } = useAnalysis({ jobId: jobId || "", enabled: !!jobId && data?.status === "completed" });
+    } = useAnalysis({
+        jobId: jobId || "",
+        enabled: !!jobId && data?.status === "completed",
+        onAnalysisCompleted: handleSelectAnalysisView
+    });
 
     // Auto-switch to translated language when translation completes
     React.useEffect(() => {
@@ -133,15 +168,6 @@ export function TranscriptionViewerNew({
         [data?.segments]
     );
 
-    // Active analysis view state ("transcript" or AnalysisType)
-    const [currentAnalysisView, setCurrentAnalysisView] = React.useState<string>("transcript");
-
-    // Handler to switch analysis view
-    const handleSelectAnalysisView = (view: "transcript" | AnalysisType) => {
-        console.log("[TranscriptionViewerNew] Switching to view:", view);
-        setCurrentAnalysisView(view);
-    };
-
     // Handlers
     const handleBack = () => {
         router.push("/dashboard");
@@ -164,18 +190,41 @@ export function TranscriptionViewerNew({
     const handleExport = async (format: ExportFormat) => {
         if (!data) return;
 
+        setIsExporting(true);
         try {
             // Export in the currently displayed language
-            await exportFile(format, data, displayLanguage);
+            await exportFile(format, data.id, displayLanguage, data.audioUrl);
         } catch (error) {
             console.error("Export failed:", error);
             // TODO: Add toast notification here
+        } finally {
+            setIsExporting(false);
         }
     };
 
     const handleEdit = () => {
-        // Placeholder for edit mode
-        console.log("Edit mode - coming soon");
+        // Toggle edit mode
+        setIsEditMode((prev) => !prev);
+    };
+
+    // Handle segment edit click
+    const handleSegmentEditClick = (segment: ViewerSegment) => {
+        setEditingSegment(segment);
+    };
+
+    // Handle save from modal
+    const handleSaveEdit = async (segmentId: string, text: string) => {
+        await updateSegment({ segmentId, text });
+    };
+
+    // Handle revert from modal
+    const handleRevertEdit = async (segmentId: string) => {
+        await revertSegment({ segmentId });
+    };
+
+    // Handle revert all
+    const handleRevertAll = async () => {
+        await revertAll();
     };
 
     const handleSkipBack = () => {
@@ -274,7 +323,10 @@ export function TranscriptionViewerNew({
         const stepText = getProcessingStepText(data.status, data.processingStep);
         return (
             <div className="flex flex-col h-screen bg-background">
-                <ViewerHeader data={data} onBack={handleBack} />
+                <ViewerHeader
+                    data={data}
+                    onToggleSidebar={() => setIsSidebarOpen(true)}
+                />
                 <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
                     <RefreshDouble className="h-10 w-10 text-primary animate-spin" />
                     <div className="text-center">
@@ -294,7 +346,10 @@ export function TranscriptionViewerNew({
     if (data.status === "failed") {
         return (
             <div className="flex flex-col h-screen bg-background">
-                <ViewerHeader data={data} onBack={handleBack} />
+                <ViewerHeader
+                    data={data}
+                    onToggleSidebar={() => setIsSidebarOpen(true)}
+                />
                 <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
                     <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
                         <WarningCircle className="h-8 w-8 text-destructive" />
@@ -318,6 +373,14 @@ export function TranscriptionViewerNew({
     // Completed state - full viewer
     return (
         <div className={cn("h-full", className)}>
+            {/* Export Notification */}
+            {isExporting && (
+                <div className="fixed bottom-6 right-6 z-[100] bg-card text-foreground px-5 py-4 rounded-xl shadow-xl flex items-center gap-3 border border-border">
+                    <RefreshDouble className="h-5 w-5 animate-spin text-primary" />
+                    <span className="text-sm font-semibold">Preparing download...</span>
+                </div>
+            )}
+
             {/* Hidden audio element */}
             {data.audioUrl && (
                 <audio
@@ -330,6 +393,8 @@ export function TranscriptionViewerNew({
             )}
 
             <ViewerLayout
+                isSidebarOpen={isSidebarOpen}
+                onCloseSidebar={() => setIsSidebarOpen(false)}
                 sidebar={
                     <ActionsSidebar
                         onCopy={handleCopy}
@@ -345,6 +410,7 @@ export function TranscriptionViewerNew({
                         translatedLanguages={data.translatedLanguages}
                         translationStatus={data.translationStatus}
                         translatingToLanguage={data.translatingToLanguage}
+                        canTranslate={limits.translation}
                         sourceLanguage={data.sourceLanguage}
                         displayLanguage={displayLanguage}
                         onDisplayLanguageChange={setDisplayLanguage}
@@ -355,7 +421,11 @@ export function TranscriptionViewerNew({
                         onGenerateAllAnalysis={generateAllAnalysis}
                         onSelectAnalysisView={handleSelectAnalysisView}
                         currentAnalysisView={currentAnalysisView}
-                        onEdit={handleEdit}
+                        isEditMode={isEditMode}
+                        onToggleEditMode={setIsEditMode}
+                        hasEditedSegments={getEditedSegments().length > 0}
+                        onRevertAll={handleRevertAll}
+                        isReverting={isReverting}
                     />
                 }
                 audioPlayer={
@@ -372,7 +442,11 @@ export function TranscriptionViewerNew({
                 }
             >
                 {/* Header */}
-                <ViewerHeader data={data} onBack={handleBack} />
+                <ViewerHeader
+                    data={data}
+                    onToggleSidebar={() => setIsSidebarOpen(true)}
+                    currentAnalysisView={currentAnalysisView}
+                />
 
                 {/* Content: Transcript or Analysis View */}
                 {currentAnalysisView === "ActionItems" ? (
@@ -403,9 +477,21 @@ export function TranscriptionViewerNew({
                         showSpeakers={showSpeakers}
                         displayLanguage={displayLanguage}
                         onSegmentClick={seekToSegment}
+                        isEditMode={isEditMode}
+                        onEditClick={handleSegmentEditClick}
                     />
                 )}
             </ViewerLayout>
+
+            {/* Segment Edit Modal */}
+            <SegmentEditModal
+                segment={editingSegment}
+                onClose={() => setEditingSegment(null)}
+                onSave={handleSaveEdit}
+                onRevert={handleRevertEdit}
+                isSaving={isUpdating}
+                isReverting={isReverting}
+            />
         </div>
     );
 }

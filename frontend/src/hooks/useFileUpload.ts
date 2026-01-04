@@ -6,6 +6,7 @@ import {
     orchestrateUpload,
     abortUploadSession,
 } from "@/services/upload/uploadOrchestrator";
+import { uploadAbortRegistry } from "@/services/upload/uploadAbortRegistry";
 import {
     UploadConfig,
     UploadStage,
@@ -25,7 +26,7 @@ export interface UseFileUploadOptions {
 }
 
 export interface UseFileUploadReturn {
-    upload: (file: File, options?: UploadOptions) => Promise<TranscriptionJobResponse | null>;
+    upload: (file: File, options?: UploadOptions, tempId?: string) => Promise<TranscriptionJobResponse | null>;
     abort: () => void;
     reset: () => void;
     progress: number;
@@ -65,8 +66,13 @@ export function useFileUpload(options: UseFileUploadOptions = {}): UseFileUpload
     }, []);
 
     const mutation = useMutation({
-        mutationFn: async ({ file, uploadOptions }: { file: File; uploadOptions?: UploadOptions }) => {
+        mutationFn: async ({ file, uploadOptions, tempId }: { file: File; uploadOptions?: UploadOptions; tempId?: string }) => {
             abortControllerRef.current = new AbortController();
+
+            // Register with abort registry if tempId provided
+            if (tempId) {
+                uploadAbortRegistry.register(tempId, abortControllerRef.current);
+            }
 
             return orchestrateUpload({
                 file,
@@ -77,12 +83,19 @@ export function useFileUpload(options: UseFileUploadOptions = {}): UseFileUpload
                 onStatusChange: (stage: UploadStage) => setStatus(stage),
             });
         },
-        onSuccess: () => {
+        onSuccess: (_, variables) => {
+            // Unregister from abort registry
+            if (variables.tempId) {
+                uploadAbortRegistry.unregister(variables.tempId);
+            }
             setStatus("success");
-            // Invalidate transcriptions query to trigger refetch and enable polling
             queryClient.invalidateQueries({ queryKey: ["transcriptions"] });
         },
-        onError: (err) => {
+        onError: (err, variables) => {
+            // Unregister from abort registry
+            if (variables.tempId) {
+                uploadAbortRegistry.unregister(variables.tempId);
+            }
             if (abortControllerRef.current?.signal.aborted) {
                 setStatus("aborted");
             } else {
@@ -93,10 +106,10 @@ export function useFileUpload(options: UseFileUploadOptions = {}): UseFileUpload
     });
 
     const upload = React.useCallback(
-        async (file: File, uploadOptions?: UploadOptions): Promise<TranscriptionJobResponse | null> => {
+        async (file: File, uploadOptions?: UploadOptions, tempId?: string): Promise<TranscriptionJobResponse | null> => {
             reset();
             try {
-                return await mutation.mutateAsync({ file, uploadOptions });
+                return await mutation.mutateAsync({ file, uploadOptions, tempId });
             } catch {
                 return null;
             }

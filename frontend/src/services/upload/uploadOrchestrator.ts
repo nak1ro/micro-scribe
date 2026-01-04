@@ -2,7 +2,7 @@ import { transcriptionApi } from "@/services/transcription/api";
 import { audioExtractor } from "@/services/media/audioExtractor";
 import {
     UploadSessionResponse,
-    PartETagDto,
+    PartDto,
     TranscriptionQuality,
     TranscriptionJobResponse,
 } from "@/types/api/transcription";
@@ -15,7 +15,7 @@ import {
 /**
  * Orchestrates the complete file upload flow:
  * 1. Initiate upload session
- * 2. Upload file to S3 (single or multipart)
+ * 2. Upload file to Azure Blob Storage (single or multipart)
  * 3. Complete upload
  * 4. Poll for validation
  * 5. Create transcription job
@@ -78,34 +78,24 @@ export async function orchestrateUpload(
 
     checkAbort(signal);
 
-    // Step 2: Upload file to S3
+    // Step 2: Upload file to Azure
     onStatusChange?.("uploading");
 
-    let parts: PartETagDto[] | null = null;
+    let parts: PartDto[] | null = null;
 
-    // Backend decides single vs multipart based on its threshold (returns uploadId for multipart)
-    // Frontend follows that decision, not its own size comparison
-    if (session.uploadId || session.uploadUrl) {
-        // Multipart upload (S3 with ID, or Azure purely via SAS URL)
-        // 1. If uploadId exists -> S3 Multipart.
-        // 2. If !uploadId:
-        //    a. If file < chunkSize -> Single PUT (Azure or S3).
-        //    b. If file > chunkSize -> Azure Block Upload (implied).
+    // Backend decides single vs multipart based on its threshold
+    // uploadId !== null means multipart (block) upload
+    if (!session.uploadUrl) {
+        throw new Error("Invalid session: no uploadUrl provided");
+    }
 
-        if (session.uploadId) {
-            parts = await uploadChunked(fileToUpload, session, config, signal, onProgress);
-        } else {
-            // No ID. Check size.
-            if (fileToUpload.size <= config.chunkSize) {
-                await uploadSingleFile(fileToUpload, session.uploadUrl!, contentType, config, signal);
-                onProgress?.(100);
-            } else {
-                // Large file, no uploadId -> Assume Azure Block Upload
-                parts = await uploadChunked(fileToUpload, session, config, signal, onProgress);
-            }
-        }
+    if (session.uploadId) {
+        // Multipart block upload
+        parts = await uploadChunked(fileToUpload, session, config, signal, onProgress);
     } else {
-        throw new Error("Invalid session: neither uploadUrl nor uploadId provided");
+        // Single file upload
+        await uploadSingleFile(fileToUpload, session.uploadUrl, contentType, config, signal);
+        onProgress?.(100);
     }
 
     checkAbort(signal);
@@ -172,7 +162,10 @@ async function uploadSingleFile(
         {
             method: "PUT",
             body: file,
-            headers: { "Content-Type": contentType },
+            headers: {
+                "Content-Type": contentType,
+                "x-ms-blob-type": "BlockBlob",
+            },
             signal,
         },
         config.maxRetries,
@@ -186,8 +179,8 @@ async function uploadChunked(
     config: UploadConfig,
     signal?: AbortSignal,
     onProgress?: (percent: number) => void
-): Promise<PartETagDto[]> {
-    const parts: PartETagDto[] = [];
+): Promise<PartDto[]> {
+    const parts: PartDto[] = [];
     const totalChunks = Math.ceil(file.size / config.chunkSize);
 
     for (let i = 0; i < totalChunks; i++) {
@@ -198,61 +191,37 @@ async function uploadChunked(
         const chunk = file.slice(start, end);
         const partNumber = i + 1;
 
-        // Azure logic: Generate BlockID if not S3 (no uploadId)
-        let blockId: string | undefined;
-        if (!session.uploadId) {
-            blockId = generateBlockId(partNumber);
-        }
+        const chunkUrl = buildChunkUrl(session, partNumber);
+        await uploadChunkWithRetry(chunk, chunkUrl, config, signal);
 
-        const chunkUrl = buildChunkUrl(session, partNumber, blockId);
-        const { eTag } = await uploadChunkWithRetry(chunk, chunkUrl, partNumber, config, signal, blockId);
-
-        parts.push({ partNumber, eTag, blockId });
+        parts.push({ partNumber });
         onProgress?.(Math.round(((i + 1) / totalChunks) * 100));
     }
 
     return parts;
 }
 
-function buildChunkUrl(session: UploadSessionResponse, partNumber: number, blockId?: string): string {
-    if (session.uploadId && session.uploadUrl) {
-        const url = new URL(session.uploadUrl);
-        url.searchParams.set("partNumber", String(partNumber));
-        url.searchParams.set("uploadId", session.uploadId);
-        return url.toString();
-    } else if (session.uploadUrl && blockId) {
-        const url = new URL(session.uploadUrl);
-        url.searchParams.set("comp", "block");
-        url.searchParams.set("blockid", blockId);
-        return url.toString();
-    }
-    return session.uploadUrl || "";
+function buildChunkUrl(session: UploadSessionResponse, partNumber: number): string {
+    if (!session.uploadUrl) return "";
+
+    const url = new URL(session.uploadUrl);
+    url.searchParams.set("comp", "block");
+    url.searchParams.set("blockid", generateBlockId(partNumber));
+    return url.toString();
 }
 
 async function uploadChunkWithRetry(
     chunk: Blob,
     url: string,
-    partNumber: number,
     config: UploadConfig,
-    signal?: AbortSignal,
-    blockId?: string
-): Promise<{ eTag?: string }> {
-    const response = await fetchWithRetry(
+    signal?: AbortSignal
+): Promise<void> {
+    await fetchWithRetry(
         url,
         { method: "PUT", body: chunk, signal },
         config.maxRetries,
         config.retryBaseDelayMs
     );
-
-    const eTag = response.headers.get("ETag") || undefined;
-
-    // For S3, ETag is required. For Azure, it's optional but we check logic.
-    // If request was S3 (no blockId), ETag is mandatory.
-    if (!blockId && !eTag) {
-        throw new Error(`No ETag returned for part ${partNumber}`);
-    }
-
-    return { eTag };
 }
 
 function generateBlockId(index: number): string {

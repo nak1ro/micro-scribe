@@ -12,7 +12,8 @@ declare global {
 export class AudioExtractor {
     private static instance: AudioExtractor;
     private ffmpeg: any | null = null;
-    private isLoading = false;
+    private loadingPromise: Promise<void> | null = null;
+    private extractionQueue: Promise<void> = Promise.resolve();
 
     private constructor() { }
 
@@ -24,42 +25,45 @@ export class AudioExtractor {
     }
 
     public async load(): Promise<void> {
-        if (this.ffmpeg || this.isLoading) return;
+        if (this.ffmpeg) return;
+        if (this.loadingPromise) return this.loadingPromise;
 
-        this.isLoading = true;
+        this.loadingPromise = (async () => {
+            try {
+                // Load FFmpeg implementation from UMD script in public folder
+                // This bypasses Turbopack's static analysis of the ESM module
+                if (!window.FFmpegWASM) {
+                    await new Promise<void>((resolve, reject) => {
+                        const script = document.createElement("script");
+                        script.src = "/ffmpeg/ffmpeg.js";
+                        script.async = true;
+                        script.onload = () => resolve();
+                        script.onerror = () => reject(new Error("Failed to load FFmpeg script"));
+                        document.body.appendChild(script);
+                    });
+                }
 
-        try {
-            // Load FFmpeg implementation from UMD script in public folder
-            // This bypasses Turbopack's static analysis of the ESM module
-            if (!window.FFmpegWASM) {
-                await new Promise<void>((resolve, reject) => {
-                    const script = document.createElement("script");
-                    script.src = "/ffmpeg/ffmpeg.js";
-                    script.async = true;
-                    script.onload = () => resolve();
-                    script.onerror = () => reject(new Error("Failed to load FFmpeg script"));
-                    document.body.appendChild(script);
+                // Instantiate FFmpeg using the loaded global
+                const FFmpegClass = window.FFmpegWASM.FFmpeg;
+                const ffmpeg = new FFmpegClass();
+
+                // Use local core files from public/ffmpeg
+                await ffmpeg.load({
+                    coreURL: "/ffmpeg/ffmpeg-core.js",
+                    wasmURL: "/ffmpeg/ffmpeg-core.wasm",
                 });
+
+                this.ffmpeg = ffmpeg;
+                this.setupLogging();
+            } catch (error) {
+                console.error("Failed to load FFmpeg:", error);
+                throw error;
+            } finally {
+                this.loadingPromise = null;
             }
+        })();
 
-            // Instantiate FFmpeg using the loaded global
-            const FFmpegClass = window.FFmpegWASM.FFmpeg;
-            const ffmpeg = new FFmpegClass();
-
-            // Use local core files from public/ffmpeg
-            await ffmpeg.load({
-                coreURL: "/ffmpeg/ffmpeg-core.js",
-                wasmURL: "/ffmpeg/ffmpeg-core.wasm",
-            });
-
-            this.ffmpeg = ffmpeg;
-            this.setupLogging();
-        } catch (error) {
-            console.error("Failed to load FFmpeg:", error);
-            throw error;
-        } finally {
-            this.isLoading = false;
-        }
+        return this.loadingPromise;
     }
 
     private setupLogging() {
@@ -74,13 +78,29 @@ export class AudioExtractor {
         file: File,
         onProgress?: (progress: number) => void
     ): Promise<Blob> {
+        // Chain execution to ensure sequential processing
+        // This prevents race conditions on the single FFmpeg instance and file system
+        const result = this.extractionQueue.then(() => this._performExtraction(file, onProgress));
+
+        // Update queue to wait for this task (catching errors so queue doesn't stall)
+        this.extractionQueue = result.then(() => { }).catch(() => { });
+
+        return result;
+    }
+
+    private async _performExtraction(
+        file: File,
+        onProgress?: (progress: number) => void
+    ): Promise<Blob> {
         if (!this.ffmpeg) {
             await this.load();
         }
 
         const ffmpeg = this.ffmpeg!;
-        const inputName = "input" + this.getFileExtension(file.name);
-        const outputName = "output.mp3";
+        // Use unique filenames to be extra safe, though serial queue prevents collisions
+        const id = Date.now();
+        const inputName = `input_${id}` + this.getFileExtension(file.name);
+        const outputName = `output_${id}.mp3`;
 
         try {
             // Write file to FFmpeg WASM file system
@@ -124,6 +144,8 @@ export class AudioExtractor {
             console.error("Audio extraction failed:", error);
             // Attempt cleanup if possible
             try {
+                // Check if file exists before deleting to avoid error? 
+                // FFmpeg wasm might throw if file doesn't exist but try/catch block handles it.
                 await ffmpeg.deleteFile(inputName);
                 await ffmpeg.deleteFile(outputName);
             } catch { }

@@ -1,41 +1,65 @@
 "use client";
 
 import * as React from "react";
-import { useUsage } from "@/hooks/useUsage";
-import { PlanType } from "@/types/api/usage";
+import {
+    useSubscriptionStatus,
+    useCustomerPortal,
+    useChangePlan,
+    useCancelSubscription,
+    usePaymentMethod,
+    useInvoices,
+} from "@/features/billing";
 import { billingCopy } from "../data";
 import { CurrentPlanSection } from "./CurrentPlanSection";
+import { PaymentMethodSection } from "./PaymentMethodSection";
+import { BillingHistorySection } from "./BillingHistorySection";
 import { SavingsCallout } from "./SavingsCallout";
 import { LockedFeatures } from "./LockedFeatures";
 import { CancelSubscriptionSection } from "./CancelSubscriptionSection";
+import { Spinner } from "@/components/ui";
 
 // Main billing page content orchestrating all billing components
 export function BillingContent() {
-    const { data: usage } = useUsage();
+    const { data: subscription, isLoading } = useSubscriptionStatus();
+    const portalMutation = useCustomerPortal();
+    const changePlanMutation = useChangePlan();
+    const cancelMutation = useCancelSubscription();
+    const { data: paymentMethod, isLoading: isLoadingPayment } = usePaymentMethod();
+    const { data: invoicesData, isLoading: isLoadingInvoices } = useInvoices();
 
-    // Map backend PlanType to local type
-    const planType = usage?.planType === PlanType.Pro ? "Pro" : "Free";
-    const isPro = planType === "Pro";
+    const isPro = subscription?.plan === "Pro";
+    const isActive = subscription?.status === "Active";
+    const isCanceling = subscription?.cancelAtPeriodEnd === true;
 
-    // Mock billing cycle (would come from backend in real implementation)
-    const billingCycle: "monthly" | "annual" = "monthly";
-    const nextBillingDate = isPro ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : undefined;
+    // Determine billing cycle from subscription end date
+    const nextBillingDate = subscription?.currentPeriodEnd
+        ? new Date(subscription.currentPeriodEnd)
+        : undefined;
 
-    // Action handlers (placeholders for Stripe integration)
     const handleUpgrade = () => {
-        console.log("Redirecting to Stripe Checkout...");
-        // TODO: Integrate with Stripe Checkout
+        // Use full page navigation to avoid COEP policy conflict with Stripe.js
+        window.location.href = "/account/checkout";
     };
 
     const handleSwitchToAnnual = () => {
-        console.log("Redirecting to Stripe for billing change...");
-        // TODO: Integrate with Stripe billing portal
+        changePlanMutation.mutate({ newInterval: "Yearly" });
     };
 
     const handleCancel = () => {
-        console.log("Processing cancellation...");
-        // TODO: Integrate with backend cancellation endpoint
+        cancelMutation.mutate(false);
     };
+
+    const handleManagePayment = () => {
+        portalMutation.mutate({ returnUrl: window.location.href });
+    };
+
+    if (isLoading) {
+        return (
+            <div className="max-w-3xl mx-auto px-4 py-8 flex items-center justify-center">
+                <Spinner size="lg" />
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
@@ -51,23 +75,66 @@ export function BillingContent() {
 
             {/* Current plan overview */}
             <CurrentPlanSection
-                planType={planType}
-                billingCycle={isPro ? billingCycle : undefined}
+                planType={isPro ? "Pro" : "Free"}
                 nextBillingDate={nextBillingDate}
+                cancelAtPeriodEnd={isCanceling}
                 onUpgrade={handleUpgrade}
             />
 
-            {/* Savings callout (only for monthly Pro users) */}
+            {/* Payment method (Pro users only) */}
+            {isPro && (
+                <PaymentMethodSection
+                    paymentMethod={paymentMethod}
+                    onManagePayment={handleManagePayment}
+                    isLoading={portalMutation.isPending || isLoadingPayment}
+                />
+            )}
+
+            {/* Billing history (Pro users only) */}
+            {isPro && (
+                <BillingHistorySection
+                    invoices={invoicesData?.invoices ?? []}
+                    hasMore={invoicesData?.hasMore ?? false}
+                    isLoading={isLoadingInvoices}
+                />
+            )}
+
+            {/* Savings callout (only for Pro users on monthly) */}
             <SavingsCallout
-                isVisible={isPro && billingCycle === "monthly"}
+                isVisible={isPro && isActive && !isCanceling}
                 onSwitchToAnnual={handleSwitchToAnnual}
+                isLoading={changePlanMutation.isPending}
             />
 
             {/* Locked features upsell (Free users only) */}
             {!isPro && <LockedFeatures onUpgrade={handleUpgrade} />}
 
             {/* Cancel subscription (Pro users only) */}
-            {isPro && <CancelSubscriptionSection onCancel={handleCancel} />}
+            {isPro && isActive && !isCanceling && (
+                <CancelSubscriptionSection
+                    onCancel={handleCancel}
+                    isLoading={cancelMutation.isPending}
+                />
+            )}
+
+            {/* Show canceling status */}
+            {isCanceling && (
+                <div className="rounded-xl border border-warning/30 bg-warning/5 p-6">
+                    <h3 className="text-lg font-semibold text-foreground">
+                        Subscription Ending
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        Your subscription will end on {nextBillingDate?.toLocaleDateString()}.
+                        You can reactivate anytime before this date.
+                    </p>
+                    <button
+                        onClick={handleManagePayment}
+                        className="mt-3 text-sm font-medium text-primary hover:underline"
+                    >
+                        Reactivate Subscription →
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

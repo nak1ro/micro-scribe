@@ -59,8 +59,13 @@ public static class AiPrompts
            }}";
         
     public static string Translate(string content, string targetLanguage) =>
-        $@"The following text is a JSON object. Translate the string values inside the JSON to {targetLanguage}. 
-           DO NOT translate the JSON keys. Ensure the output is valid JSON.
+        $@"The following text is a JSON object. Translate all string values inside the JSON (including nested arrays and objects) to {targetLanguage}. 
+           
+           Rules:
+           1. DO NOT translate the JSON keys (e.g. ""summary"", ""actionItems"", ""task"", ""owner"").
+           2. Translate only the values.
+           3. For ""priority"" values (High/Medium/Low), translate them to the target language equivalent.
+           4. Ensure the output is valid JSON.
            
            JSON Content:
            {content}";

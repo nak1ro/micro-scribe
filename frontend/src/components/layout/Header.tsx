@@ -3,19 +3,18 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Menu, X, Mic2, LayoutDashboard, CreditCard, User, LogOut, Sun, Moon } from "lucide-react";
+import { Rocket, Menu, Xmark, ViewGrid, CreditCard, User, LogOut, SunLight, HalfMoon } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/hooks/useAuth";
 
-
-
 const navLinks = [
-    { href: "/features", label: "Features" },
+    { href: "/#features", label: "Features" },
+    { href: "/#how-it-works", label: "How it Works" },
     { href: "/pricing", label: "Pricing" },
-    { href: "/about", label: "About" },
+    { href: "/#faq", label: "FAQ" },
 ];
 
 export function Header() {
@@ -35,13 +34,36 @@ export function Header() {
                 <div className="flex h-full items-center justify-between">
                     {/* Left: Logo + Nav */}
                     <div className="flex items-center gap-8">
-                        {/* Logo */}
+                        {/* Logo with hover effects */}
                         <Link
                             href="/"
-                            className="flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity"
+                            className="group flex items-center gap-2 text-foreground"
                         >
-                            <Mic2 className="h-7 w-7 text-primary" />
-                            <span className="hidden sm:block text-lg font-semibold">
+                            {/* Animated rocket icon */}
+                            <span className="relative">
+                                <Rocket
+                                    className={cn(
+                                        "h-7 w-7 text-primary",
+                                        "transition-transform duration-300 ease-out",
+                                        "group-hover:rotate-[-15deg] group-hover:scale-110"
+                                    )}
+                                />
+                                {/* Sparkle effect on hover */}
+                                <span className={cn(
+                                    "absolute -top-1 -right-1 w-2 h-2 rounded-full",
+                                    "bg-primary/80 opacity-0 scale-0",
+                                    "group-hover:opacity-100 group-hover:scale-100",
+                                    "transition-all duration-300 delay-100",
+                                    "animate-ping"
+                                )} />
+                            </span>
+                            {/* Gradient text on hover */}
+                            <span className={cn(
+                                "hidden sm:block text-lg font-semibold",
+                                "transition-all duration-300",
+                                "group-hover:bg-gradient-to-r group-hover:from-primary group-hover:to-primary/60",
+                                "group-hover:bg-clip-text group-hover:text-transparent"
+                            )}>
                                 ScribeRocket
                             </span>
                         </Link>
@@ -74,7 +96,7 @@ export function Header() {
                             <>
                                 <Link href="/dashboard" className="hidden sm:block">
                                     <Button variant="ghost" size="md" className="gap-2">
-                                        <LayoutDashboard className="h-4 w-4" />
+                                        <ViewGrid className="h-4 w-4" />
                                         Dashboard
                                     </Button>
                                 </Link>
@@ -109,7 +131,7 @@ export function Header() {
                             aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
                         >
                             {isMobileMenuOpen ? (
-                                <X className="h-6 w-6" />
+                                <Xmark className="h-6 w-6" />
                             ) : (
                                 <Menu className="h-6 w-6" />
                             )}
@@ -213,11 +235,11 @@ function UserMenu({ user }: UserMenuProps) {
                         <p className="text-xs text-muted-foreground">{user.email}</p>
                     </div>
                     <div className="p-1">
+                        <DropdownLink href="/dashboard" icon={ViewGrid}>
+                            Dashboard
+                        </DropdownLink>
                         <DropdownLink href="/dashboard/subscription" icon={CreditCard}>
                             Manage Subscription
-                        </DropdownLink>
-                        <DropdownLink href="/dashboard/account" icon={User}>
-                            Account
                         </DropdownLink>
                         <ThemeMenuButton />
                     </div>
@@ -275,7 +297,7 @@ function ThemeMenuButton() {
     if (!mounted) {
         return (
             <div className="flex items-center gap-2 px-3 py-2 text-sm rounded-md text-foreground">
-                <Sun className="h-4 w-4 text-muted-foreground" />
+                <SunLight className="h-4 w-4 text-muted-foreground" />
                 Theme
             </div>
         );
@@ -293,9 +315,9 @@ function ThemeMenuButton() {
             )}
         >
             {isDark ? (
-                <Sun className="h-4 w-4 text-muted-foreground" />
+                <SunLight className="h-4 w-4 text-muted-foreground" />
             ) : (
-                <Moon className="h-4 w-4 text-muted-foreground" />
+                <HalfMoon className="h-4 w-4 text-muted-foreground" />
             )}
             {isDark ? "Light mode" : "Dark mode"}
         </button>

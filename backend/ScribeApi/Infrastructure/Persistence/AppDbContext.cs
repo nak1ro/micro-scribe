@@ -21,9 +21,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<WebhookDelivery> WebhookDeliveries => Set<WebhookDelivery>();
     public DbSet<Folder> Folders => Set<Folder>();
     public DbSet<FolderTranscriptionJob> FolderTranscriptionJobs => Set<FolderTranscriptionJob>();
-    public DbSet<TranscriptionAnalysis> TranscriptionAnalyses => Set<TranscriptionAnalysis>();
-
+    public DbSet<TranscriptionAnalysisJob> TranscriptionAnalysisJobs => Set<TranscriptionAnalysisJob>();
     public DbSet<ExternalLogin> ExternalLogins => Set<ExternalLogin>();
+    public DbSet<ProcessedStripeEvent> ProcessedStripeEvents => Set<ProcessedStripeEvent>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -44,6 +44,11 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .Property(s => s.xmin)
             .IsRowVersion();
 
-
+        // ProcessedStripeEvent - string primary key, index for cleanup
+        builder.Entity<ProcessedStripeEvent>(e =>
+        {
+            e.HasKey(p => p.EventId);
+            e.HasIndex(p => p.ProcessedAtUtc);
+        });
     }
 }

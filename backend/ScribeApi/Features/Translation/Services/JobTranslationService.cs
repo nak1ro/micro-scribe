@@ -1,5 +1,6 @@
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
+using ScribeApi.Core.Domain.Plans;
 using ScribeApi.Core.Exceptions;
 using ScribeApi.Features.Translation.Contracts;
 using ScribeApi.Infrastructure.BackgroundJobs;
@@ -13,20 +14,34 @@ public class JobTranslationService : IJobTranslationService
 {
     private readonly AppDbContext _context;
     private readonly IBackgroundJobClient _backgroundJobs;
+    private readonly IPlanResolver _planResolver;
+    private readonly IPlanGuard _planGuard;
     private readonly ILogger<JobTranslationService> _logger;
 
     public JobTranslationService(
         AppDbContext context,
         IBackgroundJobClient backgroundJobs,
+        IPlanResolver planResolver,
+        IPlanGuard planGuard,
         ILogger<JobTranslationService> logger)
     {
         _context = context;
         _backgroundJobs = backgroundJobs;
+        _planResolver = planResolver;
+        _planGuard = planGuard;
         _logger = logger;
     }
 
     public async Task EnqueueTranslationAsync(Guid jobId, string userId, string targetLanguage, CancellationToken ct)
     {
+        // Check plan allows translation
+        var user = await _context.Users.OfType<ApplicationUser>()
+            .FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user == null) throw new NotFoundException("User not found.");
+        
+        var plan = _planResolver.GetPlanDefinition(user.Plan);
+        _planGuard.EnsureTranslationAllowed(plan);
+
         var job = await _context.TranscriptionJobs
             .FirstOrDefaultAsync(j => j.Id == jobId && j.UserId == userId, ct);
 
@@ -57,3 +72,4 @@ public class JobTranslationService : IJobTranslationService
         _logger.LogInformation("Enqueued translation job {JobId} to {Language}", jobId, targetLanguage);
     }
 }
+

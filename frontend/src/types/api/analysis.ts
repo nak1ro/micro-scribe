@@ -14,6 +14,8 @@ export interface TranscriptionAnalysisDto {
     content: string; // JSON string
     translations: Record<string, string>;
     createdAtUtc: string;
+    status: "Pending" | "Processing" | "Completed" | "Failed";
+    errorMessage?: string | null;
 }
 
 export interface GenerateAnalysisRequest {

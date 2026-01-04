@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
+import { useAuth } from "@/hooks";
 
 export interface PricingButtonProps {
     children: React.ReactNode;
@@ -19,8 +20,18 @@ export function PricingButton({
     highlighted = false,
     className,
 }: PricingButtonProps) {
+    const { isAuthenticated } = useAuth();
+
+    // If href points to signup, redirect based on auth state
+    const targetHref = React.useMemo(() => {
+        if (href.includes("/auth")) {
+            return isAuthenticated ? "/dashboard" : href;
+        }
+        return href;
+    }, [href, isAuthenticated]);
+
     return (
-        <Link href={href}>
+        <Link href={targetHref}>
             <Button
                 variant={highlighted ? "default" : "outline"}
                 size="lg"
@@ -35,3 +46,4 @@ export function PricingButton({
         </Link>
     );
 }
+

@@ -20,6 +20,7 @@ export interface ViewerSegment {
     speaker: string | null;
     translations: Record<string, string>;
     isEdited: boolean;
+    originalText: string | null;
 }
 
 export interface ViewerState {
@@ -53,7 +54,7 @@ export interface TranscriptionData {
     audioUrl: string | null;
 }
 
-export type ExportFormat = "txt" | "docx" | "srt" | "csv" | "mp3";
+export type ExportFormat = "txt" | "docx" | "srt" | "vtt" | "json" | "csv" | "mp3";
 
 export interface ExportOption {
     id: ExportFormat;

@@ -1,4 +1,5 @@
 using ScribeApi.Core.Configuration;
+using ScribeApi.Core.Interfaces;
 using ScribeApi.Features.Billing.Contracts;
 using ScribeApi.Features.Billing.Services;
 using ScribeApi.Infrastructure.Billing;
@@ -17,7 +18,9 @@ public static class BillingServiceExtensions
         services.AddScoped<StripeClient>();
         services.AddScoped<StripeWebhookHandler>();
         services.AddScoped<IBillingService, BillingService>();
+        services.AddScoped<IWebhookIdempotencyService, WebhookIdempotencyService>();
 
         return services;
     }
 }
+

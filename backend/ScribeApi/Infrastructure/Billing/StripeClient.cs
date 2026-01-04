@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Options;
 using ScribeApi.Core.Configuration;
 using Stripe;
-using Stripe.Checkout;
+using Stripe.BillingPortal;
 
 namespace ScribeApi.Infrastructure.Billing;
 
@@ -9,8 +9,9 @@ public class StripeClient
 {
     private readonly StripeSettings _settings;
     private readonly CustomerService _customerService;
-    private readonly SessionService _sessionService;
+    private readonly SetupIntentService _setupIntentService;
     private readonly SubscriptionService _subscriptionService;
+    private readonly PaymentMethodService _paymentMethodService;
 
     public StripeClient(IOptions<StripeSettings> settings)
     {
@@ -18,8 +19,9 @@ public class StripeClient
         StripeConfiguration.ApiKey = _settings.SecretKey;
 
         _customerService = new CustomerService();
-        _sessionService = new SessionService();
+        _setupIntentService = new SetupIntentService();
         _subscriptionService = new SubscriptionService();
+        _paymentMethodService = new PaymentMethodService();
     }
 
     // Create a new Stripe customer for a user
@@ -34,36 +36,111 @@ public class StripeClient
         return await _customerService.CreateAsync(options, cancellationToken: ct);
     }
 
-    // Create a checkout session for upgrading to Pro plan
-    public async Task<Session> CreateCheckoutSessionAsync(
-        string customerId,
-        string? successUrl = null,
-        string? cancelUrl = null,
-        CancellationToken ct = default)
+    // Create a SetupIntent for collecting payment method via Elements
+    public async Task<SetupIntent> CreateSetupIntentAsync(string customerId, CancellationToken ct = default)
     {
-        var options = new SessionCreateOptions
+        var options = new SetupIntentCreateOptions
         {
             Customer = customerId,
-            Mode = "subscription",
-            LineItems = [new SessionLineItemOptions { Price = _settings.ProPriceId, Quantity = 1 }],
-            SuccessUrl = successUrl ?? _settings.SuccessUrl,
-            CancelUrl = cancelUrl ?? _settings.CancelUrl
+            PaymentMethodTypes = ["card"],
+            Usage = "off_session"
         };
 
-        return await _sessionService.CreateAsync(options, cancellationToken: ct);
+        return await _setupIntentService.CreateAsync(options, cancellationToken: ct);
+    }
+
+    // Attach a payment method to a customer and set as default. Returns the actual customer ID.
+    public async Task<string> AttachPaymentMethodAsync(string customerId, string paymentMethodId, CancellationToken ct = default)
+    {
+        // Check if payment method is already attached to a customer
+        var paymentMethod = await _paymentMethodService.GetAsync(paymentMethodId, cancellationToken: ct);
+        var actualCustomerId = customerId;
+
+        if (paymentMethod.Customer != null)
+        {
+            // Payment method is already attached - use that customer
+            actualCustomerId = paymentMethod.Customer.Id;
+        }
+        else
+        {
+            // Attach to the provided customer
+            await _paymentMethodService.AttachAsync(paymentMethodId, new PaymentMethodAttachOptions
+            {
+                Customer = customerId
+            }, cancellationToken: ct);
+        }
+
+        // Set as default payment method
+        await _customerService.UpdateAsync(actualCustomerId, new CustomerUpdateOptions
+        {
+            InvoiceSettings = new CustomerInvoiceSettingsOptions
+            {
+                DefaultPaymentMethod = paymentMethodId
+            }
+        }, cancellationToken: ct);
+
+        return actualCustomerId;
+    }
+
+    // Create a subscription for a customer with a specific price
+    public async Task<Subscription> CreateSubscriptionAsync(
+        string customerId,
+        string priceId,
+        string? idempotencyKey = null,
+        CancellationToken ct = default)
+    {
+        var options = new SubscriptionCreateOptions
+        {
+            Customer = customerId,
+            Items = [new SubscriptionItemOptions { Price = priceId }],
+            PaymentSettings = new SubscriptionPaymentSettingsOptions
+            {
+                SaveDefaultPaymentMethod = "on_subscription"
+            },
+            Expand = ["latest_invoice.payment_intent"]
+        };
+
+        var requestOptions = new RequestOptions();
+        if (!string.IsNullOrEmpty(idempotencyKey))
+        {
+            requestOptions.IdempotencyKey = idempotencyKey;
+        }
+
+        return await _subscriptionService.CreateAsync(options, requestOptions, ct);
+    }
+
+    // Update subscription to a new price (for plan switching)
+    public async Task<Subscription> UpdateSubscriptionPriceAsync(
+        string subscriptionId,
+        string newPriceId,
+        CancellationToken ct = default)
+    {
+        var subscription = await _subscriptionService.GetAsync(subscriptionId, cancellationToken: ct);
+        var itemId = subscription.Items.Data.FirstOrDefault()?.Id;
+
+        if (string.IsNullOrEmpty(itemId))
+            throw new InvalidOperationException("Subscription has no items");
+
+        var options = new SubscriptionUpdateOptions
+        {
+            Items = [new SubscriptionItemOptions { Id = itemId, Price = newPriceId }],
+            ProrationBehavior = "create_prorations"
+        };
+
+        return await _subscriptionService.UpdateAsync(subscriptionId, options, cancellationToken: ct);
     }
 
     // Create a billing portal session for managing subscription
-    public async Task<Stripe.BillingPortal.Session> CreatePortalSessionAsync(
+    public async Task<Session> CreatePortalSessionAsync(
         string customerId,
-        string? returnUrl = null,
+        string returnUrl,
         CancellationToken ct = default)
     {
-        var portalService = new Stripe.BillingPortal.SessionService();
-        var options = new Stripe.BillingPortal.SessionCreateOptions
+        var portalService = new SessionService();
+        var options = new SessionCreateOptions
         {
             Customer = customerId,
-            ReturnUrl = returnUrl ?? _settings.SuccessUrl
+            ReturnUrl = returnUrl
         };
 
         return await portalService.CreateAsync(options, cancellationToken: ct);
@@ -108,5 +185,45 @@ public class StripeClient
         {
             return null;
         }
+    }
+
+    // Get customer's default payment method
+    public async Task<PaymentMethod?> GetDefaultPaymentMethodAsync(string customerId, CancellationToken ct = default)
+    {
+        try
+        {
+            var customer = await _customerService.GetAsync(customerId, new CustomerGetOptions
+            {
+                Expand = ["invoice_settings.default_payment_method"]
+            }, cancellationToken: ct);
+
+            return customer.InvoiceSettings?.DefaultPaymentMethod;
+        }
+        catch (StripeException)
+        {
+            return null;
+        }
+    }
+
+    // List invoices for a customer
+    public async Task<StripeList<Invoice>> ListInvoicesAsync(
+        string customerId, 
+        int limit = 10, 
+        string? startingAfter = null, 
+        CancellationToken ct = default)
+    {
+        var invoiceService = new InvoiceService();
+        var options = new InvoiceListOptions
+        {
+            Customer = customerId,
+            Limit = limit
+        };
+
+        if (!string.IsNullOrEmpty(startingAfter))
+        {
+            options.StartingAfter = startingAfter;
+        }
+
+        return await invoiceService.ListAsync(options, cancellationToken: ct);
     }
 }

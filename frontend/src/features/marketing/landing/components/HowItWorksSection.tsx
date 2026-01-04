@@ -5,13 +5,14 @@ import Link from "next/link";
 import { Upload, Sparks, Download, ArrowRight } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { CTAButton } from "@/components/ui";
+import { useInView } from "@/hooks";
 
 // Steps data
 const steps = [
     {
         number: "1",
         title: "Upload",
-        description: "Drag & drop any audio or video file. We support MP3, WAV, MP4, and 20+ formats.",
+        description: "Upload files, paste a YouTube link, or record directly from your microphone",
         icon: Upload,
         color: "from-violet-500 to-purple-600",
         bg: "bg-violet-500/10",
@@ -26,39 +27,13 @@ const steps = [
     },
     {
         number: "3",
-        title: "Export",
-        description: "Download as TXT, SRT, DOCX, or PDF. Edit and share instantly.",
+        title: "Review & Export",
+        description: "Read, edit, and share your transcript. Export as TXT, SRT, DOCX, or PDF.",
         icon: Download,
         color: "from-cyan-500 to-blue-600",
         bg: "bg-cyan-500/10",
     },
 ];
-
-// Hook for intersection observer
-function useInView(threshold = 0.3) {
-    const ref = React.useRef<HTMLDivElement>(null);
-    const [isInView, setIsInView] = React.useState(false);
-
-    React.useEffect(() => {
-        const element = ref.current;
-        if (!element) return;
-
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setIsInView(true);
-                    observer.disconnect();
-                }
-            },
-            { threshold }
-        );
-
-        observer.observe(element);
-        return () => observer.disconnect();
-    }, [threshold]);
-
-    return { ref, isInView };
-}
 
 export function HowItWorksSection() {
     const { ref: sectionRef, isInView } = useInView(0.2);

@@ -1,9 +1,11 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { NavArrowDown, Page, TextBox, MediaVideo, Table2Columns, MusicDoubleNote } from "iconoir-react";
+import { NavArrowDown, Page, TextBox, MediaVideo, Table2Columns, MusicDoubleNote, Lock, Code } from "iconoir-react";
 import { getLanguageName } from "@/lib/utils";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
 import type { ExportFormat, ExportOption } from "@/features/transcription/types";
 
 interface ExportMenuProps {
@@ -34,6 +36,18 @@ const exportOptions: ExportOption[] = [
         icon: "Subtitles",
     },
     {
+        id: "vtt",
+        label: "VTT Subtitles",
+        description: "Web Video Text Tracks",
+        icon: "Subtitles",
+    },
+    {
+        id: "json",
+        label: "JSON Data",
+        description: "Full transcription data",
+        icon: "Code",
+    },
+    {
         id: "csv",
         label: "CSV Spreadsheet",
         description: "Comma-separated values",
@@ -53,11 +67,13 @@ const iconMap = {
     Subtitles: MediaVideo,
     Table: Table2Columns,
     Music: MusicDoubleNote,
+    Code: Code,
 };
 
 export function ExportMenu({ onExport, displayLanguage, sourceLanguage, disabled, className }: ExportMenuProps) {
     const [isOpen, setIsOpen] = React.useState(false);
     const menuRef = React.useRef<HTMLDivElement>(null);
+    const { canExport, isPro } = usePlanLimits();
 
     // Close on click outside
     React.useEffect(() => {
@@ -86,6 +102,7 @@ export function ExportMenu({ onExport, displayLanguage, sourceLanguage, disabled
     }, [isOpen]);
 
     const handleExport = (format: ExportFormat) => {
+        if (!canExport(format)) return;
         onExport(format);
         setIsOpen(false);
     };
@@ -135,24 +152,38 @@ export function ExportMenu({ onExport, displayLanguage, sourceLanguage, disabled
                     </div>
                     {exportOptions.map((option) => {
                         const Icon = iconMap[option.icon as keyof typeof iconMap];
+                        const isLocked = !canExport(option.id);
+
                         return (
                             <button
                                 key={option.id}
                                 onClick={() => handleExport(option.id)}
+                                disabled={isLocked}
                                 className={cn(
                                     "w-full flex items-start gap-3 px-3 py-2.5",
-                                    "hover:bg-accent text-left",
-                                    "transition-colors duration-100"
+                                    "text-left transition-colors duration-100",
+                                    isLocked
+                                        ? "opacity-50 cursor-not-allowed"
+                                        : "hover:bg-accent"
                                 )}
                                 role="menuitem"
                             >
                                 <Icon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                                <div>
-                                    <div className="text-sm font-medium text-foreground">
+                                <div className="flex-1">
+                                    <div className="text-sm font-medium text-foreground flex items-center gap-2">
                                         {option.label}
+                                        {isLocked && (
+                                            <Lock className="h-3 w-3 text-muted-foreground" />
+                                        )}
                                     </div>
                                     <div className="text-xs text-muted-foreground">
-                                        {option.description}
+                                        {isLocked ? (
+                                            <Link href="/pricing" className="text-primary hover:underline">
+                                                Upgrade to Pro
+                                            </Link>
+                                        ) : (
+                                            option.description
+                                        )}
                                     </div>
                                 </div>
                             </button>

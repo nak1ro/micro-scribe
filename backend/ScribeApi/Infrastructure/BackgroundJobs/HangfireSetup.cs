@@ -44,6 +44,11 @@ public static class HangfireSetup
             job => job.RunAsync(CancellationToken.None),
             Cron.Hourly);
 
+        manager.AddOrUpdate<CleanupProcessedEventsJob>(
+            "cleanup-processed-stripe-events",
+            job => job.RunAsync(CancellationToken.None),
+            Cron.Daily);
+
         return app;
     }
 

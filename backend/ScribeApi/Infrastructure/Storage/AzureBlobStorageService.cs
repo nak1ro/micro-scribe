@@ -76,9 +76,6 @@ public class AzureBlobStorageService : IFileStorageService
         };
         
         sasBuilder.SetPermissions(BlobSasPermissions.Write);
-        
-        // Note: Content-Type can be enforced via headers but usually SAS just gives permission
-        // To enforce content type on upload, clients should set x-ms-blob-content-type header
 
         var sasUri = blobClient.GenerateSasUri(sasBuilder);
         
@@ -108,14 +105,11 @@ public class AzureBlobStorageService : IFileStorageService
         return sasUri.ToString();
     }
 
-    // Azure doesn't have an explicit initiate call for Block Blobs, but we need to return a result compatible with the interface.
-    // We'll use the key itself as the UploadId for tracking (or we could just ignore UploadId since it's identifying the blob anyway).
     public Task<MultipartUploadInitResult> InitiateMultipartUploadAsync(string key, string contentType, long totalSizeBytes, CancellationToken ct)
     {
-        // Calculate parts
         var totalParts = (int)Math.Ceiling((double)totalSizeBytes / _storageSettings.PartSizeBytes);
         
-        // For Azure, UploadId isn't strictly needed like S3, but we pass the key as ID to keep it simple.
+        // For Azure, UploadId is the key itself since there's no explicit initiation
         var uploadId = key; 
 
         _logger.LogInformation("Initiated virtual multipart upload for {Key} with {TotalParts} parts", key, totalParts);
@@ -126,11 +120,9 @@ public class AzureBlobStorageService : IFileStorageService
     public async Task<string> GeneratePartUploadUrlAsync(string key, string uploadId, int partNumber, CancellationToken ct)
     {
         var container = await GetContainerClientAsync(ct);
-        var blobClient = container.GetBlockBlobClient(key); // Must use BlockBlobClient
+        var blobClient = container.GetBlockBlobClient(key);
         var expiry = DateTimeOffset.UtcNow.AddMinutes(_storageSettings.PresignedUrlExpiryMinutes);
 
-        // Generate a Block ID based on part number.
-        // It must be Base64 encoded and all blocks must have IDs of the same length.
         var blockId = GenerateBlockId(partNumber);
         
         var sasBuilder = new BlobSasBuilder
@@ -144,10 +136,9 @@ public class AzureBlobStorageService : IFileStorageService
         
         sasBuilder.SetPermissions(BlobSasPermissions.Write);
 
-        // Azure Blob SAS URI for valid SAS token
         var sasUri = blobClient.GenerateSasUri(sasBuilder);
         
-        // Append comp=block and blockid to the URI
+        // Append comp=block and blockid to the URI for Azure Block Blob PUT Block
         var uriBuilder = new UriBuilder(sasUri);
         var query = System.Web.HttpUtility.ParseQueryString(uriBuilder.Query);
         query["comp"] = "block";
@@ -159,13 +150,13 @@ public class AzureBlobStorageService : IFileStorageService
         return uriBuilder.ToString();
     }
 
-    public async Task CompleteMultipartUploadAsync(string key, string uploadId, List<UploadPartInfo> parts, CancellationToken ct)
+    public async Task CompleteMultipartUploadAsync(string key, string uploadId, List<int> partNumbers, CancellationToken ct)
     {
         var container = await GetContainerClientAsync(ct);
         var blobClient = container.GetBlockBlobClient(key);
 
-        // Convert parts to block IDs
-        var blockIds = parts.OrderBy(p => p.PartNumber).Select(p => GenerateBlockId(p.PartNumber)).ToList();
+        // Convert part numbers to block IDs
+        var blockIds = partNumbers.OrderBy(p => p).Select(GenerateBlockId).ToList();
 
         await blobClient.CommitBlockListAsync(blockIds, cancellationToken: ct);
         
@@ -174,11 +165,7 @@ public class AzureBlobStorageService : IFileStorageService
 
     public async Task AbortMultipartUploadAsync(string key, string uploadId, CancellationToken ct)
     {
-        // Uncommitted blocks are garbage collected by Azure after 7 days via lifecycle management if not committed.
-        // There is no explicit "abort" API for block lists that clears them immediately other than deleting the blob, 
-        // but if the blob doesn't exist yet (because no block list committed), delete might fail or do nothing.
-        // We can check if it exists and delete.
-        
+        // Uncommitted blocks are garbage collected by Azure after 7 days
         var container = await GetContainerClientAsync(ct);
         var blobClient = container.GetBlobClient(key);
         
@@ -217,8 +204,7 @@ public class AzureBlobStorageService : IFileStorageService
 
     private static string GenerateBlockId(int partNumber)
     {
-        // Block ID must be Base64 string of up to 64 bytes. All Block IDs for a blob must be same length.
-        // We use 6 digits for part number padded with zeros: 000001, 000002...
+        // Block ID must be Base64 encoded, all IDs must be same length
         var rawId = partNumber.ToString("D6");
         var bytes = System.Text.Encoding.UTF8.GetBytes(rawId);
         return Convert.ToBase64String(bytes);

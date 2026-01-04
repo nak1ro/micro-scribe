@@ -10,7 +10,6 @@ import {
     FAQSection,
     FinalCTASection,
     LandingBackground,
-    TestimonialsSection,
 } from "@/features/marketing/landing";
 
 export default function LandingPage() {
@@ -20,10 +19,10 @@ export default function LandingPage() {
                 <HeroSection />
                 <ProblemSolutionSection />
                 <HowItWorksSection />
-                <PricingSection />
                 <FeaturesSection />
-                <WhisperReviewsSection />
                 <UseCasesSection />
+                <WhisperReviewsSection />
+                <PricingSection />
                 <FAQSection />
                 <FinalCTASection />
             </LandingBackground>

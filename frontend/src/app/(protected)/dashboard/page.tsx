@@ -2,23 +2,37 @@
 
 import * as React from "react";
 import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { CreateTranscriptionModal } from "@/features/transcription";
 import { DashboardContent, useDashboardModal } from "@/features/workspace/dashboard";
 import { useTranscriptions, useFolderItems, useFolder } from "@/hooks";
+import { uploadAbortRegistry } from "@/services/upload/uploadAbortRegistry";
 import type { TranscriptionListItem } from "@/types/models/transcription";
 
 function DashboardPageContent() {
+    const router = useRouter();  // Add useRouter hook
     const searchParams = useSearchParams();
     const folderId = searchParams.get("folder");
 
     const { isModalOpen, openModal, closeModal } = useDashboardModal();
+
+    // Clean up URL when closing modal
+    const handleCloseModal = () => {
+        closeModal();
+        const params = new URLSearchParams(searchParams.toString());
+        if (params.get("action") === "new") {
+            params.delete("action");
+            router.replace(`/dashboard?${params.toString()}`);
+        }
+    };
+
     const {
         items: allItems,
         isLoading: isLoadingAll,
         error: allError,
         refetch,
         deleteItem,
+        cancelItem,
         addOptimisticItem,
         updateOptimisticItem,
         removeOptimisticItem,
@@ -52,15 +66,33 @@ function DashboardPageContent() {
         await refetch();
     };
 
+    // Abort client-side upload (FFmpeg/Azure upload)
+    const handleCancelUpload = (id: string) => {
+        uploadAbortRegistry.abort(id);
+        removeOptimisticItem(id);
+    };
+
     // Check for "action=new" in URL to open modal
     React.useEffect(() => {
         if (searchParams.get("action") === "new") {
             openModal();
-            // Optional: Clean up URL without reload if desired, but "new" action works fine as persistent trigger until closed?
-            // Actually better to replace URL to avoid re-opening on refresh if we wanted, but for now simple is fine.
-            // Let's just open it.
         }
     }, [searchParams, openModal]);
+
+    // Check for "upgrade=success" in URL to show success message
+    const [showUpgradeSuccess, setShowUpgradeSuccess] = React.useState(false);
+    React.useEffect(() => {
+        if (searchParams.get("upgrade") === "success") {
+            setShowUpgradeSuccess(true);
+            // Remove query param from URL
+            const url = new URL(window.location.href);
+            url.searchParams.delete("upgrade");
+            window.history.replaceState({}, "", url.toString());
+            // Hide toast after 5 seconds
+            const timer = setTimeout(() => setShowUpgradeSuccess(false), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [searchParams]);
 
     return (
         <>
@@ -71,18 +103,40 @@ function DashboardPageContent() {
                 onOpenModal={openModal}
                 onDownload={(id) => console.log("Download:", id)}
                 onDelete={deleteItem}
+                onCancelUpload={handleCancelUpload}
+                onCancelJob={cancelItem}
                 onShare={(id) => console.log("Share:", id)}
                 folderName={folderId ? folderData?.name : undefined}
             />
 
             <CreateTranscriptionModal
                 isOpen={isModalOpen}
-                onClose={closeModal}
+                onClose={handleCloseModal}
                 onSuccess={handleUploadSuccess}
                 onOptimisticAdd={addOptimisticItem}
                 onOptimisticUpdate={updateOptimisticItem}
                 onOptimisticRemove={removeOptimisticItem}
             />
+
+            {/* Upgrade Success Toast */}
+            {showUpgradeSuccess && (
+                <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-success text-success-foreground shadow-lg">
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span className="font-medium">Welcome to Pro! Your upgrade was successful.</span>
+                        <button
+                            onClick={() => setShowUpgradeSuccess(false)}
+                            className="ml-2 hover:opacity-70 transition-opacity"
+                        >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

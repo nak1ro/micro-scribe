@@ -39,7 +39,12 @@ public class TranscriptEditService : ITranscriptEditService
 
         // Force EF to detect change in JSON column
         _context.Entry(job).Property(x => x.Segments).IsModified = true;
-        
+
+        // Update Job Metadata
+        job.LastEditedAtUtc = DateTime.UtcNow;
+        // Rebuild the full transcript to reflect edits (for Search/UI/Export)
+        job.Transcript = string.Join(" ", job.Segments.OrderBy(s => s.StartSeconds).Select(s => s.Text));
+
         await _context.SaveChangesAsync(ct);
 
         return _mapper.Map<TranscriptSegmentDto>(segment);
@@ -63,6 +68,11 @@ public class TranscriptEditService : ITranscriptEditService
 
         // Force EF to detect change in JSON column
         _context.Entry(job).Property(x => x.Segments).IsModified = true;
+
+        // Update Job Metadata
+        job.LastEditedAtUtc = DateTime.UtcNow;
+        // Rebuild the full transcript to reflect edits
+        job.Transcript = string.Join(" ", job.Segments.OrderBy(s => s.StartSeconds).Select(s => s.Text));
 
         await _context.SaveChangesAsync(ct);
 
