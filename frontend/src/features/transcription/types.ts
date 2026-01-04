@@ -20,6 +20,7 @@ export interface ViewerSegment {
     speaker: string | null;
     translations: Record<string, string>;
     isEdited: boolean;
+    originalText: string | null;
 }
 
 export interface ViewerState {

@@ -60,7 +60,8 @@ public class TranslationJobRunner
 
             // Get texts to translate
             var orderedSegments = job.Segments.OrderBy(s => s.StartSeconds).ToList();
-            var textsToTranslate = orderedSegments.Select(s => s.Text).ToList();
+            // Use OriginalText if available (source of truth), otherwise Text
+            var textsToTranslate = orderedSegments.Select(s => s.OriginalText ?? s.Text).ToList();
 
             if (textsToTranslate.Count == 0)
             {

@@ -7,6 +7,7 @@ import {
     TranscriptionJobResponse,
     TranscriptionJobListItem,
     TranscriptionJobDetailResponse,
+    TranscriptSegmentDto,
     InitiateUploadRequest,
     UploadSessionResponse,
     CompleteUploadRequest,
@@ -126,6 +127,22 @@ export const transcriptionApi = {
         const response = await apiClient.post<TranscriptionAnalysisDto[]>(
             API_ENDPOINTS.TRANSCRIPTIONS.ANALYSIS_TRANSLATE(jobId),
             { targetLanguage }
+        );
+        return response.data;
+    },
+
+    // Segment Editing
+    updateSegment: async (jobId: string, segmentId: string, text: string): Promise<TranscriptSegmentDto> => {
+        const response = await apiClient.patch<TranscriptSegmentDto>(
+            API_ENDPOINTS.TRANSCRIPTIONS.UPDATE_SEGMENT(jobId, segmentId),
+            { text }
+        );
+        return response.data;
+    },
+
+    revertSegment: async (jobId: string, segmentId: string): Promise<TranscriptSegmentDto> => {
+        const response = await apiClient.post<TranscriptSegmentDto>(
+            API_ENDPOINTS.TRANSCRIPTIONS.REVERT_SEGMENT(jobId, segmentId)
         );
         return response.data;
     },

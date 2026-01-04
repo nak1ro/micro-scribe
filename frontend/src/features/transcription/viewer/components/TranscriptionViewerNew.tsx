@@ -7,6 +7,7 @@ import { RefreshDouble, WarningCircle } from "iconoir-react";
 import { Button } from "@/components/ui";
 import { useTranscriptionJob } from "@/hooks/useTranscriptions";
 import { useAnalysis } from "@/hooks/useAnalysis";
+import { useSegmentEdit } from "@/hooks/useSegmentEdit";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 
 import { ViewerHeader } from "./ViewerHeader";
@@ -14,6 +15,7 @@ import { ViewerLayout } from "./ViewerLayout";
 import { TranscriptContent } from "./TranscriptContent";
 import { AudioPlayer } from "./AudioPlayer";
 import { ActionsSidebar } from "./ActionsSidebar";
+import { SegmentEditModal } from "./SegmentEditModal";
 import { ActionItemsView } from "@/features/transcription/analysis/components/ActionItemsView";
 import { MeetingMinutesView } from "@/features/transcription/analysis/components/MeetingMinutesView";
 import { AnalysisContentView } from "@/features/transcription/analysis/components/AnalysisContentView";
@@ -21,7 +23,7 @@ import { useAudioSync } from "@/features/transcription/hooks/useAudioSync";
 import { handleExport as exportFile } from "@/features/transcription/utils/exportUtils";
 import { getProcessingStepText } from "@/features/transcription/utils";
 import { transcriptionApi } from "@/services/transcription";
-import type { TranscriptionData, ExportFormat } from "@/features/transcription/types";
+import type { TranscriptionData, ExportFormat, ViewerSegment } from "@/features/transcription/types";
 import type { AnalysisType, TranscriptionAnalysisDto } from "@/types/api/analysis";
 
 interface TranscriptionViewerNewProps {
@@ -66,7 +68,8 @@ export function TranscriptionViewerNew({
                     endSeconds: s.endSeconds,
                     speaker: s.speaker,
                     translations: s.translations || {},
-                    isEdited: s.isEdited
+                    isEdited: s.isEdited,
+                    originalText: s.originalText
                 })),
                 audioUrl: job.presignedUrl
             };
@@ -88,6 +91,20 @@ export function TranscriptionViewerNew({
 
     // Active analysis view state ("transcript" or AnalysisType)
     const [currentAnalysisView, setCurrentAnalysisView] = React.useState<string>("transcript");
+
+    // Edit mode state
+    const [isEditMode, setIsEditMode] = React.useState(false);
+    const [editingSegment, setEditingSegment] = React.useState<ViewerSegment | null>(null);
+
+    // Segment editing hook
+    const {
+        updateSegment,
+        revertSegment,
+        revertAll,
+        isUpdating,
+        isReverting,
+        getEditedSegments,
+    } = useSegmentEdit({ jobId: jobId || "" });
 
     // Handler to switch analysis view
     const handleSelectAnalysisView = React.useCallback((view: "transcript" | AnalysisType | TranscriptionAnalysisDto) => {
@@ -186,8 +203,28 @@ export function TranscriptionViewerNew({
     };
 
     const handleEdit = () => {
-        // Placeholder for edit mode
-        console.log("Edit mode - coming soon");
+        // Toggle edit mode
+        setIsEditMode((prev) => !prev);
+    };
+
+    // Handle segment edit click
+    const handleSegmentEditClick = (segment: ViewerSegment) => {
+        setEditingSegment(segment);
+    };
+
+    // Handle save from modal
+    const handleSaveEdit = async (segmentId: string, text: string) => {
+        await updateSegment({ segmentId, text });
+    };
+
+    // Handle revert from modal
+    const handleRevertEdit = async (segmentId: string) => {
+        await revertSegment({ segmentId });
+    };
+
+    // Handle revert all
+    const handleRevertAll = async () => {
+        await revertAll();
     };
 
     const handleSkipBack = () => {
@@ -384,7 +421,11 @@ export function TranscriptionViewerNew({
                         onGenerateAllAnalysis={generateAllAnalysis}
                         onSelectAnalysisView={handleSelectAnalysisView}
                         currentAnalysisView={currentAnalysisView}
-                        onEdit={handleEdit}
+                        isEditMode={isEditMode}
+                        onToggleEditMode={setIsEditMode}
+                        hasEditedSegments={getEditedSegments().length > 0}
+                        onRevertAll={handleRevertAll}
+                        isReverting={isReverting}
                     />
                 }
                 audioPlayer={
@@ -436,9 +477,21 @@ export function TranscriptionViewerNew({
                         showSpeakers={showSpeakers}
                         displayLanguage={displayLanguage}
                         onSegmentClick={seekToSegment}
+                        isEditMode={isEditMode}
+                        onEditClick={handleSegmentEditClick}
                     />
                 )}
             </ViewerLayout>
+
+            {/* Segment Edit Modal */}
+            <SegmentEditModal
+                segment={editingSegment}
+                onClose={() => setEditingSegment(null)}
+                onSave={handleSaveEdit}
+                onRevert={handleRevertEdit}
+                isSaving={isUpdating}
+                isReverting={isReverting}
+            />
         </div>
     );
 }

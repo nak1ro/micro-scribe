@@ -13,6 +13,9 @@ interface TranscriptContentProps {
     showSpeakers: boolean;
     displayLanguage: string | null;
     onSegmentClick: (index: number) => void;
+    // Edit mode props
+    isEditMode?: boolean;
+    onEditClick?: (segment: ViewerSegment) => void;
     className?: string;
 }
 
@@ -24,6 +27,8 @@ export function TranscriptContent({
     showSpeakers,
     displayLanguage,
     onSegmentClick,
+    isEditMode = false,
+    onEditClick,
     className,
 }: TranscriptContentProps) {
     const segmentRefs = React.useRef<Map<number, HTMLDivElement>>(new Map());
@@ -119,6 +124,8 @@ export function TranscriptContent({
                                         previousSpeaker={index > 0 ? segments[index - 1].speaker : null}
                                         speakerInfo={speakerInfo}
                                         onClick={onSegmentClick}
+                                        isEditMode={isEditMode}
+                                        onEditClick={onEditClick}
                                         segmentRef={(el) => {
                                             if (el) {
                                                 segmentRefs.current.set(index, el);

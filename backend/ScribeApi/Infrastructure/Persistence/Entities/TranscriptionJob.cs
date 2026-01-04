@@ -60,6 +60,9 @@ public class TranscriptionJob
     // Soft delete flag
     public bool IsDeleted { get; set; }
 
+    // Timestamp of the last user edit to the transcript
+    public DateTime? LastEditedAtUtc { get; set; }
+
     // Current processing step (Normalizing, Transcribing, Diarizing, Translating)
     public string? ProcessingStep { get; set; }
 

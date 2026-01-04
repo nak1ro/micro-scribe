@@ -145,7 +145,27 @@ public class AnalysisService : IAnalysisService
                 .AsNoTracking()
                 .FirstOrDefaultAsync(j => j.Id == jobId, ct);
 
-            if (jobData == null || string.IsNullOrEmpty(jobData.Transcript))
+            if (jobData == null)
+            {
+                throw new ValidationException("Job not found.");
+            }
+
+            // Reconstruct ORIGINAL transcript (Source of Truth) for AI Analysis
+            // This ensures analysis is based on what was said, not what was edited (per requirements)
+            string transcriptForAi;
+            if (jobData.Segments != null && jobData.Segments.Count > 0)
+            {
+                transcriptForAi = string.Join(" ", jobData.Segments
+                    .OrderBy(s => s.StartSeconds)
+                    .Select(s => s.OriginalText ?? s.Text));
+            }
+            else
+            {
+                // Fallback if no segments (shouldn't happen for completed jobs)
+                transcriptForAi = jobData.Transcript ?? string.Empty;
+            }
+
+            if (string.IsNullOrEmpty(transcriptForAi))
             {
                 throw new ValidationException("Transcript not found or empty.");
             }
@@ -187,7 +207,8 @@ public class AnalysisService : IAnalysisService
 
                 try 
                 {
-                    var text = await _aiService.GenerateTextAsync(prompt, jobData.Transcript, ct);
+                    // Use the Reconstructed Original Transcript
+                    var text = await _aiService.GenerateTextAsync(prompt, transcriptForAi, ct);
                     text = CleanAiOutput(text); 
                     return (Lang: lang, Text: text);
                 }
