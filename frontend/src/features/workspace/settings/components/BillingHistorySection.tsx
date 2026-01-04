@@ -72,7 +72,8 @@ export function BillingHistorySection({ invoices, hasMore, isLoading }: BillingH
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto">
+            {/* Desktop Table */}
+            <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-border bg-muted/30">
@@ -96,6 +97,13 @@ export function BillingHistorySection({ invoices, hasMore, isLoading }: BillingH
                         ))}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile List View */}
+            <div className="block sm:hidden divide-y divide-border">
+                {visibleInvoices.map((invoice) => (
+                    <InvoiceMobileCard key={invoice.id} invoice={invoice} />
+                ))}
             </div>
 
             {/* Expand/Collapse */}
@@ -195,5 +203,41 @@ function StatusBadge({ status }: { status: InvoiceItem["status"] }) {
             <Icon className="h-3 w-3" />
             {label}
         </span>
+    );
+}
+
+function InvoiceMobileCard({ invoice }: { invoice: InvoiceItem }) {
+    const formattedDate = new Date(invoice.createdAtUtc).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    });
+
+    const formattedAmount = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: invoice.currency.toUpperCase(),
+    }).format(invoice.amountCents / 100);
+
+    return (
+        <div className="p-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-foreground">{formattedDate}</span>
+                <span className="text-sm font-medium text-foreground">{formattedAmount}</span>
+            </div>
+            <div className="flex items-center justify-between">
+                <StatusBadge status={invoice.status} />
+                {invoice.invoicePdf && (
+                    <a
+                        href={invoice.invoicePdf}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                    >
+                        <Download className="h-3.5 w-3.5" />
+                        PDF
+                    </a>
+                )}
+            </div>
+        </div>
     );
 }

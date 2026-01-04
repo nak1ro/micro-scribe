@@ -324,9 +324,10 @@ export function CreateTranscriptionModal({
             {/* Modal */}
             <div
                 className={cn(
-                    "relative w-full max-w-2xl mx-4",
-                    "bg-card border border-border rounded-2xl shadow-2xl",
-                    "animate-fade-in"
+                    "relative w-full h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto",
+                    "sm:max-w-2xl sm:mx-4",
+                    "bg-card border-t sm:border border-border sm:rounded-2xl shadow-2xl",
+                    "animate-fade-in flex flex-col"
                 )}
                 role="dialog"
                 aria-modal="true"
@@ -425,7 +426,7 @@ export function CreateTranscriptionModal({
                         </div>
 
                         {/* Tab Content */}
-                        <div className="p-6">
+                        <div className="p-4 sm:p-6 flex-1 overflow-y-auto">
                             {/* Usage limit warning for Free users */}
                             {!isPro && dailyLimit !== null && (
                                 <div className={cn(
@@ -503,17 +504,17 @@ export function CreateTranscriptionModal({
                             {/* Options */}
                             <div className="mt-6 pt-6 border-t border-border space-y-4">
                                 {/* Source Language */}
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                                    <label className="text-sm font-medium text-foreground min-w-[100px]">
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-sm font-medium text-foreground">
                                         Language
                                     </label>
                                     <select
                                         value={sourceLanguage}
                                         onChange={(e) => setSourceLanguage(e.target.value)}
                                         className={cn(
-                                            "flex-1 h-10 px-3 rounded-md",
+                                            "w-full h-12 sm:h-10 px-3 rounded-md",
                                             "bg-background border border-input",
-                                            "text-sm text-foreground",
+                                            "text-base sm:text-sm text-foreground",
                                             "focus:outline-none focus:ring-2 focus:ring-ring"
                                         )}
                                     >
@@ -554,11 +555,11 @@ export function CreateTranscriptionModal({
                                 </div>
 
                                 {/* Quality */}
-                                <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
-                                    <label className="text-sm font-medium text-foreground min-w-[100px] pt-2">
+                                <div className="flex flex-col gap-2 sm:gap-4">
+                                    <label className="text-sm font-medium text-foreground">
                                         Model Speed
                                     </label>
-                                    <div className="flex-1 flex gap-2">
+                                    <div className="flex flex-col sm:flex-row gap-2">
                                         {QUALITY_OPTIONS.map((opt) => {
                                             const isRestricted = !limits.allModels && opt.value !== TranscriptionQuality.Balanced;
                                             const isSelected = quality === opt.value;
@@ -593,14 +594,14 @@ export function CreateTranscriptionModal({
                         </div>
 
                         {/* Footer */}
-                        <div className="flex items-center justify-end gap-3 p-6 border-t border-border">
-                            <Button variant="ghost" onClick={onClose}>
+                        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 p-4 sm:p-6 border-t border-border mt-auto">
+                            <Button variant="ghost" onClick={onClose} className="w-full sm:w-auto">
                                 Cancel
                             </Button>
                             <Button
                                 onClick={handleSubmit}
                                 disabled={!hasContent() || !canTranscribe() || !!generalError || isValidatingFiles}
-                                className="min-w-[120px]"
+                                className="w-full sm:w-auto sm:min-w-[120px]"
                             >
                                 Transcribe
                             </Button>
@@ -879,7 +880,7 @@ function MultiFileUploadTab({
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
             className={cn(
-                "flex flex-col items-center justify-center gap-4 py-12 px-6",
+                "flex flex-col items-center justify-center gap-4 py-8 sm:py-12 px-6",
                 "border-2 border-dashed rounded-xl transition-colors",
                 isDragging
                     ? "border-primary bg-primary/5"
@@ -895,19 +896,20 @@ function MultiFileUploadTab({
                 <>
                     <div className="text-center">
                         <h3 className="text-lg font-semibold text-foreground mb-1">
-                            Drag & Drop
+                            <span className="hidden sm:inline">Drag & Drop</span>
+                            <span className="sm:hidden">Select Files</span>
                         </h3>
                         <p className="text-sm text-muted-foreground">
                             {maxFilesPerUpload > 1
                                 ? `Up to ${maxFilesPerUpload} files`
                                 : "Drop your file here"}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-muted-foreground mt-1 hidden sm:block">
                             {SUPPORTED_FORMATS.join(", ")}
                         </p>
                     </div>
 
-                    <div className="text-muted-foreground">or</div>
+                    <div className="text-muted-foreground hidden sm:block">or</div>
 
                     <Button
                         variant="outline"

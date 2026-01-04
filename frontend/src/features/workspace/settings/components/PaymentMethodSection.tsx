@@ -45,7 +45,7 @@ export function PaymentMethodSection({ paymentMethod, onManagePayment, isLoading
 
     return (
         <div className="rounded-xl border border-border bg-card p-6">
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="flex items-start gap-4">
                     <div className="p-2 rounded-lg bg-muted">
                         <CreditCard className="h-5 w-5 text-muted-foreground" />
@@ -54,12 +54,12 @@ export function PaymentMethodSection({ paymentMethod, onManagePayment, isLoading
                         <h3 className="text-lg font-semibold text-foreground">
                             Payment Method
                         </h3>
-                        <div className="flex items-center gap-2 mt-2">
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
                             <CardBrandIcon brand={paymentMethod.brand} />
                             <span className="text-sm text-foreground font-medium">
                                 •••• {paymentMethod.last4}
                             </span>
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-sm text-muted-foreground whitespace-nowrap">
                                 Expires {paymentMethod.expMonth}/{paymentMethod.expYear}
                             </span>
                         </div>
@@ -70,6 +70,7 @@ export function PaymentMethodSection({ paymentMethod, onManagePayment, isLoading
                     size="sm"
                     onClick={onManagePayment}
                     disabled={isLoading}
+                    className="w-full sm:w-auto"
                 >
                     {isLoading ? "Loading..." : "Update"}
                 </Button>

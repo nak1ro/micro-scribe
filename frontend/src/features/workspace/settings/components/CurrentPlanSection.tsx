@@ -66,7 +66,7 @@ export function CurrentPlanSection({
 
             {/* Plan limits summary */}
             <div className="mt-4 pt-4 border-t border-border">
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-4">
                     {plan.limits.map((limit, index) => (
                         <span
                             key={index}

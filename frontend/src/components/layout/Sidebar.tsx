@@ -458,6 +458,14 @@ function MobileBottomNav({ onNewTranscription, isPremium }: MobileBottomNavProps
         return pathname === href || pathname?.startsWith(href);
     };
 
+    // Hide bottom nav in transcription viewer (immersive mode)
+    // Only show on dashboard, settings, and new transcription page
+    const isTranscriptionsViewer = pathname?.startsWith('/transcriptions/') && pathname !== '/transcriptions/new';
+
+    if (isTranscriptionsViewer) {
+        return null;
+    }
+
     return (
         <nav
             className={cn(
@@ -472,15 +480,16 @@ function MobileBottomNav({ onNewTranscription, isPremium }: MobileBottomNavProps
                     href="/dashboard"
                     className={cn(
                         "flex flex-col items-center justify-center gap-1 min-w-[64px] rounded-lg relative",
-                        "text-muted-foreground hover:text-foreground transition-colors",
+                        "text-muted-foreground hover:text-foreground transition-all duration-300",
                         isActive("/dashboard") && "text-primary"
                     )}
                 >
-                    <MusicDoubleNote className="h-6 w-6" />
+                    <MusicDoubleNote className={cn("h-6 w-6 transition-transform duration-300", isActive("/dashboard") && "scale-110")} />
                     <span className="text-[10px] font-medium">Files</span>
-                    {isActive("/dashboard") && (
-                        <span className="absolute -bottom-1 w-1 h-1 rounded-full bg-primary" />
-                    )}
+                    <span className={cn(
+                        "absolute -bottom-1 w-1 h-1 rounded-full bg-primary transition-all duration-300",
+                        isActive("/dashboard") ? "opacity-100 scale-100" : "opacity-0 scale-0"
+                    )} />
                 </Link>
 
                 {/* New Transcription - Center Button */}
@@ -504,48 +513,50 @@ function MobileBottomNav({ onNewTranscription, isPremium }: MobileBottomNavProps
                     href="/account"
                     className={cn(
                         "flex flex-col items-center justify-center gap-1 min-w-[64px] rounded-lg relative",
-                        "text-muted-foreground hover:text-foreground transition-colors",
+                        "text-muted-foreground hover:text-foreground transition-all duration-300",
                         (isActive("/account") && !isActive("/account/billing") && !isActive("/account/checkout")) && "text-primary"
                     )}
                 >
-                    <User className="h-6 w-6" />
+                    <User className={cn("h-6 w-6 transition-transform duration-300", (isActive("/account") && !isActive("/account/billing") && !isActive("/account/checkout")) && "scale-110")} />
                     <span className="text-[10px] font-medium">Account</span>
-                    {(isActive("/account") && !isActive("/account/billing") && !isActive("/account/checkout")) && (
-                        <span className="absolute -bottom-1 w-1 h-1 rounded-full bg-primary" />
-                    )}
+                    <span className={cn(
+                        "absolute -bottom-1 w-1 h-1 rounded-full bg-primary transition-all duration-300",
+                        (isActive("/account") && !isActive("/account/billing") && !isActive("/account/checkout")) ? "opacity-100 scale-100" : "opacity-0 scale-0"
+                    )} />
                 </Link>
 
-                {/* Upgrade (for free users) / Premium badge */}
                 {/* Upgrade (for free users) / Premium badge */}
                 {!isPremium ? (
                     <Link
                         href="/account/checkout"
                         className={cn(
                             "flex flex-col items-center justify-center gap-1 min-w-[64px] rounded-lg relative",
-                            "text-muted-foreground hover:text-foreground transition-colors",
+                            "text-muted-foreground hover:text-foreground transition-all duration-300",
                             isActive("/account/checkout") && "text-primary"
                         )}
                     >
-                        <Sparks className="h-6 w-6" />
+                        <Sparks className={cn("h-6 w-6 transition-transform duration-300", isActive("/account/checkout") && "scale-110")} />
                         <span className="text-[10px] font-medium">Upgrade</span>
-                        {isActive("/account/checkout") && (
-                            <span className="absolute -bottom-1 w-1 h-1 rounded-full bg-primary" />
-                        )}
+                        <span className={cn(
+                            "absolute -bottom-1 w-1 h-1 rounded-full bg-primary transition-all duration-300",
+                            isActive("/account/checkout") ? "opacity-100 scale-100" : "opacity-0 scale-0"
+                        )} />
                     </Link>
                 ) : (
                     <Link
                         href="/account/billing"
                         className={cn(
                             "flex flex-col items-center justify-center gap-1 min-w-[64px] rounded-lg relative",
-                            "text-muted-foreground hover:text-foreground transition-colors",
+                            "text-muted-foreground hover:text-foreground transition-all duration-300",
                             isActive("/account/billing") && "text-primary"
                         )}
                     >
-                        <Sparks className="h-6 w-6" />
+                        <Sparks className={cn("h-6 w-6 transition-transform duration-300", isActive("/account/billing") && "scale-110")} />
                         <span className="text-[10px] font-medium">Pro</span>
-                        {isActive("/account/billing") && (
-                            <span className="absolute -bottom-1 w-1 h-1 rounded-full bg-primary" />
-                        )}
+                        <span className={cn(
+                            "absolute -bottom-1 w-1 h-1 rounded-full bg-primary transition-all duration-300",
+                            isActive("/account/billing") ? "opacity-100 scale-100" : "opacity-0 scale-0"
+                        )} />
                     </Link>
                 )}
             </div>

@@ -76,6 +76,7 @@ export function TranscriptionViewerNew({
     }, [providedData, job]);
 
     // UI State
+    const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
     const [showTimecodes, setShowTimecodes] = React.useState(true);
     const [showSpeakers, setShowSpeakers] = React.useState(true);
     const [copied, setCopied] = React.useState(false);
@@ -285,7 +286,11 @@ export function TranscriptionViewerNew({
         const stepText = getProcessingStepText(data.status, data.processingStep);
         return (
             <div className="flex flex-col h-screen bg-background">
-                <ViewerHeader data={data} onBack={handleBack} />
+                <ViewerHeader
+                    data={data}
+                    onBack={handleBack}
+                    onToggleSidebar={() => setIsSidebarOpen(true)}
+                />
                 <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
                     <RefreshDouble className="h-10 w-10 text-primary animate-spin" />
                     <div className="text-center">
@@ -305,7 +310,11 @@ export function TranscriptionViewerNew({
     if (data.status === "failed") {
         return (
             <div className="flex flex-col h-screen bg-background">
-                <ViewerHeader data={data} onBack={handleBack} />
+                <ViewerHeader
+                    data={data}
+                    onBack={handleBack}
+                    onToggleSidebar={() => setIsSidebarOpen(true)}
+                />
                 <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
                     <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
                         <WarningCircle className="h-8 w-8 text-destructive" />
@@ -349,6 +358,8 @@ export function TranscriptionViewerNew({
             )}
 
             <ViewerLayout
+                isSidebarOpen={isSidebarOpen}
+                onCloseSidebar={() => setIsSidebarOpen(false)}
                 sidebar={
                     <ActionsSidebar
                         onCopy={handleCopy}
@@ -392,7 +403,11 @@ export function TranscriptionViewerNew({
                 }
             >
                 {/* Header */}
-                <ViewerHeader data={data} onBack={handleBack} />
+                <ViewerHeader
+                    data={data}
+                    onBack={handleBack}
+                    onToggleSidebar={() => setIsSidebarOpen(true)}
+                />
 
                 {/* Content: Transcript or Analysis View */}
                 {currentAnalysisView === "ActionItems" ? (
