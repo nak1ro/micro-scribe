@@ -19,13 +19,16 @@ public class MediaFile
     public required string StorageObjectKey { get; set; }
 
     public required string BucketName { get; set; }
-
+    
     public required string StorageProvider { get; set; }
+
+    public const string StorageProviderS3 = "S3";
+    public const string StorageProviderYouTube = "YouTube";
 
     // ETag from storage (optional - Azure provides this after blob is committed)
     public string? ETag { get; set; }
 
-    public required Guid CreatedFromUploadSessionId { get; set; }
+    public Guid? CreatedFromUploadSessionId { get; set; }
 
     public string? NormalizedAudioObjectKey { get; set; }
 

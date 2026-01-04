@@ -41,6 +41,8 @@ using ScribeApi.Infrastructure.Email;
 using ScribeApi.Infrastructure.Transcription;
 using FfmpegMediaService = ScribeApi.Infrastructure.MediaProcessing.FfmpegMediaService;
 using ScribeApi.Infrastructure.AI;
+using ScribeApi.Infrastructure.External.Google;
+using ScribeApi.Features.Transcriptions.Import;
 
 namespace ScribeApi.Api.Extensions;
 
@@ -215,9 +217,14 @@ public static class ServiceCollectionExtensions
         services.Configure<PlansOptions>(configuration.GetSection("Plans"));
         services.Configure<OAuthSettings>(configuration.GetSection("OAuth"));
         services.Configure<StorageSettings>(configuration.GetSection("Storage"));
+        services.Configure<YouTubeSettings>(configuration.GetSection(YouTubeSettings.SectionName));
 
         services.AddSingleton<IPlanResolver, PlanResolver>();
         services.AddSingleton<IPlanGuard, PlanGuard>();
+
+        // YouTube Integration
+        services.AddScoped<IYouTubeService, YouTubeService>();
+        services.AddScoped<IYouTubeImportService, YouTubeImportService>();
 
         // Billing
         services.AddBilling(configuration);

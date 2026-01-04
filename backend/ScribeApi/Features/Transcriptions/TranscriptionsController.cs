@@ -25,6 +25,7 @@ public class TranscriptionsController : ControllerBase
     private readonly ITranscriptEditService _editService;
     private readonly IJobTranslationService _translationService;
     private readonly IAnalysisService _analysisService;
+    private readonly IYouTubeImportService _youTubeImportService;
     private readonly IMapper _mapper;
 
     public TranscriptionsController(
@@ -34,6 +35,7 @@ public class TranscriptionsController : ControllerBase
         ITranscriptEditService editService,
         IJobTranslationService translationService,
         IAnalysisService analysisService,
+        IYouTubeImportService youTubeImportService,
         IMapper mapper)
     {
         _jobService = jobService;
@@ -42,6 +44,7 @@ public class TranscriptionsController : ControllerBase
         _editService = editService;
         _translationService = translationService;
         _analysisService = analysisService;
+        _youTubeImportService = youTubeImportService;
         _mapper = mapper;
     }
 
@@ -74,6 +77,19 @@ public class TranscriptionsController : ControllerBase
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         var result = await _jobService.StartJobAsync(userId, request, ct);
+
+        return CreatedAtAction(nameof(GetJob), new { jobId = result.JobId }, result);
+    }
+
+    [HttpPost("youtube")]
+    public async Task<ActionResult<TranscriptionJobDetailResponse>> ImportFromYouTube(
+        [FromBody] YouTubeImportRequest request,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var result = await _youTubeImportService.ImportFromYouTubeAsync(request, userId, ct);
 
         return CreatedAtAction(nameof(GetJob), new { jobId = result.JobId }, result);
     }
