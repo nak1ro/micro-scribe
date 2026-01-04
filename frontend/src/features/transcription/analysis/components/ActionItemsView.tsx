@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, Square, CheckSquare } from "iconoir-react";
+import { Square, CheckSquare } from "iconoir-react";
 import type { TranscriptionAnalysisDto, ActionItemsContent, ActionItemContent } from "@/types/api/analysis";
 import { parseAnalysisContent } from "@/types/api/analysis";
 
@@ -68,20 +68,6 @@ export function ActionItemsView({
     if (actionItemsAnalysis.status === "Pending" || actionItemsAnalysis.status === "Processing") {
         return (
             <div className={cn("flex flex-col h-full", className)}>
-                {/* Header */}
-                <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
-                    <button
-                        onClick={onBack}
-                        className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                        aria-label="Back to transcript"
-                    >
-                        <ArrowLeft className="h-5 w-5 text-muted-foreground" />
-                    </button>
-                    <div>
-                        <h2 className="text-lg font-semibold text-foreground">📋 Action Items</h2>
-                        <p className="text-xs text-muted-foreground">Generating...</p>
-                    </div>
-                </div>
                 <div className="flex-1 flex flex-col items-center justify-center space-y-4">
                     <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
                     <p className="text-muted-foreground animate-pulse">
@@ -95,20 +81,6 @@ export function ActionItemsView({
     if (actionItemsAnalysis.status === "Failed") {
         return (
             <div className={cn("flex flex-col h-full", className)}>
-                {/* Header */}
-                <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
-                    <button
-                        onClick={onBack}
-                        className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                        aria-label="Back to transcript"
-                    >
-                        <ArrowLeft className="h-5 w-5 text-muted-foreground" />
-                    </button>
-                    <div>
-                        <h2 className="text-lg font-semibold text-foreground">📋 Action Items</h2>
-                        <p className="text-xs text-destructive">Failed</p>
-                    </div>
-                </div>
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-3">
                     <div className="p-3 bg-destructive/10 rounded-full text-destructive">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" x2="12.01" y1="8" y2="8" /><line x1="12" y1="12" x2="12" y2="16" /></svg>
@@ -126,23 +98,6 @@ export function ActionItemsView({
 
     return (
         <div className={cn("flex flex-col h-full", className)}>
-            {/* Header */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
-                <button
-                    onClick={onBack}
-                    className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                    aria-label="Back to transcript"
-                >
-                    <ArrowLeft className="h-5 w-5 text-muted-foreground" />
-                </button>
-                <div>
-                    <h2 className="text-lg font-semibold text-foreground">📋 Action Items</h2>
-                    <p className="text-xs text-muted-foreground">
-                        {actionItems.length} items • {completed.size} completed
-                    </p>
-                </div>
-            </div>
-
             {/* Action items list */}
             <div className="flex-1 overflow-y-auto px-4 py-4">
                 <div className="max-w-3xl mx-auto space-y-2">

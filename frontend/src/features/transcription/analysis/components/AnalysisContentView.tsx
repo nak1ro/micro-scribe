@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { ArrowLeft } from "iconoir-react";
 import type { TranscriptionAnalysisDto, ShortSummaryContent, LongSummaryContent, TopicsContent, SentimentContent } from "@/types/api/analysis";
 import { parseAnalysisContent } from "@/types/api/analysis";
 
@@ -172,18 +171,6 @@ export function AnalysisContentView({
 
     return (
         <div className={cn("flex flex-col h-full", className)}>
-            {/* Header */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
-                <button
-                    onClick={onBack}
-                    className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                    aria-label="Back to transcript"
-                >
-                    <ArrowLeft className="h-5 w-5 text-muted-foreground" />
-                </button>
-                <h2 className="text-lg font-semibold text-foreground">{getTitle()}</h2>
-            </div>
-
             {/* Content */}
             <div className="flex-1 overflow-y-auto px-4 py-6">
                 <div className="max-w-3xl mx-auto">

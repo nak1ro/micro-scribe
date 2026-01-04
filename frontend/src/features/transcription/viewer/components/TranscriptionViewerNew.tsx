@@ -288,7 +288,6 @@ export function TranscriptionViewerNew({
             <div className="flex flex-col h-screen bg-background">
                 <ViewerHeader
                     data={data}
-                    onBack={handleBack}
                     onToggleSidebar={() => setIsSidebarOpen(true)}
                 />
                 <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
@@ -312,7 +311,6 @@ export function TranscriptionViewerNew({
             <div className="flex flex-col h-screen bg-background">
                 <ViewerHeader
                     data={data}
-                    onBack={handleBack}
                     onToggleSidebar={() => setIsSidebarOpen(true)}
                 />
                 <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
@@ -405,8 +403,8 @@ export function TranscriptionViewerNew({
                 {/* Header */}
                 <ViewerHeader
                     data={data}
-                    onBack={handleBack}
                     onToggleSidebar={() => setIsSidebarOpen(true)}
+                    currentAnalysisView={currentAnalysisView}
                 />
 
                 {/* Content: Transcript or Analysis View */}

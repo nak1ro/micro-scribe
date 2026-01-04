@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { NavArrowDown, Check, RefreshDouble, Plus, ReportColumns } from "iconoir-react";
+import { NavArrowDown, Check, RefreshDouble, Plus, ReportColumns, ArrowLeft } from "iconoir-react";
 import type { TranscriptionAnalysisDto, AnalysisType } from "@/types/api/analysis";
 
 interface AnalysisMenuProps {
@@ -149,6 +149,23 @@ export function AnalysisMenu({
             {/* Dropdown */}
             {isOpen && (
                 <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-popover border border-border rounded-lg shadow-lg py-1">
+                    {/* View Transcript - shown when in analysis view */}
+                    {currentView !== "transcript" && (
+                        <>
+                            <button
+                                onClick={() => { onSelectView("transcript"); setIsOpen(false); }}
+                                className={cn(
+                                    "w-full flex items-center gap-2 px-3 py-2",
+                                    "text-left text-sm font-medium text-primary hover:bg-primary/5",
+                                    "transition-colors"
+                                )}
+                            >
+                                <ArrowLeft className="h-4 w-4" />
+                                <span>View Transcript</span>
+                            </button>
+                            <div className="h-px bg-border my-1" />
+                        </>
+                    )}
                     {ANALYSIS_TYPES.map((item) => {
                         const loading = isLoading(item.type);
                         const complete = isCompleted(item.type);
