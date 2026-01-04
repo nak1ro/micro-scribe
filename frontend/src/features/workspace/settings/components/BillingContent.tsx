@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import {
     useSubscriptionStatus,
     useCustomerPortal,
@@ -21,7 +20,6 @@ import { Spinner } from "@/components/ui";
 
 // Main billing page content orchestrating all billing components
 export function BillingContent() {
-    const router = useRouter();
     const { data: subscription, isLoading } = useSubscriptionStatus();
     const portalMutation = useCustomerPortal();
     const changePlanMutation = useChangePlan();
@@ -39,7 +37,8 @@ export function BillingContent() {
         : undefined;
 
     const handleUpgrade = () => {
-        router.push("/account/checkout");
+        // Use full page navigation to avoid COEP policy conflict with Stripe.js
+        window.location.href = "/account/checkout";
     };
 
     const handleSwitchToAnnual = () => {

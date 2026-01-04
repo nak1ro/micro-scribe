@@ -96,6 +96,7 @@ public sealed class ExceptionHandlingMiddleware
             ConcurrencyException => (HttpStatusCode.Conflict, "Data was modified by another request"),
             RequestTimeoutException => (HttpStatusCode.RequestTimeout, "Request timeout"),
             OperationCanceledException => (HttpStatusCode.RequestTimeout, "Operation canceled"),
+            InvalidOperationException => (HttpStatusCode.InternalServerError, "Invalid operation"),
             _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred")
         };
     }

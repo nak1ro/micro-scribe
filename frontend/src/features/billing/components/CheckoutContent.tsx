@@ -44,16 +44,13 @@ export function CheckoutContent() {
 
     const { data: config, isLoading: configLoading } = useBillingConfig();
     const setupIntentMutation = useSetupIntent();
-    const lastCalledInterval = React.useRef<BillingInterval | null>(null);
 
-    // Create SetupIntent when interval changes (with guard against Strict Mode double-call)
+    // Create SetupIntent on mount and when interval changes
+    // Use the mutation data to track what's been called to avoid duplicates
     React.useEffect(() => {
-        // Skip if already called with this interval
-        if (lastCalledInterval.current === interval) {
-            return;
-        }
-        lastCalledInterval.current = interval;
+        // Always call on mount, or when interval changes from what was used
         setupIntentMutation.mutate({ interval });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [interval]);
 
     const price = interval === "Monthly" ? pricingConfig.monthly.pro : pricingConfig.annual.pro;

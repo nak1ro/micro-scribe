@@ -11,15 +11,23 @@ interface StripeProviderProps {
     children: React.ReactNode;
 }
 
+// Cache the stripe promise outside the component to avoid reloading on navigation
+const stripePromiseCache = new Map<string, Promise<Stripe | null>>();
+
+function getStripePromise(publishableKey: string): Promise<Stripe | null> {
+    if (!stripePromiseCache.has(publishableKey)) {
+        stripePromiseCache.set(publishableKey, loadStripe(publishableKey));
+    }
+    return stripePromiseCache.get(publishableKey)!;
+}
+
 // Provider component that wraps children with Stripe Elements context
 export function StripeProvider({ publishableKey, clientSecret, children }: StripeProviderProps) {
-    const [stripePromise, setStripePromise] = React.useState<Promise<Stripe | null> | null>(null);
-
-    React.useEffect(() => {
-        if (publishableKey) {
-            setStripePromise(loadStripe(publishableKey));
-        }
-    }, [publishableKey]);
+    // Initialize stripe synchronously using the cached promise
+    const stripePromise = React.useMemo(
+        () => (publishableKey ? getStripePromise(publishableKey) : null),
+        [publishableKey]
+    );
 
     const options: StripeElementsOptions = {
         clientSecret,

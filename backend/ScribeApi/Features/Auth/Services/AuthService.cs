@@ -18,10 +18,11 @@ public class AuthService : IAuthService
     private readonly IMapper _mapper;
     private readonly IEmailService _emailService;
     private readonly ILogger<AuthService> _logger;
+    private readonly IHostEnvironment _env;
 
     public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager,
         AppDbContext context, IMapper mapper, IEmailService emailService,
-        ILogger<AuthService> logger)
+        ILogger<AuthService> logger, IHostEnvironment env)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -29,6 +30,7 @@ public class AuthService : IAuthService
         _mapper = mapper;
         _emailService = emailService;
         _logger = logger;
+        _env = env;
     }
 
     public async Task<UserDto> RegisterAsync(RegisterRequestDto request, CancellationToken cancellationToken = default)
@@ -39,41 +41,42 @@ public class AuthService : IAuthService
             throw new ConflictException("User with this email already exists.");
         }
 
+        var isDev = _env.IsDevelopment();
+
         var user = new ApplicationUser
         {
             UserName = request.Email,
-            Email = request.Email
+            Email = request.Email,
+            EmailConfirmed = isDev // Auto-confirm in dev
         };
 
-        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
-        try
+        // Transaction is handled globally by TransactionFilter
+        
+        var result = await _userManager.CreateAsync(user, request.Password);
+        if (!result.Succeeded)
         {
-            var result = await _userManager.CreateAsync(user, request.Password);
-            if (!result.Succeeded)
-            {
-                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                throw new ValidationException($"Registration failed: {errors}");
-            }
-    
-            await _userManager.AddToRoleAsync(user, AuthConstants.Roles.User);
-    
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            throw new ValidationException($"Registration failed: {errors}");
+        }
+
+        await _userManager.AddToRoleAsync(user, AuthConstants.Roles.User);
+
+        if (!isDev)
+        {
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
             
             await _emailService.SendEmailConfirmationAsync(user.Email, encodedToken, cancellationToken);
-            
-            await transaction.CommitAsync(cancellationToken);
-            
-            // Auto-login
-            await _signInManager.SignInAsync(user, isPersistent: true);
-    
-            return await MapUserDtoAsync(user);
         }
-        catch (Exception)
+        else
         {
-            await transaction.RollbackAsync(cancellationToken);
-            throw;
+            _logger.LogInformation("Development mode: Email confirmation skipped for {Email}. User auto-confirmed.", user.Email);
         }
+        
+        // Auto-login
+        await _signInManager.SignInAsync(user, isPersistent: true);
+
+        return await MapUserDtoAsync(user);
     }
 
     public async Task<UserDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default)

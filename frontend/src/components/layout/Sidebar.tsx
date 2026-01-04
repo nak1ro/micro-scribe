@@ -195,7 +195,7 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
 
 function UpgradeCard() {
     return (
-        <Link href="/account/checkout">
+        <a href="/account/checkout">
             <div
                 className={cn(
                     "relative overflow-hidden rounded-xl p-4",
@@ -209,26 +209,27 @@ function UpgradeCard() {
             >
                 {/* Shimmer sweep effect */}
                 <div
-                    className="absolute inset-0 w-[200%] h-full bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                    style={{ animation: "shimmer 3s ease-in-out infinite" }}
+                    className={cn(
+                        "absolute inset-0",
+                        "bg-gradient-to-r from-transparent via-white/20 to-transparent",
+                        "animate-[shimmer_3s_ease-in-out_infinite]",
+                        "-translate-x-full"
+                    )}
                 />
 
-                {/* Glow overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent" />
-
+                {/* Content */}
                 <div className="relative">
                     <div className="flex items-center gap-2 mb-2">
                         <Sparks className="h-5 w-5" />
                         <span className="font-bold text-sm">Go Premium</span>
                     </div>
-                    <p className="text-sm opacity-90 mb-2">Unlimited transcriptions</p>
-                    <div className="flex items-center gap-1.5 text-sm opacity-80">
+                    <div className="flex items-center gap-1 text-xs opacity-90">
                         <Check className="h-3.5 w-3.5" />
                         <span>No daily limits</span>
                     </div>
                 </div>
             </div>
-        </Link>
+        </a>
     );
 }
 
@@ -265,13 +266,13 @@ function UsageIndicator({ used, limit, isCollapsed }: UsageIndicatorProps) {
     if (isCollapsed) {
         return (
             <div className="flex items-center justify-center">
-                <Link
+                <a
                     href="/account/checkout"
                     className="w-10 h-10 flex items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                     title="Go Premium"
                 >
                     <Sparks className="h-5 w-5" />
-                </Link>
+                </a>
             </div>
         );
     }
@@ -527,7 +528,7 @@ function MobileBottomNav({ onNewTranscription, isPremium }: MobileBottomNavProps
 
                 {/* Upgrade (for free users) / Premium badge */}
                 {!isPremium ? (
-                    <Link
+                    <a
                         href="/account/checkout"
                         className={cn(
                             "flex flex-col items-center justify-center gap-1 min-w-[64px] rounded-lg relative",
@@ -541,7 +542,7 @@ function MobileBottomNav({ onNewTranscription, isPremium }: MobileBottomNavProps
                             "absolute -bottom-1 w-1 h-1 rounded-full bg-primary transition-all duration-300",
                             isActive("/account/checkout") ? "opacity-100 scale-100" : "opacity-0 scale-0"
                         )} />
-                    </Link>
+                    </a>
                 ) : (
                     <Link
                         href="/account/billing"
