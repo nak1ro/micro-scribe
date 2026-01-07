@@ -31,12 +31,17 @@ jobs:
 
       - name: Prepare Standalone Artifact
         run: |
-          mkdir .deployment
-          # Copy the standalone server and dependencies
+          # Create destination directory structure explicitly
+          mkdir -p .deployment/.next
+          
+          # Copy standalone app (preserves subfolder structure if present)
           cp -r .next/standalone/* .deployment/
-          # Copy static assets (required for images/styles to work)
-          cp -r .next/static .deployment/.next/static
-          cp -r public .deployment/public
+          
+          # Copy static files to the correct location
+          cp -r .next/static .deployment/.next/
+          
+          # Copy public folder
+          cp -r public .deployment/
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
