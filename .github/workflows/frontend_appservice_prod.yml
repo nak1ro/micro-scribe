@@ -52,7 +52,6 @@ jobs:
           cp -r public deploy/public
 
           # Copy static assets to where Next.js expects them
-          # (standalone/.next exists but doesn't have static/)
           cp -r .next/static deploy/.next/static
 
           # Never deploy Azure's placeholder page
@@ -67,8 +66,11 @@ jobs:
           echo "== server.js =="
           test -f deploy/server.js && echo "✅ deploy/server.js" || (echo "❌ missing deploy/server.js" && exit 1)
 
-          echo "== .next server build =="
-          test -d deploy/.next/server && echo "✅ deploy/.next/server" || (echo "❌ missing deploy/.next/server (critical!)" && exit 1)
+          echo "== next module =="
+          test -f deploy/node_modules/next/package.json && echo "✅ next present" || (echo "❌ next missing in deploy/node_modules" && exit 1)
+
+          echo "== .next server build (critical) =="
+          test -d deploy/.next/server && echo "✅ deploy/.next/server" || (echo "❌ missing deploy/.next/server" && exit 1)
 
           echo "== static assets =="
           test -d deploy/.next/static && echo "✅ deploy/.next/static" || (echo "❌ missing deploy/.next/static" && exit 1)
