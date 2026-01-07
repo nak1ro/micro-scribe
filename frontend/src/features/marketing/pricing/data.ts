@@ -152,6 +152,12 @@ export const pricingFAQContent = {
 };
 
 // Trust signals
+export const trustSignals = [
+    { icon: "Lock", text: "Secure 256-bit SSL Encryption" },
+    { icon: "CreditCard", text: "Secure Payment via Stripe" },
+    { icon: "RefreshCw", text: "No Questions Asked Refunds" },
+    { icon: "Shield", text: "Data Privacy & Protection" },
+];
 
 
 // Final CTA

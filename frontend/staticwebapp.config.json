@@ -1,0 +1,31 @@
+{
+    "routes": [
+        {
+            "route": "/account/*",
+            "headers": {
+                "Cross-Origin-Opener-Policy": "same-origin-allow-popups"
+            }
+        },
+        {
+            "route": "/dashboard/*",
+            "headers": {
+                "Cross-Origin-Opener-Policy": "same-origin",
+                "Cross-Origin-Embedder-Policy": "require-corp"
+            }
+        },
+        {
+            "route": "/transcriptions/*",
+            "headers": {
+                "Cross-Origin-Opener-Policy": "same-origin",
+                "Cross-Origin-Embedder-Policy": "require-corp"
+            }
+        },
+        {
+            "route": "/ffmpeg/*",
+            "headers": {
+                "Cross-Origin-Opener-Policy": "same-origin",
+                "Cross-Origin-Embedder-Policy": "require-corp"
+            }
+        }
+    ]
+}
