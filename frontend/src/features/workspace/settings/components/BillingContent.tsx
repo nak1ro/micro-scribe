@@ -137,7 +137,6 @@ export function BillingContent() {
                     </button>
                 </div>
             )}
-
             <ConfirmationDialog
                 open={showAnnualConfirm}
                 onOpenChange={setShowAnnualConfirm}
