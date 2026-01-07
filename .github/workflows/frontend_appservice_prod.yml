@@ -42,19 +42,32 @@ jobs:
       - name: Prepare deploy folder (standalone)
         working-directory: frontend
         run: |
+          echo "== Inspecting standalone output =="
+          ls -la .next/standalone/
+          echo "== Checking if .next/standalone/.next exists =="
+          ls -la .next/standalone/.next/ || echo "⚠️ .next/standalone/.next does NOT exist"
+          
           rm -rf deploy
           mkdir -p deploy
 
-          # Copy standalone server output (includes node_modules AND .next server build)
+          # Copy standalone server output
           cp -r .next/standalone/* deploy/
 
-          # Copy public assets (standalone doesn't include public/)
+          # Ensure .next directory exists (create if standalone didn't have it)
+          mkdir -p deploy/.next
+
+          # Copy public assets
           cp -r public deploy/public
 
-          # Copy static assets to where Next.js expects them
+          # Copy static assets
           cp -r .next/static deploy/.next/static
 
-          # Never deploy Azure's placeholder page
+          # Copy server chunks if they exist at root level
+          if [ -d .next/server ]; then
+            cp -r .next/server deploy/.next/server
+            echo "✅ Copied .next/server from root"
+          fi
+
           rm -f deploy/hostingstart.html || true
 
       - name: Sanity check deploy artifact
