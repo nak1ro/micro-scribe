@@ -31,17 +31,31 @@ jobs:
 
       - name: Prepare Standalone Artifact
         run: |
-          # Create destination directory structure explicitly
-          mkdir -p .deployment/.next
+          mkdir -p .deployment
           
-          # Copy standalone app (preserves subfolder structure if present)
+          # Copy standalone output
           cp -r .next/standalone/* .deployment/
           
-          # Copy static files to the correct location
-          cp -r .next/static .deployment/.next/
-          
-          # Copy public folder
-          cp -r public .deployment/
+          # Handle nested "frontend" structure if Next.js created it
+          if [ -d ".deployment/frontend" ]; then
+            echo "Nested structure detected. Adapting..."
+            
+            # Create wrapper server.js at root that points to nested file
+            echo "process.chdir('frontend'); require('./frontend/server.js');" > .deployment/server.js
+            
+            # Ensure static assets are in the nested folder
+            mkdir -p .deployment/frontend/.next
+            cp -r .next/static .deployment/frontend/.next/
+            cp -r public .deployment/frontend/
+            
+          else
+            echo "Standard structure detected."
+            
+            # Ensure static assets are in the root folder
+            mkdir -p .deployment/.next
+            cp -r .next/static .deployment/.next/
+            cp -r public .deployment/
+          fi
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
