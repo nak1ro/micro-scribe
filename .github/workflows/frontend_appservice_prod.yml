@@ -45,15 +45,14 @@ jobs:
           rm -rf deploy
           mkdir -p deploy
 
-          # Copy standalone server output (includes node_modules required by server.js)
+          # Copy standalone server output (includes node_modules AND .next server build)
           cp -r .next/standalone/* deploy/
 
-          # Copy Next static assets to the exact path expected
-          mkdir -p deploy/.next/static
-          cp -r .next/static/* deploy/.next/static/
-
-          # Copy public assets
+          # Copy public assets (standalone doesn't include public/)
           cp -r public deploy/public
+
+          # Copy static assets to where Next.js expects them
+          cp -r .next/static deploy/.next/static
 
           # Never deploy Azure's placeholder page
           rm -f deploy/hostingstart.html || true
@@ -70,8 +69,14 @@ jobs:
           echo "== next module =="
           test -f deploy/node_modules/next/package.json && echo "✅ next present" || (echo "❌ next missing in deploy/node_modules" && exit 1)
 
+          echo "== .next server build (critical) =="
+          test -d deploy/.next/server && echo "✅ deploy/.next/server" || (echo "❌ missing deploy/.next/server" && exit 1)
+
           echo "== static assets =="
           test -d deploy/.next/static && echo "✅ deploy/.next/static" || (echo "❌ missing deploy/.next/static" && exit 1)
+
+          echo "== .next contents =="
+          ls -la deploy/.next/
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
