@@ -8,3 +8,4 @@ export { Spinner, type SpinnerProps, type SpinnerSize } from "./Spinner";
 export { Textarea, type TextareaProps } from "./Textarea";
 export { ThemeToggle } from "./ThemeToggle";
 export { CTAButton, type CTAButtonProps } from "./CTAButton";
+export { ConfirmationDialog } from "./ConfirmationDialog";

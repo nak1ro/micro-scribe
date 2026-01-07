@@ -4,12 +4,14 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
 import { planDisplayData, billingCopy } from "../data";
+import { BillingInterval } from "@/types/api/billing";
 
 interface CurrentPlanSectionProps {
     planType: "Free" | "Pro";
     nextBillingDate?: Date;
     cancelAtPeriodEnd?: boolean;
     onUpgrade: () => void;
+    interval?: BillingInterval;
 }
 
 // Displays current plan status with billing details
@@ -18,6 +20,7 @@ export function CurrentPlanSection({
     nextBillingDate,
     cancelAtPeriodEnd,
     onUpgrade,
+    interval,
 }: CurrentPlanSectionProps) {
     const plan = planDisplayData[planType];
     const isPro = planType === "Pro";
@@ -28,7 +31,7 @@ export function CurrentPlanSection({
                 <div className="space-y-1">
                     <div className="flex items-center gap-3">
                         <h2 className="text-xl font-semibold text-foreground">
-                            {plan.name}
+                            {plan.name} {isPro && interval ? `(${interval})` : ""}
                         </h2>
                         <span
                             className={cn(

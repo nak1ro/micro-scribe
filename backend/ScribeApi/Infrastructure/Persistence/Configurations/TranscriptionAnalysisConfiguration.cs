@@ -20,7 +20,7 @@ public class TranscriptionAnalysisConfiguration : IEntityTypeConfiguration<Trans
             .HasColumnType("jsonb");
 
         builder.HasOne(x => x.TranscriptionJob)
-            .WithMany(j => j.Analyses)
+            .WithMany()
             .HasForeignKey(x => x.TranscriptionJobId)
             .OnDelete(DeleteBehavior.Cascade);
 

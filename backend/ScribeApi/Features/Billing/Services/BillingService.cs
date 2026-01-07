@@ -99,7 +99,8 @@ public class BillingService : IBillingService
                 PlanType.Free,
                 SubscriptionStatus.Active,
                 null,
-                false);
+                false,
+                null);
         }
 
         var subscription = await _context.Subscriptions
@@ -113,22 +114,37 @@ public class BillingService : IBillingService
                 user.Plan,
                 SubscriptionStatus.Active,
                 null,
-                false);
+                false,
+                null);
         }
 
         var cancelAtPeriodEnd = false;
 
+        BillingInterval? interval = null;
         if (!string.IsNullOrEmpty(subscription.StripeSubscriptionId))
         {
             var stripeSubscription = await _stripeClient.GetSubscriptionAsync(subscription.StripeSubscriptionId, ct);
-            cancelAtPeriodEnd = stripeSubscription?.CancelAtPeriodEnd ?? false;
+            if (stripeSubscription != null)
+            {
+                cancelAtPeriodEnd = stripeSubscription.CancelAtPeriodEnd;
+                if (stripeSubscription.Items.Data.FirstOrDefault()?.Price?.Recurring?.Interval is string intervalStr)
+                {
+                    interval = intervalStr.ToLower() switch
+                    {
+                        "year" => BillingInterval.Yearly,
+                        "month" => BillingInterval.Monthly,
+                        _ => null
+                    };
+                }
+            }
         }
 
         return new SubscriptionStatusDto(
             user.Plan,
             subscription.Status,
             subscription.CurrentPeriodEndUtc,
-            cancelAtPeriodEnd);
+            cancelAtPeriodEnd,
+            interval);
     }
 
     public async Task<string> EnsureStripeCustomerAsync(string userId, CancellationToken ct = default)
