@@ -29,7 +29,7 @@ jobs:
       - name: Build with Next.js
         run: npm run build
 
-      - name: Prepare Standalone Artifact (force server.js at root)
+      - name: Prepare Standalone Artifact (force root server.js)
         run: |
           rm -rf .deployment
           mkdir -p .deployment
@@ -42,25 +42,33 @@ jobs:
           cp -r .next/static .deployment/.next/
           cp -r public .deployment/
 
-          echo "Creating root server.js for Azure..."
+          echo "Preserving Next standalone server.js..."
+          if [ -f ".deployment/server.js" ]; then
+            mv .deployment/server.js .deployment/next-server.js
+          else
+            echo "ERROR: Next standalone did not produce .deployment/server.js"
+            echo "Contents of .next/standalone:"
+            find .next/standalone -maxdepth 3 -type f
+            exit 1
+          fi
+
+          echo "Creating Azure root server.js wrapper..."
           cat << 'EOF' > .deployment/server.js
-          const path = require('path');
-
-          // Ensure correct working directory
+          // Azure entrypoint: keep this file at wwwroot/server.js
           process.chdir(__dirname);
-
-          // Start Next.js standalone server
-          require('./server');
+          require("./next-server.js");
           EOF
 
-          echo "Deployment contents:"
-          find .deployment -maxdepth 2 -type f
+          echo "Deployment contents (top level):"
+          ls -la .deployment
+          echo "Deployment file tree (maxdepth 3):"
+          find .deployment -maxdepth 3 -type f
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: frontend/.deployment/
+          path: .deployment/
 
   deploy:
     runs-on: ubuntu-latest
