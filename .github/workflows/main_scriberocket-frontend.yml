@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
     defaults:
       run:
         working-directory: frontend
@@ -127,4 +129,5 @@ jobs:
           app-name: scriberocket-frontend
           slot-name: Production
           package: artifact
+
 
