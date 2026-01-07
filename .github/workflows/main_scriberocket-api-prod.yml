@@ -32,6 +32,5 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: scriberocket-api-prod
-          slot-name: production
-          publish-profile: ${{ secrets.AzureAppService_PublishProfile_a8f7ad3a11214270b3f22b0504a5344e }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_A8F7AD3A11214270B3F22B0504A5344E }}
           package: ./publish
