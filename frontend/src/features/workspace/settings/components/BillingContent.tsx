@@ -16,7 +16,7 @@ import { BillingHistorySection } from "./BillingHistorySection";
 import { SavingsCallout } from "./SavingsCallout";
 import { LockedFeatures } from "./LockedFeatures";
 import { CancelSubscriptionSection } from "./CancelSubscriptionSection";
-import { Spinner } from "@/components/ui";
+import { Spinner, ConfirmationDialog } from "@/components/ui";
 
 // Main billing page content orchestrating all billing components
 export function BillingContent() {
@@ -26,6 +26,7 @@ export function BillingContent() {
     const cancelMutation = useCancelSubscription();
     const { data: paymentMethod, isLoading: isLoadingPayment } = usePaymentMethod();
     const { data: invoicesData, isLoading: isLoadingInvoices } = useInvoices();
+    const [showAnnualConfirm, setShowAnnualConfirm] = React.useState(false);
 
     const isPro = subscription?.plan === "Pro";
     const isActive = subscription?.status === "Active";
@@ -42,7 +43,7 @@ export function BillingContent() {
     };
 
     const handleSwitchToAnnual = () => {
-        changePlanMutation.mutate({ newInterval: "Yearly" });
+        setShowAnnualConfirm(true);
     };
 
     const handleCancel = () => {
@@ -79,6 +80,7 @@ export function BillingContent() {
                 nextBillingDate={nextBillingDate}
                 cancelAtPeriodEnd={isCanceling}
                 onUpgrade={handleUpgrade}
+                interval={subscription?.interval}
             />
 
             {/* Payment method (Pro users only) */}
@@ -101,7 +103,7 @@ export function BillingContent() {
 
             {/* Savings callout (only for Pro users on monthly) */}
             <SavingsCallout
-                isVisible={isPro && isActive && !isCanceling}
+                isVisible={isPro && isActive && !isCanceling && subscription?.interval === "Monthly"}
                 onSwitchToAnnual={handleSwitchToAnnual}
                 isLoading={changePlanMutation.isPending}
             />
@@ -135,6 +137,20 @@ export function BillingContent() {
                     </button>
                 </div>
             )}
+            <ConfirmationDialog
+                open={showAnnualConfirm}
+                onOpenChange={setShowAnnualConfirm}
+                title="Switch to Annual Billing?"
+                description={
+                    <span>
+                        You are about to switch to annual billing.
+                        You will be <strong>charged immediately</strong> for the pro-rated amount for the remainder of the year.
+                    </span>
+                }
+                confirmText="Switch & Pay"
+                onConfirm={() => changePlanMutation.mutate({ newInterval: "Yearly" }, { onSuccess: () => setShowAnnualConfirm(false) })}
+                isLoading={changePlanMutation.isPending}
+            />
         </div>
     );
 }
