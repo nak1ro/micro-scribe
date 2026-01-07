@@ -1,36 +1,37 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
+name: Build and deploy ASP.Net Core app to Azure Web App: scriberocket-api-prod
 
-name: 'Build and deploy ASP.Net Core app to Azure Web App: scriberocket-api-prod'
-
-on:
+"on":
   push:
     branches:
-    - main
+      - main
   workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v2
-    
-    - name: Set up .NET Core
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: '8.x'
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Build with dotnet
-      run: dotnet build --configuration Release
-    
-    - name: dotnet publish
-      run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp 
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.x"
 
-    - name: Deploy to Azure Web App
-      uses: azure/webapps-deploy@v2
-      with: 
-        app-name: 'scriberocket-api-prod'
-        slot-name: 'production'
-        publish-profile: ${{ secrets.AzureAppService_PublishProfile_a8f7ad3a11214270b3f22b0504a5344e }}
-        package: ${{env.DOTNET_ROOT}}/myapp 
+      - name: Restore
+        run: dotnet restore backend/ScribeApi/ScribeApi.csproj
+
+      - name: Build
+        run: dotnet build backend/ScribeApi/ScribeApi.csproj -c Release --no-restore
+
+      - name: Publish
+        run: dotnet publish backend/ScribeApi/ScribeApi.csproj -c Release -o ./publish --no-build
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: scriberocket-api-prod
+          slot-name: production
+          publish-profile: ${{ secrets.AzureAppService_PublishProfile_a8f7ad3a11214270b3f22b0504a5344e }}
+          package: ./publish
