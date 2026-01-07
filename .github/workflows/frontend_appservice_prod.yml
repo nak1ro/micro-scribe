@@ -1,4 +1,4 @@
-name: Deploy Frontend (Next.js) to Azure App Service
+name: Deploy Frontend (Next.js Standalone) to Azure App Service
 
 on:
   push:
@@ -28,18 +28,33 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Build frontend
+      - name: Build (standalone)
         working-directory: frontend
         env:
           NEXT_PUBLIC_API_URL: https://scriberocket-api-prod.azurewebsites.net
         run: npm run build
 
-      - name: Prepare deploy folder
+      - name: Verify standalone output
+        working-directory: frontend
+        run: |
+          test -f .next/standalone/server.js
+          echo "✅ .next/standalone/server.js exists"
+
+      - name: Prepare deploy folder (standalone)
         working-directory: frontend
         run: |
           rm -rf deploy
-          mkdir deploy
-          cp -r .next public package.json package-lock.json deploy/
+          mkdir -p deploy
+
+          # Copy the standalone server + minimal node_modules (produced by Next)
+          cp -r .next/standalone/* deploy/
+
+          # Copy Next static assets to the exact path the server expects
+          mkdir -p deploy/.next
+          cp -r .next/static deploy/.next/
+
+          # Copy public assets
+          cp -r public deploy/public
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
