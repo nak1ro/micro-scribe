@@ -34,12 +34,18 @@ jobs:
           NEXT_PUBLIC_API_URL: https://scriberocket-api-prod.azurewebsites.net
         run: npm run build
 
-      - name: Prepare deploy folder
+      - name: Prepare standalone deploy folder
         working-directory: frontend
         run: |
           rm -rf deploy
-          mkdir deploy
-          cp -r .next public package.json package-lock.json deploy/
+          mkdir -p deploy
+          # Standalone server + minimal node_modules
+          cp -r .next/standalone/* deploy/
+          # Static assets (Next expects these at .next/static)
+          mkdir -p deploy/.next
+          cp -r .next/static deploy/.next/
+          # Public assets
+          cp -r public deploy/public
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
