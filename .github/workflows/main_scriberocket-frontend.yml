@@ -2,8 +2,7 @@ name: Build and deploy Node.js app to Azure Web App - scriberocket-frontend
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -31,68 +30,69 @@ jobs:
 
       - name: Prepare Standalone Artifact (force root server.js)
         run: |
-          rm -rf .deployment
-          mkdir -p .deployment
+          rm -rf deployment
+          mkdir -p deployment
 
           echo "Copying Next.js standalone output..."
-          cp -r .next/standalone/* .deployment/
+          cp -r .next/standalone/* deployment/
 
           echo "Ensuring static assets..."
-          mkdir -p .deployment/.next
-          cp -r .next/static .deployment/.next/
-          cp -r public .deployment/
+          mkdir -p deployment/.next
+          cp -r .next/static deployment/.next/
+          cp -r public deployment/
 
           echo "Preserving Next standalone server.js..."
-          if [ -f ".deployment/server.js" ]; then
-            mv .deployment/server.js .deployment/next-server.js
+          if [ -f "deployment/server.js" ]; then
+            mv deployment/server.js deployment/next-server.js
           else
-            echo "ERROR: Next standalone did not produce .deployment/server.js"
+            echo "ERROR: Next standalone did not produce deployment/server.js"
             echo "Contents of .next/standalone:"
             find .next/standalone -maxdepth 3 -type f
             exit 1
           fi
 
           echo "Creating Azure root server.js wrapper..."
-          cat << 'EOF' > .deployment/server.js
-          // Azure entrypoint: keep this file at wwwroot/server.js
+          cat << 'EOF' > deployment/server.js
           process.chdir(__dirname);
           require("./next-server.js");
           EOF
 
-          echo "Deployment contents (top level):"
-          ls -la .deployment
-          echo "Deployment file tree (maxdepth 3):"
-          find .deployment -maxdepth 3 -type f
+          echo "Sanity check (top level):"
+          ls -la deployment
+          echo "Must contain server.js and next-server.js:"
+          test -f deployment/server.js
+          test -f deployment/next-server.js
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: frontend/.deployment/
+          path: frontend/deployment/
+          include-hidden-files: true
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
     environment:
-      name: "Production"
+      name: Production
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write
       contents: read
 
     steps:
-      - name: Download artifact from build job
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: node-app
           path: artifact
 
-      - name: Debug downloaded artifact
+      - name: Verify artifact before deploy
         run: |
-          echo "Artifact folder contents:"
+          echo "Artifact top-level:"
           ls -la artifact
-          echo "Artifact file tree (maxdepth 2):"
-          find artifact -maxdepth 2 -type f
+          echo "Check server.js exists:"
+          test -f artifact/server.js
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -105,6 +105,6 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: "scriberocket-frontend"
-          slot-name: "Production"
+          app-name: scriberocket-frontend
+          slot-name: Production
           package: artifact
