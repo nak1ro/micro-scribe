@@ -28,7 +28,7 @@ jobs:
       - name: Build with Next.js
         run: npm run build
 
-      - name: Prepare Standalone Artifact (force root server.js)
+      - name: Prepare Standalone Artifact (standalone + root server.js)
         run: |
           rm -rf deployment
           mkdir -p deployment
@@ -93,6 +93,8 @@ jobs:
           ls -la artifact
           echo "Check server.js exists:"
           test -f artifact/server.js
+          echo "Check .next/static exists:"
+          test -d artifact/.next/static
 
       - name: Login to Azure
         uses: azure/login@v2
