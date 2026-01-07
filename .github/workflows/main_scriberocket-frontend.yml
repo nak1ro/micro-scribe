@@ -33,33 +33,25 @@ jobs:
           rm -rf deployment
           mkdir -p deployment
 
-          echo "Copying Next.js standalone output..."
           cp -r .next/standalone/* deployment/
 
-          echo "Ensuring static assets..."
           mkdir -p deployment/.next
           cp -r .next/static deployment/.next/
           cp -r public deployment/
 
-          echo "Preserving Next standalone server.js..."
           if [ -f "deployment/server.js" ]; then
             mv deployment/server.js deployment/next-server.js
           else
             echo "ERROR: Next standalone did not produce deployment/server.js"
-            echo "Contents of .next/standalone:"
             find .next/standalone -maxdepth 3 -type f
             exit 1
           fi
 
-          echo "Creating Azure root server.js wrapper..."
           cat << 'EOF' > deployment/server.js
           process.chdir(__dirname);
           require("./next-server.js");
           EOF
 
-          echo "Sanity check (top level):"
-          ls -la deployment
-          echo "Must contain server.js and next-server.js:"
           test -f deployment/server.js
           test -f deployment/next-server.js
 
@@ -73,9 +65,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    environment:
-      name: Production
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write
       contents: read
@@ -89,11 +78,9 @@ jobs:
 
       - name: Verify artifact before deploy
         run: |
-          echo "Artifact top-level:"
           ls -la artifact
-          echo "Check server.js exists:"
           test -f artifact/server.js
-          echo "Check .next/static exists:"
+          test -f artifact/next-server.js
           test -d artifact/.next/static
 
       - name: Login to Azure
