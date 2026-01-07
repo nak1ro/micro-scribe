@@ -32,13 +32,28 @@ jobs:
         run: |
           rm -rf deployment
           mkdir -p deployment
-
+      
+          echo "Copying Next.js standalone output..."
           cp -r .next/standalone/* deployment/
-
+      
+          echo "Ensuring .next artifacts..."
           mkdir -p deployment/.next
+      
+          # static assets
           cp -r .next/static deployment/.next/
+      
+          # critical build id (fixes 'production-start-no-build-id')
+          cp .next/BUILD_ID deployment/.next/BUILD_ID
+      
+          # depending on Next version/features, server folder may be required
+          if [ -d ".next/server" ]; then
+            cp -r .next/server deployment/.next/
+          fi
+      
+          echo "Copying public/..."
           cp -r public deployment/
-
+      
+          echo "Preserving Next standalone server.js..."
           if [ -f "deployment/server.js" ]; then
             mv deployment/server.js deployment/next-server.js
           else
@@ -46,14 +61,19 @@ jobs:
             find .next/standalone -maxdepth 3 -type f
             exit 1
           fi
-
+      
+          echo "Creating Azure root server.js wrapper..."
           cat << 'EOF' > deployment/server.js
           process.chdir(__dirname);
           require("./next-server.js");
           EOF
-
+      
+          echo "Sanity checks:"
           test -f deployment/server.js
           test -f deployment/next-server.js
+          test -f deployment/.next/BUILD_ID
+          test -d deployment/.next/static
+
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -97,3 +117,4 @@ jobs:
           app-name: scriberocket-frontend
           slot-name: Production
           package: artifact
+
