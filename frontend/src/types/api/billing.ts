@@ -42,6 +42,7 @@ export interface SubscriptionStatusResponse {
     status: SubscriptionStatus;
     currentPeriodEnd: string;
     cancelAtPeriodEnd: boolean;
+    interval: BillingInterval;
 }
 
 // Change plan interval
