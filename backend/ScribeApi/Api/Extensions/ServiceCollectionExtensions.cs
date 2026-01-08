@@ -64,15 +64,15 @@ public static class ServiceCollectionExtensions
         // Swagger
         services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new OpenApiInfo { Title = "ScribeApi", Version = "v1" }); });
 
+        services.Configure<CorsSettings>(configuration.GetSection(CorsSettings.SectionName));
+        var corsSettings = configuration.GetSection(CorsSettings.SectionName).Get<CorsSettings>();
+        var allowedOrigins = corsSettings?.AllowedOrigins ?? Array.Empty<string>();
+
         services.AddCors(options =>
         {
             options.AddPolicy("LocalhostPolicy", policy =>
             {
-                policy.WithOrigins(
-                        "http://localhost:3000",
-                        "http://localhost:5173",
-                        "http://localhost:4200"
-                    )
+                policy.WithOrigins(allowedOrigins)
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();
