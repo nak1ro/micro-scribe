@@ -18,14 +18,15 @@ public class AzureBlobStorageService : IFileStorageService
     private BlobContainerClient? _containerClient;
 
     public AzureBlobStorageService(
+        BlobServiceClient blobServiceClient,
         IOptions<AzureBlobSettings> settings,
         IOptions<StorageSettings> storageSettings,
         ILogger<AzureBlobStorageService> logger)
     {
+        _blobServiceClient = blobServiceClient;
         _settings = settings.Value;
         _storageSettings = storageSettings.Value;
         _logger = logger;
-        _blobServiceClient = new BlobServiceClient(_settings.ConnectionString);
     }
 
     public string BucketName => _settings.ContainerName;

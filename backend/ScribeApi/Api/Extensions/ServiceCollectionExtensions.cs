@@ -1,6 +1,8 @@
 using System.Text;
 using Npgsql;
 using System.Text.Json.Serialization;
+using Azure.Identity;
+using Azure.Storage.Blobs;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Identity;
@@ -204,7 +206,20 @@ public static class ServiceCollectionExtensions
 
         if (storageProvider.Equals("Azure", StringComparison.OrdinalIgnoreCase))
         {
+            var blobSettings = configuration.GetSection("Storage:AzureBlob").Get<AzureBlobSettings>();
             services.Configure<AzureBlobSettings>(configuration.GetSection("Storage:AzureBlob"));
+            
+            services.AddSingleton(x => {
+                if (!string.IsNullOrEmpty(blobSettings?.ServiceUrl))
+                {
+                    // Managed Identity
+                    return new BlobServiceClient(new Uri(blobSettings.ServiceUrl), new DefaultAzureCredential());
+                }
+                
+                // Connection String fallback
+                return new BlobServiceClient(blobSettings?.ConnectionString);
+            });
+            
             services.AddScoped<IFileStorageService, AzureBlobStorageService>();
         }
         else
