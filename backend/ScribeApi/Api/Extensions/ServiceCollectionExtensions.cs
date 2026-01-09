@@ -91,6 +91,25 @@ public static class ServiceCollectionExtensions
         // DbContext
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+        
+        var dbAuthMode = configuration["DB_AUTH_MODE"] ?? "Password";
+        if (dbAuthMode.Equals("EntraMI", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("[STARTUP] Using Entra Managed Identity for PostgreSQL");
+            
+            // Remove password from connection string if present (builder handles this via builder.Password = null?) 
+            // Actually NpgsqlDataSourceBuilder has properties too, but it parses the string.
+            // We just need to make sure we use the token provider.
+            
+            dataSourceBuilder.UsePeriodicPasswordProvider(async (_, ct) =>
+            {
+                var credential = new DefaultAzureCredential();
+                var token = await credential.GetTokenAsync(
+                    new Azure.Core.TokenRequestContext(new[] { "https://oss-rdbms-aad.database.windows.net/.default" }), ct);
+                return token.Token;
+            }, TimeSpan.FromMinutes(45), TimeSpan.FromSeconds(10));
+        }
+
         dataSourceBuilder.EnableDynamicJson();
         var dataSource = dataSourceBuilder.Build();
 
@@ -205,7 +224,7 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient<ITranslationService, Infrastructure.Translation.AzureTranslationService>();
 
         // Hangfire
-        services.AddHangfireServices(configuration);
+        services.AddHangfireServices(dataSource);
 
         // HttpClient for OAuthService
         services.AddHttpClient<IOAuthService, OAuthService>();

@@ -8,16 +8,14 @@ public static class HangfireSetup
 {
     public static IServiceCollection AddHangfireServices(
         this IServiceCollection services, 
-        IConfiguration configuration)
+        Npgsql.NpgsqlDataSource dataSource)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
-
         services.AddHangfire(config => config
             .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
             .UseSimpleAssemblyNameTypeSerializer()
             .UseRecommendedSerializerSettings()
             .UsePostgreSqlStorage(options => 
-                options.UseNpgsqlConnection(connectionString)));
+                options.UseConnectionFactory(new NpgsqlDataSourceConnectionFactory(dataSource))));
 
         services.AddHangfireServer(options =>
         {
@@ -64,4 +62,19 @@ public static class HangfireSetup
         return app;
     }
 
+
+
+    private class NpgsqlDataSourceConnectionFactory : Hangfire.PostgreSql.IConnectionFactory
+    {
+        private readonly Npgsql.NpgsqlDataSource _dataSource;
+        public NpgsqlDataSourceConnectionFactory(Npgsql.NpgsqlDataSource dataSource)
+        {
+            _dataSource = dataSource;
+        }
+
+        public Npgsql.NpgsqlConnection GetOrCreateConnection()
+        {
+            return _dataSource.CreateConnection();
+        }
+    }
 }
