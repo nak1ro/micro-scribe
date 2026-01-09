@@ -2,13 +2,14 @@
 
 import * as React from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { ArrowLeft, CheckCircle, Sparks } from "iconoir-react";
+import { ArrowLeft, CheckCircle, Sparks, WarningCircle, Mail } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { Button, Spinner } from "@/components/ui";
 import { useBillingConfig, useSetupIntent } from "@/features/billing";
 import { StripeProvider } from "./StripeProvider";
 import { CheckoutForm } from "./CheckoutForm";
 import { pricingConfig, planCardContent } from "@/features/marketing/pricing/data";
+import { useEmailVerification } from "@/context/VerificationContext";
 import type { BillingInterval } from "@/types/api/billing";
 
 // Checkout page content
@@ -16,6 +17,7 @@ export function CheckoutContent() {
     const [interval, setInterval] = React.useState<BillingInterval>("Monthly");
     const pathname = usePathname();
     const prevPathname = React.useRef(pathname);
+    const { isVerified, resendEmail, resendLoading, resendSuccess } = useEmailVerification();
 
     // Force full page reload when navigating away from checkout to stop Stripe beacons
     React.useEffect(() => {
@@ -48,10 +50,12 @@ export function CheckoutContent() {
     // Create SetupIntent on mount and when interval changes
     // Use the mutation data to track what's been called to avoid duplicates
     React.useEffect(() => {
+        // Only create SetupIntent if user is verified
+        if (!isVerified) return;
         // Always call on mount, or when interval changes from what was used
         setupIntentMutation.mutate({ interval });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [interval]);
+    }, [interval, isVerified]);
 
     const price = interval === "Monthly" ? pricingConfig.monthly.pro : pricingConfig.annual.pro;
     const period = interval === "Monthly" ? "/month" : "/month, billed annually";
@@ -61,6 +65,43 @@ export function CheckoutContent() {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <Spinner size="lg" />
+            </div>
+        );
+    }
+
+    // Block unverified users with verification message
+    if (!isVerified) {
+        return (
+            <div className="min-h-screen bg-background">
+                <div className="max-w-md mx-auto px-4 py-16 text-center">
+                    <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-amber-500/10 flex items-center justify-center">
+                        <WarningCircle className="w-8 h-8 text-amber-500" />
+                    </div>
+                    <h1 className="text-2xl font-bold text-foreground mb-2">
+                        Email verification required
+                    </h1>
+                    <p className="text-muted-foreground mb-6">
+                        Please verify your email address before subscribing to Pro.
+                    </p>
+                    {resendSuccess ? (
+                        <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-sm text-green-600 dark:text-green-400">
+                            ✓ Verification email sent! Check your inbox.
+                        </div>
+                    ) : (
+                        <Button onClick={resendEmail} disabled={resendLoading} className="gap-2">
+                            <Mail className="w-4 h-4" />
+                            {resendLoading ? "Sending..." : "Resend verification email"}
+                        </Button>
+                    )}
+                    <div className="mt-6">
+                        <a
+                            href="/account/billing"
+                            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            Back to billing
+                        </a>
+                    </div>
+                </div>
             </div>
         );
     }

@@ -1,4 +1,4 @@
-import {apiClient, API_ENDPOINTS} from '@/services/api';
+import { apiClient, API_ENDPOINTS } from '@/services/api';
 import {
     LoginRequest,
     RegisterRequest,
@@ -46,8 +46,12 @@ export const authApi = {
 
     confirmEmail: async (userId: string, token: string): Promise<void> => {
         await apiClient.get(API_ENDPOINTS.AUTH.CONFIRM_EMAIL, {
-            params: {userId, token},
+            params: { userId, token },
         });
+    },
+
+    resendConfirmation: async (email: string): Promise<void> => {
+        await apiClient.post(API_ENDPOINTS.AUTH.RESEND_CONFIRMATION, { email });
     },
 
     externalLogin: async (data: ExternalAuthRequest): Promise<UserResponse> => {

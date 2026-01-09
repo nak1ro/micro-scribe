@@ -9,6 +9,7 @@ import { useTranscriptionJob } from "@/hooks/useTranscriptions";
 import { useAnalysis } from "@/hooks/useAnalysis";
 import { useSegmentEdit } from "@/hooks/useSegmentEdit";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { useEmailVerification } from "@/context/VerificationContext";
 
 import { ViewerHeader } from "./ViewerHeader";
 import { ViewerLayout } from "./ViewerLayout";
@@ -40,6 +41,7 @@ export function TranscriptionViewerNew({
 }: TranscriptionViewerNewProps) {
     const router = useRouter();
     const { limits } = usePlanLimits();
+    const { isVerified, openModal: openVerificationModal } = useEmailVerification();
 
     // Fetch data if jobId is provided
     const { data: job, isLoading, error, refetch } = useTranscriptionJob(jobId || "");
@@ -236,6 +238,11 @@ export function TranscriptionViewerNew({
     };
 
     const handleTranslate = async (targetLanguage: string) => {
+        // Block for unverified users
+        if (!isVerified) {
+            openVerificationModal();
+            return;
+        }
         if (!data?.id) return;
         try {
             await transcriptionApi.translateJob(data.id, targetLanguage);
@@ -249,6 +256,32 @@ export function TranscriptionViewerNew({
                 || `Request failed with status ${axiosError.response?.status}`;
             console.error("Failed to start translation:", message, error);
         }
+    };
+
+    // Guarded analysis generation - blocks unverified users
+    const handleGenerateAnalysis = (types: AnalysisType[]) => {
+        if (!isVerified) {
+            openVerificationModal();
+            return;
+        }
+        generateAnalysis(types);
+    };
+
+    const handleGenerateAllAnalysis = () => {
+        if (!isVerified) {
+            openVerificationModal();
+            return;
+        }
+        generateAllAnalysis();
+    };
+
+    // Guarded edit mode toggle - blocks unverified users
+    const handleToggleEditMode = (enabled: boolean) => {
+        if (!isVerified && enabled) {
+            openVerificationModal();
+            return;
+        }
+        setIsEditMode(enabled);
     };
 
     // Loading state - skeleton UI
@@ -417,12 +450,12 @@ export function TranscriptionViewerNew({
                         analyses={analyses}
                         isAnalysisGenerating={isAnalysisGenerating}
                         generatingAnalysisTypes={generatingAnalysisTypes}
-                        onGenerateAnalysis={generateAnalysis}
-                        onGenerateAllAnalysis={generateAllAnalysis}
+                        onGenerateAnalysis={handleGenerateAnalysis}
+                        onGenerateAllAnalysis={handleGenerateAllAnalysis}
                         onSelectAnalysisView={handleSelectAnalysisView}
                         currentAnalysisView={currentAnalysisView}
                         isEditMode={isEditMode}
-                        onToggleEditMode={setIsEditMode}
+                        onToggleEditMode={handleToggleEditMode}
                         hasEditedSegments={getEditedSegments().length > 0}
                         onRevertAll={handleRevertAll}
                         isReverting={isReverting}

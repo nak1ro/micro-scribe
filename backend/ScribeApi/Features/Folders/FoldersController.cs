@@ -40,6 +40,7 @@ public class FoldersController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<ActionResult<FolderDto>> CreateFolder(
         [FromBody] CreateFolderRequest request,
         CancellationToken ct)
@@ -52,6 +53,7 @@ public class FoldersController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<ActionResult<FolderDto>> UpdateFolder(
         Guid id,
         [FromBody] UpdateFolderRequest request,
@@ -65,6 +67,7 @@ public class FoldersController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<IActionResult> DeleteFolder(Guid id, CancellationToken ct)
     {
         var userId = User.GetUserId();
@@ -75,6 +78,7 @@ public class FoldersController : ControllerBase
     }
 
     [HttpPost("{id:guid}/items")]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<IActionResult> AddItems(
         Guid id,
         [FromBody] UpdateFolderItemsRequest request,
@@ -88,6 +92,7 @@ public class FoldersController : ControllerBase
     }
 
     [HttpDelete("{id:guid}/items")]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<IActionResult> RemoveItems(
         Guid id,
         [FromBody] UpdateFolderItemsRequest request,

@@ -29,6 +29,7 @@ public class BillingController : ControllerBase
 
     // Create a SetupIntent for collecting payment method via Elements
     [HttpPost("setup-intent")]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<ActionResult<SetupIntentResponse>> CreateSetupIntent(
         [FromBody] CreateSetupIntentRequest request,
         CancellationToken ct)
@@ -42,6 +43,7 @@ public class BillingController : ControllerBase
 
     // Confirm subscription after payment method collected
     [HttpPost("subscribe")]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<ActionResult<SubscriptionResponse>> ConfirmSubscription(
         [FromBody] ConfirmSubscriptionRequest request,
         CancellationToken ct)
@@ -55,6 +57,7 @@ public class BillingController : ControllerBase
 
     // Create a billing portal session for subscription management
     [HttpPost("portal")]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<ActionResult<PortalSessionResponse>> CreatePortalSession(
         [FromQuery] CreatePortalSessionRequest request,
         CancellationToken ct)
@@ -79,6 +82,7 @@ public class BillingController : ControllerBase
 
     // Cancel user's subscription
     [HttpDelete("subscription")]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<IActionResult> CancelSubscription(
         [FromQuery] bool cancelImmediately = false,
         CancellationToken ct = default)
@@ -94,6 +98,7 @@ public class BillingController : ControllerBase
 
     // Change subscription plan (Monthly ↔ Annual)
     [HttpPut("subscription")]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<ActionResult<SubscriptionResponse>> ChangeSubscriptionPlan(
         [FromBody] ChangeSubscriptionPlanRequest request,
         CancellationToken ct)

@@ -22,6 +22,7 @@ public class UploadsController : ControllerBase
 
     [HttpPost]
     [SkipTransaction] // Uses Serializable isolation level for plan limit enforcement
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<ActionResult<UploadSessionResponse>> InitiateUpload(
         [FromBody] InitiateUploadRequest request,
         CancellationToken ct)
@@ -32,6 +33,7 @@ public class UploadsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/complete")]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<ActionResult<UploadSessionStatusResponse>> CompleteUpload(
         Guid id,
         [FromBody] CompleteUploadRequest request,
@@ -53,6 +55,7 @@ public class UploadsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<IActionResult> AbortUpload(
         Guid id,
         CancellationToken ct)

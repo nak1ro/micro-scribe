@@ -81,6 +81,13 @@ public static class ServiceCollectionExtensions
             });
         });
 
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy("VerifiedUser", policy =>
+                policy.RequireClaim("email_verified", "true"));
+        });
+
+
         // DbContext
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
@@ -104,7 +111,8 @@ public static class ServiceCollectionExtensions
                 options.SignIn.RequireConfirmedEmail = false;
             })
             .AddEntityFrameworkStores<AppDbContext>()
-            .AddDefaultTokenProviders();
+            .AddDefaultTokenProviders()
+            .AddClaimsPrincipalFactory<CustomUserClaimsPrincipalFactory>();
 
         services.ConfigureApplicationCookie(options =>
         {
@@ -141,6 +149,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IExternalAuthService, ExternalAuthService>();
         services.AddScoped<IOAuthService, OAuthService>();
         services.AddScoped<IAuthQueries, AuthQueries>();
+        services.AddScoped<CustomUserClaimsPrincipalFactory>();
         services.AddScoped<IMediaService, MediaService>();
         services.AddScoped<IMediaQueries, MediaQueries>();
         

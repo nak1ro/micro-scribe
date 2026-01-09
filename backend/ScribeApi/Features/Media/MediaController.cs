@@ -36,6 +36,7 @@ public class MediaController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<IActionResult> DeleteAsync(Guid id, CancellationToken ct = default)
     {
         var userId = User.GetUserId();
