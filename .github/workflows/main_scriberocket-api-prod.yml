@@ -44,6 +44,7 @@ jobs:
           app-name: ${{ env.API_APP }}
           slot-name: ${{ env.API_SLOT }}
           package: ${{ env.outputs_path }}
+          clean: true  # <--- FORCE CLEAN DEPLOYMENT to remove corrupted files
 
       - name: Smoke test API staging - /diag/deps
         env:
