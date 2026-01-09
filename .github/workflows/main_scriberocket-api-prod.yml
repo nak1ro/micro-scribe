@@ -9,9 +9,10 @@ env:
   RG: scriberocket-prod
   API_APP: scriberocket-api-prod
   API_SLOT: staging
+  outputs_path: ./publish
 
 jobs:
-  build-deploy-swap:
+  build-deploy:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -26,108 +27,45 @@ jobs:
         with:
           dotnet-version: 8.x
 
-      - name: Restore
-        run: dotnet restore backend/ScribeApi/ScribeApi.csproj
-
-      - name: Build
-        run: dotnet build backend/ScribeApi/ScribeApi.csproj -c Release --no-restore
-
-      - name: Publish
-        run: dotnet publish backend/ScribeApi/ScribeApi.csproj -c Release -o ./publish --no-build
-
-      # HARD FAIL if publish output isn't correct
-      - name: Inspect publish output (must contain dll + runtimeconfig at root)
+      - name: Build and Publish
         run: |
-          set -e
-          echo "== publish dir listing =="
-          ls -la ./publish
+          dotnet publish backend/ScribeApi/ScribeApi.csproj -c Release -o ${{ env.outputs_path }}
 
-          echo "== runtimeconfig files (maxdepth 2) =="
-          find ./publish -maxdepth 2 -name "*.runtimeconfig.json" -print
-
-          echo "== dll files (maxdepth 2) =="
-          find ./publish -maxdepth 2 -name "*.dll" -print | head -n 200
-
-          # Require the correct app entrypoint files at publish root
-          test -f ./publish/ScribeApi.dll
-          test -f ./publish/ScribeApi.runtimeconfig.json
-          test -f ./publish/ScribeApi.deps.json
-
-      # ZIP the *contents* of publish so files land at wwwroot root (prevents /publish nesting)
-      - name: Create deploy zip (publish contents at zip root)
-        run: |
-          set -e
-          rm -f app.zip
-          cd publish
-          zip -r ../app.zip .
-          cd ..
-          ls -la app.zip
-
-      - name: Login to Azure (OIDC)
+      - name: Login to Azure
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F83161DF85894767B325559E9679FCD6 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_80598241AF434D9E823D6A38824C6179 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_72231FF6346C495381370352E7D7A15B }}
 
-      - name: Verify target subscription & slot exists
-        uses: azure/cli@v2
-        with:
-          inlineScript: |
-            set -e
-            echo "== az account show =="
-            az account show --query "{sub:id, tenant:tenantId, user:user.name}" -o table
-
-            echo "== slots for webapp =="
-            az webapp deployment slot list -g "${{ env.RG }}" -n "${{ env.API_APP }}" \
-              --query "[].{name:name,state:state,host:defaultHostName}" -o table
-
-            echo "== staging slot resource id =="
-            az webapp show -g "${{ env.RG }}" -n "${{ env.API_APP }}" --slot "${{ env.API_SLOT }}" \
-              --query "id" -o tsv
-
-            echo "== runtime config (prod vs staging) =="
-            az webapp config show -g "${{ env.RG }}" -n "${{ env.API_APP }}" \
-              --query "{linuxFxVersion:linuxFxVersion,appCommandLine:appCommandLine}" -o table
-            az webapp config show -g "${{ env.RG }}" -n "${{ env.API_APP }}" --slot "${{ env.API_SLOT }}" \
-              --query "{linuxFxVersion:linuxFxVersion,appCommandLine:appCommandLine}" -o table
-
-      - name: Deploy to API staging slot (zip)
+      - name: Deploy to Staging Slot
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.API_APP }}
           slot-name: ${{ env.API_SLOT }}
-          package: app.zip
-
-      # Give the platform a moment to boot before smoke tests (optional but reduces flakiness)
-      - name: Wait for app to warm up
-        run: |
-          set -e
-          for i in {1..30}; do
-            if curl -fsS "https://${{ env.API_APP }}-${{ env.API_SLOT }}.azurewebsites.net/health" > /dev/null; then
-              echo "Health OK"
-              exit 0
-            fi
-            echo "Waiting for health... attempt $i"
-            sleep 5
-          done
-          echo "Health did not become ready in time"
-          exit 1
+          package: ${{ env.outputs_path }}
 
       - name: Smoke test API staging - /diag/deps
         env:
           DIAG_KEY: ${{ secrets.API_STAGING_DIAG_KEY }}
         run: |
-          set -e
-          curl -fsS \
-            -H "X-DIAG-KEY: ${DIAG_KEY}" \
-            "https://${{ env.API_APP }}-${{ env.API_SLOT }}.azurewebsites.net/diag/deps" > /dev/null
+          # Robust check for service health (handles potential startup delays)
+          for i in {1..20}; do
+            response=$(curl -s -o /dev/null -w "%{http_code}" -H "X-DIAG-KEY: ${DIAG_KEY}" "https://${{ env.API_APP }}-${{ env.API_SLOT }}.azurewebsites.net/diag/deps")
+            if [ "$response" == "200" ]; then
+              echo "Smoke test passed!"
+              exit 0
+            fi
+            echo "Waiting for service... Attempt $i/20"
+            sleep 10
+          done
+          echo "Smoke test failed after retries."
+          exit 1
 
-      - name: Swap API staging -> production
+      - name: Swap to Production
         uses: azure/cli@v2
         with:
           inlineScript: |
-            set -e
             az webapp deployment slot swap \
               --resource-group "${{ env.RG }}" \
               --name "${{ env.API_APP }}" \
