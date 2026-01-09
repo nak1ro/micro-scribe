@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { WarningCircle, EnvelopeSimple } from "@phosphor-icons/react";
 import { useEmailVerification } from "@/context/VerificationContext";
 
-const BANNER_HEIGHT = 44;
+const BANNER_HEIGHT = 52;
 
 export function VerificationBanner() {
     const { isVerified, resendEmail, resendLoading, resendSuccess } = useEmailVerification();
@@ -45,7 +45,7 @@ export function VerificationBanner() {
                 :root { --banner-bg: #FFF9E6; --banner-border: #E6D9A6; }
                 .dark { --banner-bg: #2D2A1F; --banner-border: #3D3520; }
             `}</style>
-            <div className="px-4 py-2.5 flex items-center justify-between gap-4 h-full">
+            <div className="px-6 py-3 flex items-center justify-between gap-4 h-full">
                 {/* Left: Icon and message */}
                 <div className="flex items-center gap-3 min-w-0">
                     <WarningCircle className="w-5 h-5 text-amber-500 flex-shrink-0" weight="fill" />

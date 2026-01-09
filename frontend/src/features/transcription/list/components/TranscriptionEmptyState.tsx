@@ -3,6 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { CloudUpload, Youtube, Microphone, MusicDoubleNote } from "iconoir-react";
+import { useEmailVerification } from "@/context/VerificationContext";
 
 type InputType = "file" | "youtube" | "voice";
 
@@ -11,6 +12,17 @@ interface TranscriptionEmptyStateProps {
 }
 
 export function TranscriptionEmptyState({ onNewClick }: TranscriptionEmptyStateProps) {
+    const { isVerified, openModal: openVerificationModal } = useEmailVerification();
+
+    // Wrap click handler with verification check
+    const handleClick = (type: InputType) => {
+        if (isVerified) {
+            onNewClick?.(type);
+        } else {
+            openVerificationModal();
+        }
+    };
+
     return (
         <div
             className={cn(
@@ -43,19 +55,19 @@ export function TranscriptionEmptyState({ onNewClick }: TranscriptionEmptyStateP
                     icon={CloudUpload}
                     title="Upload File"
                     description="Audio or video"
-                    onClick={() => onNewClick?.("file")}
+                    onClick={() => handleClick("file")}
                 />
                 <OptionCard
                     icon={Youtube}
                     title="YouTube Link"
                     description="From URL"
-                    onClick={() => onNewClick?.("youtube")}
+                    onClick={() => handleClick("youtube")}
                 />
                 <OptionCard
                     icon={Microphone}
                     title="Record Voice"
                     description="Use microphone"
-                    onClick={() => onNewClick?.("voice")}
+                    onClick={() => handleClick("voice")}
                 />
             </div>
         </div>

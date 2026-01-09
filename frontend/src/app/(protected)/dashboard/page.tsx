@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { CreateTranscriptionModal } from "@/features/transcription";
 import { DashboardContent, useDashboardModal } from "@/features/workspace/dashboard";
 import { useTranscriptions, useFolderItems, useFolder } from "@/hooks";
+import { useEmailVerification } from "@/context/VerificationContext";
 import { uploadAbortRegistry } from "@/services/upload/uploadAbortRegistry";
 import type { TranscriptionListItem } from "@/types/models/transcription";
 
@@ -15,6 +16,7 @@ function DashboardPageContent() {
     const folderId = searchParams.get("folder");
 
     const { isModalOpen, openModal, closeModal } = useDashboardModal();
+    const { isVerified, openModal: openVerificationModal } = useEmailVerification();
 
     // Clean up URL when closing modal
     const handleCloseModal = () => {
@@ -75,9 +77,15 @@ function DashboardPageContent() {
     // Check for "action=new" in URL to open modal
     React.useEffect(() => {
         if (searchParams.get("action") === "new") {
-            openModal();
+            if (isVerified) {
+                openModal();
+            } else {
+                openVerificationModal();
+                // Clean URL since we're not opening the create modal
+                router.replace("/dashboard");
+            }
         }
-    }, [searchParams, openModal]);
+    }, [searchParams, openModal, isVerified, openVerificationModal, router]);
 
     // Check for "upgrade=success" in URL to show success message
     const [showUpgradeSuccess, setShowUpgradeSuccess] = React.useState(false);
