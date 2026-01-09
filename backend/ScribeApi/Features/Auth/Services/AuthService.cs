@@ -66,7 +66,7 @@ public class AuthService : IAuthService
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
             
-            await _emailService.SendEmailConfirmationAsync(user.Email, encodedToken, cancellationToken);
+            await _emailService.SendEmailConfirmationAsync(user.Email, user.Id, encodedToken, cancellationToken);
         }
         else
         {
@@ -209,7 +209,7 @@ public class AuthService : IAuthService
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         
-        await _emailService.SendEmailConfirmationAsync(user.Email!, encodedToken, cancellationToken);
+        await _emailService.SendEmailConfirmationAsync(user.Email!, user.Id, encodedToken, cancellationToken);
     }
 
 

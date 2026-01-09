@@ -69,6 +69,7 @@ public class TranscriptionsController : ControllerBase
 
     [HttpPost]
     [SkipTransaction]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<ActionResult<TranscriptionJobResponse>> CreateJob(
         [FromBody] CreateTranscriptionJobRequest request,
         CancellationToken ct)
@@ -82,6 +83,7 @@ public class TranscriptionsController : ControllerBase
     }
 
     [HttpPost("youtube")]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<ActionResult<TranscriptionJobDetailResponse>> ImportFromYouTube(
         [FromBody] YouTubeImportRequest request,
         CancellationToken ct)
@@ -96,6 +98,7 @@ public class TranscriptionsController : ControllerBase
 
     [HttpPost("{jobId:guid}/cancel")]
     [SkipTransaction]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<IActionResult> CancelJob(Guid jobId, CancellationToken ct)
     {
         var userId = User.GetUserId();
@@ -108,6 +111,7 @@ public class TranscriptionsController : ControllerBase
 
     [HttpDelete("{jobId:guid}")]
     [SkipTransaction]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<IActionResult> DeleteJob(Guid jobId, CancellationToken ct)
     {
         var userId = User.GetUserId();
@@ -153,6 +157,7 @@ public class TranscriptionsController : ControllerBase
     }
 
     [HttpPatch("{jobId:guid}/segments/{segmentId:guid}")]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<ActionResult<TranscriptSegmentDto>> UpdateSegment(
         Guid jobId,
         Guid segmentId,
@@ -168,6 +173,7 @@ public class TranscriptionsController : ControllerBase
     }
 
     [HttpPost("{jobId:guid}/segments/{segmentId:guid}/revert")]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<ActionResult<TranscriptSegmentDto>> RevertSegment(
         Guid jobId,
         Guid segmentId,
@@ -182,6 +188,7 @@ public class TranscriptionsController : ControllerBase
     }
 
     [HttpPost("{jobId:guid}/translate")]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<IActionResult> TranslateJob(
         Guid jobId,
         [FromBody] TranslateJobRequest request,
@@ -196,6 +203,7 @@ public class TranscriptionsController : ControllerBase
     }
 
     [HttpPost("{jobId:guid}/analysis")]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<ActionResult<List<TranscriptionAnalysisDto>>> GenerateAnalysis(
         Guid jobId,
         [FromBody] GenerateAnalysisRequest request,
@@ -210,6 +218,7 @@ public class TranscriptionsController : ControllerBase
     }
 
     [HttpPost("{jobId:guid}/analysis/translate")]
+    [Authorize(Policy = "VerifiedUser")]
     public async Task<ActionResult<List<TranscriptionAnalysisDto>>> TranslateAnalysis(
         Guid jobId,
         [FromBody] TranslateAnalysisRequest request,
