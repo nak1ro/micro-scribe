@@ -2,8 +2,7 @@ name: Build and deploy ASP.Net Core app to Azure Web App - scriberocket-api-prod
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 env:
@@ -43,6 +42,22 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_80598241AF434D9E823D6A38824C6179 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_72231FF6346C495381370352E7D7A15B }}
 
+      - name: Verify target subscription & slot exists
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            set -e
+            echo "== az account show =="
+            az account show --query "{sub:id, tenant:tenantId, user:user.name}" -o table
+
+            echo "== slots for webapp =="
+            az webapp deployment slot list -g "${{ env.RG }}" -n "${{ env.API_APP }}" \
+              --query "[].{name:name,state:state,host:defaultHostName}" -o table
+
+            echo "== staging slot resource id =="
+            az webapp show -g "${{ env.RG }}" -n "${{ env.API_APP }}" --slot "${{ env.API_SLOT }}" \
+              --query "id" -o tsv
+
       - name: Deploy to API staging slot
         uses: azure/webapps-deploy@v3
         with:
@@ -50,13 +65,11 @@ jobs:
           slot-name: ${{ env.API_SLOT }}
           package: ./publish
 
-      # Health check path in your current app config is /health (already set).
       - name: Smoke test API staging - /health
         run: |
           set -e
           curl -fsS "https://${{ env.API_APP }}-${{ env.API_SLOT }}.azurewebsites.net/health" > /dev/null
 
-      # Only works after you implement /diag/deps and set DIAG_KEY in API staging slot.
       - name: Smoke test API staging - /diag/deps
         env:
           DIAG_KEY: ${{ secrets.API_STAGING_DIAG_KEY }}
@@ -64,12 +77,14 @@ jobs:
           set -e
           curl -fsS \
             -H "X-DIAG-KEY: ${DIAG_KEY}" \
-            "https://${{ env.API_APP }}-${{ env.API_SLOT }}.azurewebsites.net/diag/deps"
+            "https://${{ env.API_APP }}-${{ env.API_SLOT }}.azurewebsites.net/diag/deps" > /dev/null
 
       - name: Swap API staging -> production
-        run: |
-          az webapp deployment slot swap \
-            --resource-group "${{ env.RG }}" \
-            --name "${{ env.API_APP }}" \
-            --slot "${{ env.API_SLOT }}" \
-            --target-slot "production"
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            set -e
+            az webapp deployment slot swap \
+              --resource-group "${{ env.RG }}" \
+              --name "${{ env.API_APP }}" \
+              --slot "${{ env.API_SLOT }}"
