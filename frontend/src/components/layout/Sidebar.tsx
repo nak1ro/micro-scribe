@@ -26,6 +26,7 @@ import { useFolders, useDeleteFolder, FOLDER_COLORS } from "@/hooks";
 import { PlanType } from "@/types/api/usage";
 import { FolderColor } from "@/types/models/folder";
 import { FolderModal } from "@/features/workspace/folders";
+import { VerificationBanner } from "@/components/common/VerificationBanner";
 
 interface SidebarProps {
     onNewTranscription?: () => void;
@@ -109,6 +110,9 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
                     )
                 )}
             </div>
+
+            {/* Email Verification Banner */}
+            {!isCollapsed && <VerificationBanner />}
 
             {/* Upgrade Card (Free Users) - Hero CTA */}
             {!isPremium && !isCollapsed && (
@@ -330,7 +334,20 @@ interface NewTranscriptionButtonProps {
 }
 
 function NewTranscriptionButton({ isCollapsed, onClick }: NewTranscriptionButtonProps) {
+    // Use VerificationContext for email verification check
+    const { VerificationContext } = require("@/context/VerificationContext");
+    const verificationContext = React.useContext(VerificationContext) as { isVerified: boolean; openModal: () => void } | undefined;
+    const isVerified = verificationContext?.isVerified ?? true;
+    const openModal = verificationContext?.openModal;
+
     const handleClick = (e: React.MouseEvent) => {
+        // Block upload for unverified users
+        if (!isVerified) {
+            e.preventDefault();
+            openModal?.();
+            return;
+        }
+
         if (onClick) {
             e.preventDefault();
             onClick();
@@ -587,7 +604,26 @@ function FolderSection({ isCollapsed }: FolderSectionProps) {
         createdAtUtc: string;
     } | null>(null);
 
+    // Verification context for folder actions
+    const { VerificationContext } = require("@/context/VerificationContext");
+    const verificationContext = React.useContext(VerificationContext) as { isVerified: boolean; openModal: () => void } | undefined;
+    const isVerified = verificationContext?.isVerified ?? true;
+    const openVerificationModal = verificationContext?.openModal;
+
+    const handleCreateFolder = () => {
+        if (!isVerified) {
+            openVerificationModal?.();
+            return;
+        }
+        setEditingFolder(null);
+        setIsModalOpen(true);
+    };
+
     const handleEdit = (folder: typeof editingFolder) => {
+        if (!isVerified) {
+            openVerificationModal?.();
+            return;
+        }
         setEditingFolder(folder);
         setIsModalOpen(true);
     };
@@ -598,6 +634,10 @@ function FolderSection({ isCollapsed }: FolderSectionProps) {
     };
 
     const handleDelete = async (folderId: string) => {
+        if (!isVerified) {
+            openVerificationModal?.();
+            return;
+        }
         try {
             await deleteFolderMutation.mutateAsync(folderId);
         } catch (error) {
@@ -640,10 +680,7 @@ function FolderSection({ isCollapsed }: FolderSectionProps) {
             {isExpanded && (
                 <div className="px-1.5 pb-1 space-y-0.5">
                     <button
-                        onClick={() => {
-                            setEditingFolder(null);
-                            setIsModalOpen(true);
-                        }}
+                        onClick={handleCreateFolder}
                         className={cn(
                             "flex items-center gap-2.5 w-full rounded-lg",
                             "px-2.5 py-2",

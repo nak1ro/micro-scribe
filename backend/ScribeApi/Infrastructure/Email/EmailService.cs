@@ -85,7 +85,7 @@ public class EmailService : IEmailService
             // However, sticking to the previous implementation pattern for consistency, but ACS uses STARTTLS on 587.
             // client.ServerCertificateValidationCallback = (s, c, h, e) => true; 
 
-            await client.ConnectAsync(_settings.SmtpServer, _settings.Port, SecureSocketOptions.StartTls, cancellationToken);
+            await client.ConnectAsync(_settings.SmtpServer, _settings.Port, SecureSocketOptions.Auto, cancellationToken);
 
             if (!string.IsNullOrEmpty(_settings.Username) && !string.IsNullOrEmpty(_settings.Password))
             {

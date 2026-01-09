@@ -4,6 +4,8 @@ import '@/styles/globals.css';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { QueryProvider } from '@/context/QueryProvider';
+import { VerificationProvider } from '@/context/VerificationContext';
+import { VerificationRequiredModal } from '@/components/common/VerificationRequiredModal';
 
 const plusJakartaSans = Plus_Jakarta_Sans({
     subsets: ['latin'],
@@ -32,7 +34,10 @@ export default function RootLayout({
                 >
                     <AuthProvider>
                         <QueryProvider>
-                            {children}
+                            <VerificationProvider>
+                                {children}
+                                <VerificationRequiredModal />
+                            </VerificationProvider>
                         </QueryProvider>
                     </AuthProvider>
                 </ThemeProvider>
@@ -40,3 +45,4 @@ export default function RootLayout({
         </html>
     );
 }
+

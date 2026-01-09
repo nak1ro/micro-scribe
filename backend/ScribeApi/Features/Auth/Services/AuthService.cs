@@ -47,7 +47,8 @@ public class AuthService : IAuthService
         {
             UserName = request.Email,
             Email = request.Email,
-            EmailConfirmed = isDev // Auto-confirm in dev
+
+            EmailConfirmed = false // Always require confirmation
         };
 
         // Transaction is handled globally by TransactionFilter
@@ -61,17 +62,11 @@ public class AuthService : IAuthService
 
         await _userManager.AddToRoleAsync(user, AuthConstants.Roles.User);
 
-        if (!isDev)
-        {
-            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-            
-            await _emailService.SendEmailConfirmationAsync(user.Email, user.Id, encodedToken, cancellationToken);
-        }
-        else
-        {
-            _logger.LogInformation("Development mode: Email confirmation skipped for {Email}. User auto-confirmed.", user.Email);
-        }
+        // Always send confirmation email (Dev uses MailHog)
+        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        
+        await _emailService.SendEmailConfirmationAsync(user.Email, user.Id, encodedToken, cancellationToken);
         
         // Auto-login
         await _signInManager.SignInAsync(user, isPersistent: true);

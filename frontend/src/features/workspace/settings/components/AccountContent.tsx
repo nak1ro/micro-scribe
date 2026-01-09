@@ -2,13 +2,13 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Mail, Lock, FileText, CreditCard, Trash, Palette } from "lucide-react";
+import { Mail, Lock, FileText, CreditCard, Trash, Palette, LogOut } from "lucide-react";
 import { Button, ThemeToggle } from "@/components/ui";
 import { useAuth } from "@/hooks/useAuth";
 
 // Account settings page content
 export function AccountContent() {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
 
     // Check if user signed in via OAuth (no password)
     const isOAuthUser = !user?.emailConfirmed; // Simplified check - adjust based on actual logic
@@ -89,6 +89,17 @@ export function AccountContent() {
                         <ThemeToggle />
                     </div>
                 </div>
+            </SettingsCard>
+
+            {/* Log Out Section */}
+            <SettingsCard
+                icon={LogOut}
+                title="Log Out"
+                description="Sign out of your account"
+            >
+                <Button variant="outline" size="sm" onClick={() => logout()}>
+                    Log Out
+                </Button>
             </SettingsCard>
 
             {/* Danger Zone - Delete Account */}

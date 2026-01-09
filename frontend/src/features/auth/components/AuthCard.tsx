@@ -44,9 +44,17 @@ export function AuthCard() {
             });
             router.push("/dashboard");
         } catch (err: unknown) {
-            const message =
-                err instanceof Error ? err.message : "Registration failed. Please try again.";
-            setError(message);
+            // Error is transformed by interceptors to {message, status, errors} format
+            const apiError = err as { status?: number; message?: string };
+
+            if (apiError.status === 409) {
+                setError("An account with this email already exists. Please log in instead.");
+            } else if (apiError.status && apiError.status >= 500) {
+                // Don't expose server error details to users
+                setError("Registration failed. Please try again later.");
+            } else {
+                setError("Registration failed. Please try again.");
+            }
             throw err;
         }
     };
