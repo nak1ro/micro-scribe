@@ -26,7 +26,6 @@ import { useFolders, useDeleteFolder, FOLDER_COLORS } from "@/hooks";
 import { PlanType } from "@/types/api/usage";
 import { FolderColor } from "@/types/models/folder";
 import { FolderModal } from "@/features/workspace/folders";
-import { VerificationBanner } from "@/components/common/VerificationBanner";
 
 interface SidebarProps {
     onNewTranscription?: () => void;
@@ -111,9 +110,6 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
                 )}
             </div>
 
-            {/* Email Verification Banner */}
-            {!isCollapsed && <VerificationBanner />}
-
             {/* Upgrade Card (Free Users) - Hero CTA */}
             {!isPremium && !isCollapsed && (
                 <div className="px-4 py-2 mt-4">
@@ -169,11 +165,15 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
             {/* Desktop Sidebar */}
             <aside
                 className={cn(
-                    "hidden lg:flex flex-col fixed left-0 top-0 h-screen",
+                    "hidden lg:flex flex-col sticky self-start",
                     "bg-card border-r border-border",
                     "transition-[width] duration-200 ease-out"
                 )}
-                style={{ width: isCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH }}
+                style={{
+                    width: isCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH,
+                    top: "var(--banner-height, 0px)",
+                    height: "calc(100vh - var(--banner-height, 0px))"
+                }}
             >
                 {sidebarContent}
             </aside>
@@ -182,12 +182,6 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
             <MobileBottomNav
                 onNewTranscription={onNewTranscription}
                 isPremium={isPremium}
-            />
-
-            {/* Spacer for desktop */}
-            <div
-                className="hidden lg:block shrink-0 transition-[width] duration-200"
-                style={{ width: isCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH }}
             />
         </>
     );

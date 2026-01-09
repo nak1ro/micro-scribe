@@ -6,6 +6,7 @@ import { Folder, Plus, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFolders, useDeleteFolder, FOLDER_COLORS } from "@/hooks";
 import { FolderModal } from "@/features/workspace/folders";
+import { useEmailVerification } from "@/context/VerificationContext";
 import type { FolderColor, FolderDto } from "@/types/models/folder";
 
 export function FolderPills() {
@@ -15,6 +16,7 @@ export function FolderPills() {
 
     const { data: folders, isLoading } = useFolders();
     const deleteFolderMutation = useDeleteFolder();
+    const { isVerified, openModal: openVerificationModal } = useEmailVerification();
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     const [editingFolder, setEditingFolder] = React.useState<FolderDto | null>(null);
 
@@ -26,7 +28,20 @@ export function FolderPills() {
         }
     };
 
+    const handleNewFolder = () => {
+        if (!isVerified) {
+            openVerificationModal();
+            return;
+        }
+        setEditingFolder(null);
+        setIsModalOpen(true);
+    };
+
     const handleEdit = (folder: FolderDto) => {
+        if (!isVerified) {
+            openVerificationModal();
+            return;
+        }
         setEditingFolder(folder);
         setIsModalOpen(true);
     };
@@ -37,6 +52,10 @@ export function FolderPills() {
     };
 
     const handleDelete = async (folderId: string) => {
+        if (!isVerified) {
+            openVerificationModal();
+            return;
+        }
         try {
             await deleteFolderMutation.mutateAsync(folderId);
             // If we deleted the active folder, go back to all
@@ -85,10 +104,7 @@ export function FolderPills() {
 
                 {/* New Folder button */}
                 <button
-                    onClick={() => {
-                        setEditingFolder(null);
-                        setIsModalOpen(true);
-                    }}
+                    onClick={handleNewFolder}
                     className={cn(
                         "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
                         "text-sm text-muted-foreground",
