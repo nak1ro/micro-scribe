@@ -35,6 +35,34 @@ jobs:
       - name: Publish
         run: dotnet publish backend/ScribeApi/ScribeApi.csproj -c Release -o ./publish --no-build
 
+      # HARD FAIL if publish output isn't correct
+      - name: Inspect publish output (must contain dll + runtimeconfig at root)
+        run: |
+          set -e
+          echo "== publish dir listing =="
+          ls -la ./publish
+
+          echo "== runtimeconfig files (maxdepth 2) =="
+          find ./publish -maxdepth 2 -name "*.runtimeconfig.json" -print
+
+          echo "== dll files (maxdepth 2) =="
+          find ./publish -maxdepth 2 -name "*.dll" -print | head -n 200
+
+          # Require the correct app entrypoint files at publish root
+          test -f ./publish/ScribeApi.dll
+          test -f ./publish/ScribeApi.runtimeconfig.json
+          test -f ./publish/ScribeApi.deps.json
+
+      # ZIP the *contents* of publish so files land at wwwroot root (prevents /publish nesting)
+      - name: Create deploy zip (publish contents at zip root)
+        run: |
+          set -e
+          rm -f app.zip
+          cd publish
+          zip -r ../app.zip .
+          cd ..
+          ls -la app.zip
+
       - name: Login to Azure (OIDC)
         uses: azure/login@v2
         with:
@@ -58,17 +86,33 @@ jobs:
             az webapp show -g "${{ env.RG }}" -n "${{ env.API_APP }}" --slot "${{ env.API_SLOT }}" \
               --query "id" -o tsv
 
-      - name: Deploy to API staging slot
+            echo "== runtime config (prod vs staging) =="
+            az webapp config show -g "${{ env.RG }}" -n "${{ env.API_APP }}" \
+              --query "{linuxFxVersion:linuxFxVersion,appCommandLine:appCommandLine}" -o table
+            az webapp config show -g "${{ env.RG }}" -n "${{ env.API_APP }}" --slot "${{ env.API_SLOT }}" \
+              --query "{linuxFxVersion:linuxFxVersion,appCommandLine:appCommandLine}" -o table
+
+      - name: Deploy to API staging slot (zip)
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.API_APP }}
           slot-name: ${{ env.API_SLOT }}
-          package: ./publish
+          package: app.zip
 
-      - name: Smoke test API staging - /health
+      # Give the platform a moment to boot before smoke tests (optional but reduces flakiness)
+      - name: Wait for app to warm up
         run: |
           set -e
-          curl -fsS "https://${{ env.API_APP }}-${{ env.API_SLOT }}.azurewebsites.net/health" > /dev/null
+          for i in {1..30}; do
+            if curl -fsS "https://${{ env.API_APP }}-${{ env.API_SLOT }}.azurewebsites.net/health" > /dev/null; then
+              echo "Health OK"
+              exit 0
+            fi
+            echo "Waiting for health... attempt $i"
+            sleep 5
+          done
+          echo "Health did not become ready in time"
+          exit 1
 
       - name: Smoke test API staging - /diag/deps
         env:
