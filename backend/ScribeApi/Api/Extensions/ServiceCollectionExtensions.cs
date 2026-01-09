@@ -90,10 +90,15 @@ public static class ServiceCollectionExtensions
 
         // DbContext
         var connectionString = configuration.GetConnectionString("DefaultConnection");
-        var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+        var builder = new NpgsqlConnectionStringBuilder(connectionString)
+        {
+            CommandTimeout = 60, // Increase timeout for Burstable instances
+            Pooling = true,
+            MinPoolSize = 0,
+            MaxPoolSize = 50 // Limit pool size to prevent exhaustion
+        };
         
-
-
+        var dataSourceBuilder = new NpgsqlDataSourceBuilder(builder.ToString());
         dataSourceBuilder.EnableDynamicJson();
         var dataSource = dataSourceBuilder.Build();
 
