@@ -184,7 +184,7 @@ public class OAuthService : IOAuthService
         if (response.IsSuccessStatusCode) return content;
         
         _logger.LogWarning("Failed to exchange Microsoft code for token: {Error}", content);
-        throw new OAuthException("Failed to exchange authorization code for access token");
+        throw new OAuthException($"Failed to exchange authorization code for access token: {content}");
     }
 
     private async Task<OAuthUserInfo> ParseMicrosoftTokenResponseAsync(string jsonResponse, CancellationToken cancellationToken)

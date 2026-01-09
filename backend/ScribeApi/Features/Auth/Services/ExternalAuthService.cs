@@ -169,6 +169,12 @@ public class ExternalAuthService : IExternalAuthService
 
         await _context.SaveChangesAsync(cancellationToken);
 
+        // Auto-verify email if not already confirmed (trusting the provider)
+        if (!user.EmailConfirmed)
+        {
+            user.EmailConfirmed = true;
+        }
+
         // Update last login time
         user.LastLoginAtUtc = DateTime.UtcNow;
         await _userManager.UpdateAsync(user);

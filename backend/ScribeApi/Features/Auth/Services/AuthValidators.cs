@@ -84,14 +84,14 @@ public class ExternalAuthRequestValidator : AbstractValidator<ExternalAuthReques
 
 public class OAuthCallbackRequestValidator : AbstractValidator<OAuthCallbackRequestDto>
 {
-    private static readonly string[] ValidProviders = { AuthConstants.Providers.Google };
+    private static readonly string[] ValidProviders = { AuthConstants.Providers.Google, AuthConstants.Providers.Microsoft };
     
     public OAuthCallbackRequestValidator()
     {
         RuleFor(x => x.Provider)
             .NotEmpty()
             .Must(p => ValidProviders.Contains(p.ToLower()))
-            .WithMessage($"Invalid OAuth provider. Supported providers: {AuthConstants.Providers.Google}");
+            .WithMessage($"Invalid OAuth provider. Supported providers: {AuthConstants.Providers.Google}, {AuthConstants.Providers.Microsoft}");
         
         RuleFor(x => x.Code).NotEmpty().WithMessage("Authorization code is required");
     }
@@ -99,14 +99,14 @@ public class OAuthCallbackRequestValidator : AbstractValidator<OAuthCallbackRequ
 
 public class OAuthLoginRequestValidator : AbstractValidator<OAuthLoginRequestDto>
 {
-    private static readonly string[] ValidProviders = { AuthConstants.Providers.Google };
+    private static readonly string[] ValidProviders = { AuthConstants.Providers.Google, AuthConstants.Providers.Microsoft };
     
     public OAuthLoginRequestValidator()
     {
         RuleFor(x => x.Provider)
             .NotEmpty()
             .Must(p => ValidProviders.Contains(p.ToLower()))
-            .WithMessage($"Invalid OAuth provider. Supported providers: {AuthConstants.Providers.Google}");
+            .WithMessage($"Invalid OAuth provider. Supported providers: {AuthConstants.Providers.Google}, {AuthConstants.Providers.Microsoft}");
         
         RuleFor(x => x.IdToken).NotEmpty().WithMessage("ID token is required");
     }
@@ -114,14 +114,14 @@ public class OAuthLoginRequestValidator : AbstractValidator<OAuthLoginRequestDto
 
 public class LinkOAuthAccountRequestValidator : AbstractValidator<LinkOAuthAccountRequestDto>
 {
-    private static readonly string[] ValidProviders = { AuthConstants.Providers.Google };
+    private static readonly string[] ValidProviders = { AuthConstants.Providers.Google, AuthConstants.Providers.Microsoft };
     
     public LinkOAuthAccountRequestValidator()
     {
         RuleFor(x => x.Provider)
             .NotEmpty()
             .Must(p => ValidProviders.Contains(p.ToLower()))
-            .WithMessage($"Invalid OAuth provider. Supported providers: {AuthConstants.Providers.Google}");
+            .WithMessage($"Invalid OAuth provider. Supported providers: {AuthConstants.Providers.Google}, {AuthConstants.Providers.Microsoft}");
         
         RuleFor(x => x.IdToken).NotEmpty().WithMessage("ID token is required");
     }
