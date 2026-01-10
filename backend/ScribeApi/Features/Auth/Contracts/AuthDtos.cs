@@ -17,7 +17,7 @@ public record ChangePasswordRequestDto(string CurrentPassword, string NewPasswor
 
 public record ExternalAuthRequestDto(string Provider, string IdToken);
 
-public record OAuthCallbackRequestDto(string Provider, string Code);
+public record OAuthCallbackRequestDto(string Provider, string Code, string? RedirectUri = null);
 
 public record OAuthLoginRequestDto(string Provider, string IdToken);
 

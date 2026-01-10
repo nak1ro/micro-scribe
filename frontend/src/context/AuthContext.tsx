@@ -11,7 +11,7 @@ interface AuthContextType {
     isLoading: boolean;
     isAuthenticated: boolean;
     login: (data: LoginRequest) => Promise<void>;
-    loginWithOAuth: (provider: string, code: string) => Promise<void>;
+    loginWithOAuth: (provider: string, code: string, redirectUri?: string) => Promise<void>;
     register: (data: RegisterRequest) => Promise<void>;
     logout: () => Promise<void>;
     refreshUser: () => Promise<void>;
@@ -77,8 +77,8 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
         setUser(userData);
     };
 
-    const loginWithOAuth = async (provider: string, code: string) => {
-        const userData = await authApi.oauthCallback({ provider, code });
+    const loginWithOAuth = async (provider: string, code: string, redirectUri?: string) => {
+        const userData = await authApi.oauthCallback({ provider, code, redirectUri });
         setUser(userData);
     };
 
