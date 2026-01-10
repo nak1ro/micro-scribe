@@ -36,7 +36,9 @@ export default function OAuthCallbackPage() {
 
             try {
                 processedRef.current = true;
-                await loginWithOAuth(provider, code);
+                const origin = typeof window !== 'undefined' ? window.location.origin : '';
+                const redirectUri = `${origin}/auth/callback/${provider}`;
+                await loginWithOAuth(provider, code, redirectUri);
                 router.push("/dashboard");
             } catch (err) {
                 console.error("OAuth login failed:", err);

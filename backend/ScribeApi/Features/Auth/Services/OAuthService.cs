@@ -117,17 +117,17 @@ public class OAuthService : IOAuthService
         }
     }
 
-    public async Task<OAuthUserInfo> ExchangeCodeForTokenAsync(string provider, string code, CancellationToken cancellationToken = default)
+    public async Task<OAuthUserInfo> ExchangeCodeForTokenAsync(string provider, string code, string? redirectUri = null, CancellationToken cancellationToken = default)
     {
         if (provider.Equals(GoogleProvider, StringComparison.OrdinalIgnoreCase))
         {
-             var tokenResponse = await SendGoogleTokenExchangeRequestAsync(code, cancellationToken);
+             var tokenResponse = await SendGoogleTokenExchangeRequestAsync(code, redirectUri, cancellationToken);
              return await ParseGoogleTokenResponseAsync(tokenResponse, cancellationToken);
         }
         
         if (provider.Equals(MicrosoftProvider, StringComparison.OrdinalIgnoreCase))
         {
-            var tokenResponse = await SendMicrosoftTokenExchangeRequestAsync(code, cancellationToken);
+            var tokenResponse = await SendMicrosoftTokenExchangeRequestAsync(code, redirectUri, cancellationToken);
             return await ParseMicrosoftTokenResponseAsync(tokenResponse, cancellationToken);
         }
 
@@ -136,14 +136,14 @@ public class OAuthService : IOAuthService
 
     }
 
-    private async Task<string> SendGoogleTokenExchangeRequestAsync(string code, CancellationToken cancellationToken)
+    private async Task<string> SendGoogleTokenExchangeRequestAsync(string code, string? redirectUri, CancellationToken cancellationToken)
     {
         var tokenRequest = new Dictionary<string, string>
         {
             { "code", code },
             { "client_id", _oauthSettings.Google.ClientId },
             { "client_secret", _oauthSettings.Google.ClientSecret },
-            { "redirect_uri", _oauthSettings.Google.RedirectUri },
+            { "redirect_uri", !string.IsNullOrEmpty(redirectUri) ? redirectUri : _oauthSettings.Google.RedirectUri },
             { "grant_type", GrantTypeAuthorizationCode }
         };
 
@@ -161,14 +161,14 @@ public class OAuthService : IOAuthService
         throw new OAuthException("Failed to exchange authorization code for access token");
     }
 
-    private async Task<string> SendMicrosoftTokenExchangeRequestAsync(string code, CancellationToken cancellationToken)
+    private async Task<string> SendMicrosoftTokenExchangeRequestAsync(string code, string? redirectUri, CancellationToken cancellationToken)
     {
         var tokenRequest = new Dictionary<string, string>
         {
             { "client_id", _oauthSettings.Microsoft.ClientId },
             { "scope", string.Join(" ", _oauthSettings.Microsoft.Scopes) },
             { "code", code },
-            { "redirect_uri", _oauthSettings.Microsoft.RedirectUri },
+            { "redirect_uri", !string.IsNullOrEmpty(redirectUri) ? redirectUri : _oauthSettings.Microsoft.RedirectUri },
             { "grant_type", GrantTypeAuthorizationCode },
             { "client_secret", _oauthSettings.Microsoft.ClientSecret }
         };

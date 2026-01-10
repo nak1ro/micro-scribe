@@ -35,6 +35,7 @@ export interface ExternalAuthRequest {
 export interface OAuthCallbackRequest {
     provider: string;
     code: string;
+    redirectUri?: string;
     state?: string | null;
 }
 

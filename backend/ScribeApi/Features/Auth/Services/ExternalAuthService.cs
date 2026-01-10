@@ -59,7 +59,7 @@ public class ExternalAuthService : IExternalAuthService
 
     public async Task<UserDto> OAuthCallbackAsync(OAuthCallbackRequestDto request, CancellationToken cancellationToken = default)
     {
-        var oauthUserInfo = await _oauthService.ExchangeCodeForTokenAsync(request.Provider, request.Code, cancellationToken);
+        var oauthUserInfo = await _oauthService.ExchangeCodeForTokenAsync(request.Provider, request.Code, request.RedirectUri, cancellationToken);
         return await ProcessExternalLoginFlowAsync(oauthUserInfo, cancellationToken);
     }
 
