@@ -66,9 +66,11 @@ class SignalRService {
     private onAnalysisCompleted: AnalysisCompletedHandler | null = null;
     private onAnalysisFailed: AnalysisFailedHandler | null = null;
 
-    // Get hub URL from environment
+    // Get hub URL - derive from API URL by stripping /api/ suffix
     private getHubUrl(): string {
-        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5150";
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5150/api/";
+        // Remove trailing /api/ or /api to get base URL
+        const baseUrl = apiUrl.replace(/\/api\/?$/, "");
         return `${baseUrl}/hubs/transcription`;
     }
 
