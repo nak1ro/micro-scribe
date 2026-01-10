@@ -1,3 +1,51 @@
+name: Deploy Backend (ASP.NET Core) to Azure App Service with Slots
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "backend/**"
+      - ".github/workflows/main_scriberocket-api-prod.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: backend-prod
+  cancel-in-progress: true
+
+env:
+  RG: scriberocket-prod
+  APP_NAME: scriberocket-backend-prod
+  SLOT_NAME: staging
+  PROJECT_PATH: backend/ScribeApi/ScribeApi.csproj
+  PUBLISH_DIR: publish
+  DOTNET_VERSION: "8.x"
+  HEALTH_PATH: /health
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore ${{ env.PROJECT_PATH }}
+
+      - name: Publish
+        run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -o ${{ env.PUBLISH_DIR }} --no-restore
+
+      # Upload artifact for deploy job
+      - name: Upload publish artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-publish
+          path: ${{ env.PUBLISH_DIR }}
+          if-no-files-found: error
   deploy:
     runs-on: ubuntu-latest
     needs: build
