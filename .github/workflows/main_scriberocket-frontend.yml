@@ -84,10 +84,11 @@ jobs:
           fi
 
           echo "Creating Azure root server.js wrapper..."
-          cat << 'EOF' > deployment/server.js
-          process.chdir(__dirname);
-          require("./next-server.js");
-          EOF
+          printf '%s\n' 'process.chdir(__dirname);' 'require("./next-server.js");' > deployment/server.js
+
+          echo "=== server.js content ==="
+          cat deployment/server.js
+          echo "========================="
 
           echo "Sanity checks:"
           test -f deployment/server.js
@@ -95,6 +96,15 @@ jobs:
           test -f deployment/.next/BUILD_ID
           test -f deployment/.next/routes-manifest.json
           test -d deployment/.next/static
+
+      - name: Check artifact size
+        run: |
+          echo "=== Deployment artifact size ==="
+          du -sh deployment
+          du -sh deployment/.next
+          du -sh deployment/node_modules || echo "No node_modules in deployment"
+          echo "File count: $(find deployment -type f | wc -l)"
+          echo "================================"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -119,11 +129,15 @@ jobs:
 
       - name: Verify artifact before deploy
         run: |
+          echo "=== Artifact verification ==="
           ls -la artifact
+          du -sh artifact
+          echo "File count: $(find artifact -type f | wc -l)"
           test -f artifact/server.js
           test -f artifact/next-server.js
           test -f artifact/.next/BUILD_ID
           test -d artifact/.next/static
+          echo "============================="
 
       - name: Login to Azure (OIDC)
         uses: azure/login@v2
@@ -133,16 +147,24 @@ jobs:
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_72231FF6346C495381370352E7D7A15B }}
 
       - name: Deploy to Production
+        id: deploy
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.FE_APP }}
           package: artifact
+
+      - name: Log deploy result
+        run: |
+          echo "=== Deploy completed ==="
+          echo "App URL: https://${{ env.FE_APP }}.azurewebsites.net"
+          echo "========================"
 
       - name: Health check
         run: |
           set -euo pipefail
           URL="https://${{ env.FE_APP }}.azurewebsites.net/"
           echo "Checking: $URL"
+          echo "Started at: $(date)"
 
           max_attempts=30
           sleep_seconds=10
@@ -150,12 +172,14 @@ jobs:
           for i in $(seq 1 $max_attempts); do
             code=$(curl -s -o /dev/stderr -w "%{http_code}" "$URL" || echo "000")
             if [ "$code" = "200" ]; then
-              echo "✅ Frontend health OK"
+              echo ""
+              echo "✅ Frontend health OK at $(date)"
               exit 0
             fi
-            echo "Not ready (HTTP $code). Attempt $i/$max_attempts..."
+            echo ""
+            echo "Not ready (HTTP $code). Attempt $i/$max_attempts... $(date)"
             sleep $sleep_seconds
           done
 
-          echo "❌ Frontend health check failed."
+          echo "❌ Frontend health check failed at $(date)"
           exit 1
