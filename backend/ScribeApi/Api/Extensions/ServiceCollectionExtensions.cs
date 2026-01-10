@@ -272,4 +272,17 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
+
+    private static string GetHostFromConnString(string connString)
+    {
+        try 
+        {
+            var builder = new Npgsql.NpgsqlConnectionStringBuilder(connString);
+            return builder.Host ?? "unknown";
+        }
+        catch
+        {
+            return "invalid-format";
+        }
+    }
 }
