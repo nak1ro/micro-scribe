@@ -106,7 +106,7 @@ public static class ServiceCollectionExtensions
             Pooling = true,
             MinPoolSize = 0,
             MaxPoolSize = 50,
-            SslMode = SslMode.Require
+            SslMode = SslMode.Prefer
         };
         Console.WriteLine($"[STARTUP] DB Config - Host: '{builder.Host}', SslMode: '{builder.SslMode}'");
         
