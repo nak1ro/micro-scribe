@@ -27,6 +27,7 @@ public static class WebApplicationExtensions
         }
         catch (Exception ex)
         {
+            Console.Error.WriteLine($"[CRITICAL] Error seeding Identity roles: {ex}");
             var logger = services.GetRequiredService<ILogger<WebApplication>>();
             logger.LogError(ex, "An error occurred while seeding Identity roles.");
         }
@@ -44,6 +45,7 @@ public static class WebApplicationExtensions
         }
         catch (Exception ex)
         {
+            Console.Error.WriteLine($"[CRITICAL] Error applying migrations: {ex}");
             var logger = services.GetRequiredService<ILogger<WebApplication>>();
             logger.LogError(ex, "An error occurred while applying database migrations.");
             throw; // Fail startup if migrations fail
