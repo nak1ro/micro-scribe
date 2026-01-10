@@ -6,6 +6,7 @@ import { authApi } from "@/services/auth";
 
 export interface VerificationContextType {
     isVerified: boolean;
+    isLoading: boolean;
     isModalOpen: boolean;
     openModal: () => void;
     closeModal: () => void;
@@ -17,7 +18,7 @@ export interface VerificationContextType {
 export const VerificationContext = createContext<VerificationContextType | undefined>(undefined);
 
 export function VerificationProvider({ children }: { children: ReactNode }) {
-    const { user } = useAuth();
+    const { user, isLoading } = useAuth();
     const isVerified = user?.emailConfirmed ?? false;
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -47,6 +48,7 @@ export function VerificationProvider({ children }: { children: ReactNode }) {
         <VerificationContext.Provider
             value={{
                 isVerified,
+                isLoading,
                 isModalOpen,
                 openModal,
                 closeModal,

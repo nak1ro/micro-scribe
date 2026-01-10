@@ -12,5 +12,6 @@ public interface IAuthService
     Task ChangePasswordAsync(string userId, ChangePasswordRequestDto request, CancellationToken cancellationToken = default);
     Task ConfirmEmailAsync(string userId, string token, CancellationToken cancellationToken = default);
     Task ResendEmailConfirmationAsync(string email, CancellationToken cancellationToken = default);
+    Task RefreshSessionAsync(string userId, CancellationToken cancellationToken = default);
     Task<UserDto> GetUserByIdAsync(string userId, CancellationToken cancellationToken = default);
 }

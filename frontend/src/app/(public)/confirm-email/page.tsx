@@ -35,6 +35,8 @@ function ConfirmEmailContent() {
 
             try {
                 await authApi.confirmEmail(userId, token);
+                // Refresh session to get updated cookie with emailConfirmed=true
+                await authApi.refreshSession();
                 setState("success");
 
                 // If user is logged in, redirect to dashboard after brief delay

@@ -45,6 +45,17 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Logged out successfully." });
     }
 
+    [Authorize]
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh(CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        await _authService.RefreshSessionAsync(userId, cancellationToken);
+        return Ok(new { message = "Session refreshed successfully." });
+    }
+
     [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword(ForgotPasswordRequestDto request, CancellationToken cancellationToken)

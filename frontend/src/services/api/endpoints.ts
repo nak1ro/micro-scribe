@@ -8,6 +8,7 @@ export const API_ENDPOINTS = {
         CHANGE_PASSWORD: '/auth/change-password',
         CONFIRM_EMAIL: '/auth/confirm-email',
         RESEND_CONFIRMATION: '/auth/resend-confirmation',
+        REFRESH: '/auth/refresh',
         EXTERNAL_LOGIN: '/auth/external-login',
         OAUTH_CALLBACK: '/auth/oauth/callback',
         LINK_OAUTH: '/auth/oauth/link',

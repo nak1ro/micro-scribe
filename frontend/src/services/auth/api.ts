@@ -54,6 +54,10 @@ export const authApi = {
         await apiClient.post(API_ENDPOINTS.AUTH.RESEND_CONFIRMATION, { email });
     },
 
+    refreshSession: async (): Promise<void> => {
+        await apiClient.post(API_ENDPOINTS.AUTH.REFRESH);
+    },
+
     externalLogin: async (data: ExternalAuthRequest): Promise<UserResponse> => {
         const response = await apiClient.post<UserResponse>(API_ENDPOINTS.AUTH.EXTERNAL_LOGIN, data);
         return response.data;

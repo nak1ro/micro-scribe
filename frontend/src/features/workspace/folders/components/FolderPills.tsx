@@ -16,7 +16,7 @@ export function FolderPills() {
 
     const { data: folders, isLoading } = useFolders();
     const deleteFolderMutation = useDeleteFolder();
-    const { isVerified, openModal: openVerificationModal } = useEmailVerification();
+    const { isVerified, isLoading: isVerificationLoading, openModal: openVerificationModal } = useEmailVerification();
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     const [editingFolder, setEditingFolder] = React.useState<FolderDto | null>(null);
 
@@ -28,8 +28,9 @@ export function FolderPills() {
         }
     };
 
+    // Allow actions while loading to prevent false-positive blocks
     const handleNewFolder = () => {
-        if (!isVerified) {
+        if (!isVerificationLoading && !isVerified) {
             openVerificationModal();
             return;
         }
@@ -38,7 +39,7 @@ export function FolderPills() {
     };
 
     const handleEdit = (folder: FolderDto) => {
-        if (!isVerified) {
+        if (!isVerificationLoading && !isVerified) {
             openVerificationModal();
             return;
         }
@@ -52,7 +53,7 @@ export function FolderPills() {
     };
 
     const handleDelete = async (folderId: string) => {
-        if (!isVerified) {
+        if (!isVerificationLoading && !isVerified) {
             openVerificationModal();
             return;
         }

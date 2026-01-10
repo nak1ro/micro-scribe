@@ -5,6 +5,7 @@ import { useStripe, useElements, PaymentElement } from "@stripe/react-stripe-js"
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui";
 import { useSubscribe } from "@/features/billing";
+import { authApi } from "@/services/auth";
 import type { BillingInterval } from "@/types/api/billing";
 
 interface CheckoutFormProps {
@@ -51,6 +52,8 @@ export function CheckoutForm({ interval }: CheckoutFormProps) {
                             paymentMethodId,
                             interval,
                         });
+                        // Refresh session to get updated cookie with new plan claims
+                        await authApi.refreshSession();
                         router.push("/dashboard?upgrade=success");
                         return;
                     } catch {
@@ -72,6 +75,8 @@ export function CheckoutForm({ interval }: CheckoutFormProps) {
                     paymentMethodId: setupIntent.payment_method as string,
                     interval,
                 });
+                // Refresh session to get updated cookie with new plan claims
+                await authApi.refreshSession();
                 router.push("/dashboard?upgrade=success");
             } catch {
                 setErrorMessage("Failed to create subscription. Please try again.");
