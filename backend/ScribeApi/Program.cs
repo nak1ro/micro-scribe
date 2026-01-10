@@ -18,6 +18,8 @@ app.UseSwaggerIfDevelopment();
 
 app.UseErrorHandling();
 
+app.UseForwardedHeaders();
+
 app.UseHttpsRedirection();
 
 app.UseRouting();

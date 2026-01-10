@@ -66,6 +66,17 @@ public static class ServiceCollectionExtensions
         // Swagger
         services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new OpenApiInfo { Title = "ScribeApi", Version = "v1" }); });
 
+
+        // Forwarded Headers (for Nginx/Azure/Docker)
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | 
+                                     Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+            // Clear known networks/proxies because in Azure/Docker the internal IP can change
+            options.KnownNetworks.Clear();
+            options.KnownProxies.Clear();
+        });
+
         services.Configure<CorsSettings>(configuration.GetSection(CorsSettings.SectionName));
         var corsSettings = configuration.GetSection(CorsSettings.SectionName).Get<CorsSettings>();
         var allowedOrigins = corsSettings?.AllowedOrigins ?? Array.Empty<string>();
@@ -138,7 +149,7 @@ public static class ServiceCollectionExtensions
         {
             options.Cookie.HttpOnly = true;
             options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-            options.Cookie.SameSite = SameSiteMode.Strict;
+            options.Cookie.SameSite = SameSiteMode.None;
             options.ExpireTimeSpan = TimeSpan.FromDays(30);
             options.SlidingExpiration = true;
 
