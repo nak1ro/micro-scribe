@@ -1,0 +1,40 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build output
+.next
+out
+
+# Testing
+coverage
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment (local only, build arg used for NEXT_PUBLIC_*)
+.env*.local
+.env.development
+.env.test
+.env
+
+# Misc
+*.md
+!README.md
+.git
+.gitignore
+.eslintcache
+tsconfig.tsbuildinfo
