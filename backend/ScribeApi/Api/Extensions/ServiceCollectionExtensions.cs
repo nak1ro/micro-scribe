@@ -150,6 +150,13 @@ public static class ServiceCollectionExtensions
             options.Cookie.HttpOnly = true;
             options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             options.Cookie.SameSite = SameSiteMode.None;
+            
+            var cookieDomain = configuration["CookieSettings:Domain"];
+            if (!string.IsNullOrEmpty(cookieDomain))
+            {
+                options.Cookie.Domain = cookieDomain;
+            }
+
             options.ExpireTimeSpan = TimeSpan.FromDays(30);
             options.SlidingExpiration = true;
 
