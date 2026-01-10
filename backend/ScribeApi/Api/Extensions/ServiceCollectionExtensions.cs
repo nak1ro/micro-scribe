@@ -101,11 +101,15 @@ public static class ServiceCollectionExtensions
 
         var builder = new NpgsqlConnectionStringBuilder(connectionString)
         {
-            CommandTimeout = 60, // Increase timeout for Burstable instances
+            CommandTimeout = 60,
             Pooling = true,
             MinPoolSize = 0,
-            MaxPoolSize = 50 // Limit pool size to prevent exhaustion
+            MaxPoolSize = 50,
+            // FORCE SSL SETTINGS to rule out Config String issues
+            SslMode = SslMode.Require,
+            TrustServerCertificate = true
         };
+        Console.WriteLine($"[STARTUP] DB Config - Host: '{builder.Host}', SslMode: '{builder.SslMode}', TrustServerCertificate: '{builder.TrustServerCertificate}'");
         
         var dataSourceBuilder = new NpgsqlDataSourceBuilder(builder.ToString());
         dataSourceBuilder.EnableDynamicJson();
