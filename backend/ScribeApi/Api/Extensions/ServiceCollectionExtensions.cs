@@ -90,6 +90,15 @@ public static class ServiceCollectionExtensions
 
         // DbContext
         var connectionString = configuration.GetConnectionString("DefaultConnection");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            Console.Error.WriteLine("[FATAL] 'DefaultConnection' connection string is MISSING or EMPTY.");
+        }
+        else
+        {
+            Console.WriteLine($"[STARTUP] Found 'DefaultConnection' (Length: {connectionString.Length}). Host: {GetHostFromConnString(connectionString)}");
+        }
+
         var builder = new NpgsqlConnectionStringBuilder(connectionString)
         {
             CommandTimeout = 60, // Increase timeout for Burstable instances
