@@ -115,7 +115,7 @@ jobs:
           sleep_seconds=10
 
           for i in $(seq 1 $max_attempts); do
-            code=$(curl -s -o /dev/stderr -w "%{http_code}" "$URL" || echo "000")
+            code=$(curl -sL -o /dev/null -w "%{http_code}" "$URL" || echo "000")
             if [ "$code" = "200" ]; then
               echo ""
               echo "✅ Frontend health OK at $(date)"
