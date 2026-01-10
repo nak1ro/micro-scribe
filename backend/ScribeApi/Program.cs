@@ -30,24 +30,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseHangfireDashboard(app.Environment.IsDevelopment());
-try
-{
-    Console.WriteLine("[STARTUP] Configuring Hangfire jobs...");
-    app.UseHangfireConfig();
-}
-catch (Exception ex)
-{
-    Console.Error.WriteLine($"[FATAL] Error configuring Hangfire (DB Connection likely failed): {ex.Message}");
-    // We don't throw here immediately if we want to try to reach the other main try-catch, 
-    // but since this is critical, we probably should or just let it log and cascade.
-    // Given the previous crash, let's log explicitly.
-    throw;
-}
 
 app.MapControllers();
 app.MapHub<TranscriptionHub>("/hubs/transcription");
 
-// Seeding
+// Startup sequence with proper async handling
 try 
 {
     Console.WriteLine("[STARTUP] Applying migrations...");
@@ -55,6 +42,9 @@ try
     
     Console.WriteLine("[STARTUP] Seeding identity roles...");
     await app.SeedIdentityRolesAsync();
+
+    // Configure Hangfire AFTER migrations (uses async with retry)
+    await app.UseHangfireConfigAsync();
 
     Console.WriteLine("[STARTUP] Starting application...");
     app.Run();
