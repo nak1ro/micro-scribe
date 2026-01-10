@@ -1,73 +1,150 @@
-name: Build and deploy ASP.Net Core app to Azure Web App - scriberocket-api-prod
+name: Deploy Backend (ASP.NET Core) to Azure App Service with Slots
 
 on:
   push:
-    branches: [main]
+    branches: [ "main" ]
+    paths:
+      - "backend/**"
+      - ".github/workflows/main_scriberocket-api-prod.yml"
   workflow_dispatch:
+
+concurrency:
+  group: backend-prod
+  cancel-in-progress: true
 
 env:
   RG: scriberocket-prod
-  API_APP: scriberocket-api-prod
-  API_SLOT: staging
-  outputs_path: ./publish
+  APP_NAME: scriberocket-backend-prod
+  SLOT_NAME: staging
+  PROJECT_PATH: backend/ScribeApi/ScribeApi.csproj
+  PUBLISH_DIR: publish
+  DOTNET_VERSION: "8.x"
+  HEALTH_PATH: /health
 
 jobs:
-  build-deploy:
+  build:
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore ${{ env.PROJECT_PATH }}
+
+      - name: Publish
+        run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -o ${{ env.PUBLISH_DIR }} --no-restore
+
+      # Upload artifact for deploy job
+      - name: Upload publish artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-publish
+          path: ${{ env.PUBLISH_DIR }}
+          if-no-files-found: error
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
     permissions:
       id-token: write
       contents: read
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+      - name: Download publish artifact
+        uses: actions/download-artifact@v4
         with:
-          dotnet-version: 8.x
+          name: backend-publish
+          path: artifact
 
-      - name: Build and Publish
-        run: |
-          dotnet publish backend/ScribeApi/ScribeApi.csproj -c Release -o ${{ env.outputs_path }}
-
-      - name: Login to Azure
+      - name: Azure Login (OIDC)
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F83161DF85894767B325559E9679FCD6 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_80598241AF434D9E823D6A38824C6179 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_72231FF6346C495381370352E7D7A15B }}
 
-      - name: Deploy to Staging Slot
+      # Deploy artifact to staging slot
+      - name: Deploy to staging slot
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ env.API_APP }}
-          slot-name: ${{ env.API_SLOT }}
-          package: ${{ env.outputs_path }}
-          clean: true  # <--- FORCE CLEAN DEPLOYMENT to remove corrupted files
+          app-name: ${{ env.APP_NAME }}
+          slot-name: ${{ env.SLOT_NAME }}
+          package: artifact
 
-      - name: Smoke test API staging - /diag/deps
-        env:
-          DIAG_KEY: ${{ secrets.API_STAGING_DIAG_KEY }}
+      # Wait for staging health
+      - name: Wait for staging /health
+        shell: bash
         run: |
-          # Robust check for service health (handles potential startup delays)
-          for i in {1..20}; do
-            response=$(curl -s -o /dev/null -w "%{http_code}" -H "X-DIAG-KEY: ${DIAG_KEY}" "https://${{ env.API_APP }}-${{ env.API_SLOT }}.azurewebsites.net/diag/deps")
-            if [ "$response" == "200" ]; then
-              echo "Smoke test passed!"
+          set -euo pipefail
+          URL="https://${{ env.APP_NAME }}-${{ env.SLOT_NAME }}.azurewebsites.net${{ env.HEALTH_PATH }}"
+          echo "Checking: $URL"
+
+          # Up to ~10 minutes total (handles cold start + migrations)
+          max_attempts=60
+          sleep_seconds=10
+
+          for i in $(seq 1 $max_attempts); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || true)
+            if [ "$code" = "200" ]; then
+              echo "✅ Staging health OK"
               exit 0
             fi
-            echo "Waiting for service... Attempt $i/20"
-            sleep 10
+            echo "Staging not ready (HTTP $code). Attempt $i/$max_attempts..."
+            sleep $sleep_seconds
           done
-          echo "Smoke test failed after retries."
+
+          echo "❌ Staging health check failed."
           exit 1
 
-      - name: Swap to Production
+      # Helpful logs if something is flaky
+      - name: Dump staging logs on failure
+        if: failure()
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az webapp log tail \
+              --resource-group "${{ env.RG }}" \
+              --name "${{ env.APP_NAME }}" \
+              --slot "${{ env.SLOT_NAME }}" \
+              --provider application \
+              --output none || true
+
+      # Swap staging -> production
+      - name: Swap staging to production
         uses: azure/cli@v2
         with:
           inlineScript: |
             az webapp deployment slot swap \
               --resource-group "${{ env.RG }}" \
-              --name "${{ env.API_APP }}" \
-              --slot "${{ env.API_SLOT }}"
+              --name "${{ env.APP_NAME }}" \
+              --slot "${{ env.SLOT_NAME }}" \
+              --target-slot production
+
+      # Wait for production health after swap
+      - name: Wait for production /health
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://${{ env.APP_NAME }}.azurewebsites.net${{ env.HEALTH_PATH }}"
+          echo "Checking: $URL"
+
+          max_attempts=60
+          sleep_seconds=10
+
+          for i in $(seq 1 $max_attempts); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || true)
+            if [ "$code" = "200" ]; then
+              echo "✅ Production health OK"
+              exit 0
+            fi
+            echo "Production not ready (HTTP $code). Attempt $i/$max_attempts..."
+            sleep $sleep_seconds
+          done
+
+          echo "❌ Production health check failed after swap."
+          exit 1
