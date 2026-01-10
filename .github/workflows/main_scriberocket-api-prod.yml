@@ -15,7 +15,7 @@ concurrency:
 env:
   RG: scriberocket-prod
   APP_NAME: scriberocket-backend-prod
-  SLOT_NAME: staging
+  # SLOT_NAME: staging  <-- REMOVED
   PROJECT_PATH: backend/ScribeApi/ScribeApi.csproj
   PUBLISH_DIR: publish
   DOTNET_VERSION: "8.x"
@@ -58,7 +58,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: backend-publish
-          path: artifact
+          # IMPORTANT: Download to current directory (.) to avoid creating an extra folder
+          path: .
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
@@ -72,8 +73,7 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.APP_NAME }}
-          # slot-name removed (defaults to production)
-          package: artifact
+          package: .
 
       # Wait for Production health
       - name: Wait for Production /health
