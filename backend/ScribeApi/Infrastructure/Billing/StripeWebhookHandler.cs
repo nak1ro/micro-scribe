@@ -99,6 +99,7 @@ public class StripeWebhookHandler
                 StripeSubscriptionId = stripeSub.Id,
                 User = user
             };
+            // Since we fetched user with Include(Subscriptions), we can add it there or to context
             _context.Subscriptions.Add(localSub);
         }
 
@@ -110,10 +111,16 @@ public class StripeWebhookHandler
             localSub.CurrentPeriodEndUtc = firstItem.CurrentPeriodEnd;
         }
 
-        user.Plan = localSub.Status == SubscriptionStatus.Active ? PlanType.Pro : PlanType.Free;
+        // Grant Pro access for Active, Trialing, or PastDue (grace period)
+        bool hasProAccess = localSub.Status == SubscriptionStatus.Active ||
+                            localSub.Status == SubscriptionStatus.Trialing ||
+                            localSub.Status == SubscriptionStatus.PastDue;
+
+        user.Plan = hasProAccess ? PlanType.Pro : PlanType.Free;
 
         await _context.SaveChangesAsync(ct);
-        _logger.LogInformation("Subscription {SubscriptionId} updated for user {UserId}", stripeSub.Id, user.Id);
+        _logger.LogInformation("Subscription {SubscriptionId} updated for user {UserId}. Access: {Access}", 
+            stripeSub.Id, user.Id, hasProAccess ? "Pro" : "Free");
     }
 
     private async Task HandleSubscriptionDeletedAsync(Stripe.Event stripeEvent, CancellationToken ct)
@@ -150,10 +157,19 @@ public class StripeWebhookHandler
         var user = await FindUserByCustomerIdAsync(invoice.CustomerId, ct);
         if (user == null) return;
 
+        // Try to find specific subscription by ID from invoice
+        var subId = invoice.RawJObject["subscription"]?.ToString();
         var localSub = await _context.Subscriptions
-            .Where(s => s.UserId == user.Id)
-            .OrderByDescending(s => s.CreatedAtUtc)
-            .FirstOrDefaultAsync(ct);
+            .FirstOrDefaultAsync(s => s.StripeSubscriptionId == subId, ct);
+        
+        // Fallback to latest if not found specific
+        if (localSub == null)
+        {
+             localSub = await _context.Subscriptions
+                .Where(s => s.UserId == user.Id)
+                .OrderByDescending(s => s.CreatedAtUtc)
+                .FirstOrDefaultAsync(ct);
+        }
 
         if (localSub != null)
         {
@@ -181,6 +197,11 @@ public class StripeWebhookHandler
         var user = await FindUserByCustomerIdAsync(invoice.CustomerId, ct);
         if (user == null) return;
 
+        // We don't downgrade immediately - allow Stripe's retry logic (Smart Retries) to function.
+        // The subscription status will eventually update to 'past_due' via customer.subscription.updated webhook,
+        // which we handle in HandleSubscriptionUpdatedAsync (keeping Pro access during grace period).
+        // If all retries fail, Stripe will mark it as Canceled/Unpaid (based on settings), which will then downgrade the user.
+        
         var localSub = await _context.Subscriptions
             .Where(s => s.UserId == user.Id)
             .OrderByDescending(s => s.CreatedAtUtc)
@@ -188,19 +209,13 @@ public class StripeWebhookHandler
 
         if (localSub != null)
         {
-            // Cancel subscription immediately on payment failure
-            localSub.Status = SubscriptionStatus.Canceled;
-            localSub.CanceledAtUtc = DateTime.UtcNow;
-            user.Plan = PlanType.Free;
-            await _context.SaveChangesAsync(ct);
-
-            // Cancel in Stripe as well
-            if (!string.IsNullOrEmpty(localSub.StripeSubscriptionId))
+            // Just update the status if we have it, but don't cancel/downgrade yet
+            if (localSub.Status == SubscriptionStatus.Active)
             {
-                await _stripeClient.CancelSubscriptionAsync(localSub.StripeSubscriptionId, true, ct);
+               localSub.Status = SubscriptionStatus.PastDue; 
+               // We keep user.Plan as Pro for now (grace period)
             }
-
-            _logger.LogInformation("Payment failed - user {UserId} downgraded to Free, subscription cancelled", user.Id);
+            await _context.SaveChangesAsync(ct);
         }
     }
 
@@ -210,6 +225,7 @@ public class StripeWebhookHandler
         // First, check ApplicationUser.StripeCustomerId (primary source)
         var user = await _context.Users
             .OfType<ApplicationUser>()
+            .Include(u => u.Subscriptions)
             .FirstOrDefaultAsync(u => u.StripeCustomerId == customerId, ct);
 
         if (user != null)
@@ -220,6 +236,7 @@ public class StripeWebhookHandler
         // Fallback: check Subscriptions table (for backward compatibility)
         var subscription = await _context.Subscriptions
             .Include(s => s.User)
+            .ThenInclude(u => u.Subscriptions)
             .FirstOrDefaultAsync(s => s.StripeCustomerId == customerId, ct);
 
         if (subscription?.User != null)
@@ -231,7 +248,7 @@ public class StripeWebhookHandler
         return null;
     }
 
-    private static SubscriptionStatus MapStripeStatus(string status)
+    public static SubscriptionStatus MapStripeStatus(string status)
     {
         return status switch
         {

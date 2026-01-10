@@ -32,5 +32,5 @@ public class ApplicationUser : IdentityUser
     // Nav
     public ICollection<TranscriptionJob> TranscriptionJobs { get; set; } = new List<TranscriptionJob>();
     public ICollection<MediaFile> MediaFiles { get; set; } = new List<MediaFile>();
-    public Subscription? Subscription { get; set; }
+    public ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
 }

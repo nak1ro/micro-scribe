@@ -121,6 +121,9 @@ public class StripeClient
         if (string.IsNullOrEmpty(itemId))
             throw new InvalidOperationException("Subscription has no items");
 
+        if (subscription.Items.Data.Count > 1)
+            throw new NotSupportedException("Updating multi-item subscriptions is not supported via this method.");
+
         var options = new SubscriptionUpdateOptions
         {
             Items = [new SubscriptionItemOptions { Id = itemId, Price = newPriceId }],
