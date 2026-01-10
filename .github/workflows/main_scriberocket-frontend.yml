@@ -3,12 +3,18 @@ name: Build and deploy Node.js app to Azure Web App - scriberocket-frontend
 on:
   push:
     branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/main_scriberocket-frontend.yml"
   workflow_dispatch:
+
+concurrency:
+  group: frontend-prod
+  cancel-in-progress: true
 
 env:
   RG: scriberocket-prod
   FE_APP: scriberocket-frontend
-  FE_SLOT: staging
 
 jobs:
   build:
@@ -30,20 +36,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Optionally set API URL at build time (recommended for Next.js)
-      # If you want staging builds to point at staging API, define NEXT_PUBLIC_API_URL_STAGING secret.
       - name: Set NEXT_PUBLIC_API_URL for build
-        run: |
-          if [ -n "${{ secrets.NEXT_PUBLIC_API_URL_STAGING }}" ]; then
-            echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_STAGING }}" >> $GITHUB_ENV
-          else
-            echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}" >> $GITHUB_ENV
-          fi
+        run: echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}" >> $GITHUB_ENV
 
       - name: Build with Next.js
         run: npm run build
 
-      - name: Prepare Standalone Artifact (standalone + root server.js)
+      - name: Prepare Standalone Artifact
         run: |
           rm -rf deployment
           mkdir -p deployment
@@ -60,12 +59,12 @@ jobs:
           # critical build id
           cp .next/BUILD_ID deployment/.next/BUILD_ID
 
-          # server folder (safe to include)
+          # server folder
           if [ -d ".next/server" ]; then
             cp -r .next/server deployment/.next/
           fi
 
-          # copy root manifest files that Next expects at runtime
+          # copy root manifest files
           shopt -s nullglob
           for f in .next/*.json; do
             cp "$f" deployment/.next/
@@ -133,23 +132,30 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_80598241AF434D9E823D6A38824C6179 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_72231FF6346C495381370352E7D7A15B }}
 
-      - name: Deploy to FE staging slot
-        id: deploy-to-staging
+      - name: Deploy to Production
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.FE_APP }}
-          slot-name: ${{ env.FE_SLOT }}
           package: artifact
 
-      - name: Smoke test FE staging
+      - name: Health check
         run: |
-          set -e
-          curl -fsS "https://${{ env.FE_APP }}-${{ env.FE_SLOT }}.azurewebsites.net/" > /dev/null
+          set -euo pipefail
+          URL="https://${{ env.FE_APP }}.azurewebsites.net/"
+          echo "Checking: $URL"
 
-      - name: Swap FE staging -> production
-        run: |
-          az webapp deployment slot swap \
-            --resource-group "${{ env.RG }}" \
-            --name "${{ env.FE_APP }}" \
-            --slot "${{ env.FE_SLOT }}" \
-            --target-slot "production"
+          max_attempts=30
+          sleep_seconds=10
+
+          for i in $(seq 1 $max_attempts); do
+            code=$(curl -s -o /dev/stderr -w "%{http_code}" "$URL" || echo "000")
+            if [ "$code" = "200" ]; then
+              echo "✅ Frontend health OK"
+              exit 0
+            fi
+            echo "Not ready (HTTP $code). Attempt $i/$max_attempts..."
+            sleep $sleep_seconds
+          done
+
+          echo "❌ Frontend health check failed."
+          exit 1
