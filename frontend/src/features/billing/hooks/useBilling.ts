@@ -29,6 +29,7 @@ export const useSubscribe = () => {
         mutationFn: (payload: SubscribeRequest) => billingApi.subscribe(payload),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["billing", "subscription"] });
+            queryClient.invalidateQueries({ queryKey: ["usage"] });
         },
     });
 };

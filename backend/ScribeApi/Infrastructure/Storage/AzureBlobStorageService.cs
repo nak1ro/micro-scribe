@@ -61,6 +61,39 @@ public class AzureBlobStorageService : IFileStorageService
         }
     }
 
+    private async Task<Uri> GenerateSasUriAsync(BlobBaseClient blobClient, BlobSasBuilder sasBuilder, CancellationToken ct)
+    {
+        // Try direct SAS generation first (works if we have a Shared Key)
+        try
+        {
+            if (blobClient.CanGenerateSasUri)
+            {
+                return blobClient.GenerateSasUri(sasBuilder);
+            }
+        }
+        catch (Exception ex) when (ex is ArgumentNullException or InvalidOperationException)
+        {
+            // Fallback to User Delegation Key
+            _logger.LogDebug("Direct SAS generation failed ({Message}), falling back to User Delegation Key", ex.Message);
+        }
+
+        // For Managed Identity, we need a User Delegation Key
+        // Ensure key is valid for the duration of the SAS token (+ buffer)
+        var startsOn = DateTimeOffset.UtcNow.AddMinutes(-5);
+        var expiresOn = sasBuilder.ExpiresOn.AddMinutes(5);
+
+        var userDelegationKey = await _blobServiceClient.GetUserDelegationKeyAsync(startsOn, expiresOn, ct);
+        
+        var sasQueryParameters = sasBuilder.ToSasQueryParameters(userDelegationKey, _blobServiceClient.AccountName);
+        
+        var sasUriBuilder = new UriBuilder(blobClient.Uri)
+        {
+            Query = sasQueryParameters.ToString()
+        };
+
+        return sasUriBuilder.Uri;
+    }
+
     public async Task<PresignedUploadResult> GenerateUploadUrlAsync(string key, string contentType, long sizeBytes, CancellationToken ct)
     {
         var container = await GetContainerClientAsync(ct);
@@ -78,7 +111,7 @@ public class AzureBlobStorageService : IFileStorageService
         
         sasBuilder.SetPermissions(BlobSasPermissions.Write);
 
-        var sasUri = blobClient.GenerateSasUri(sasBuilder);
+        var sasUri = await GenerateSasUriAsync(blobClient, sasBuilder, ct);
         
         _logger.LogDebug("Generated SAS URL for key {Key}", key);
 
@@ -102,7 +135,7 @@ public class AzureBlobStorageService : IFileStorageService
         
         sasBuilder.SetPermissions(BlobSasPermissions.Read);
 
-        var sasUri = blobClient.GenerateSasUri(sasBuilder);
+        var sasUri = await GenerateSasUriAsync(blobClient, sasBuilder, ct);
         return sasUri.ToString();
     }
 
@@ -137,7 +170,7 @@ public class AzureBlobStorageService : IFileStorageService
         
         sasBuilder.SetPermissions(BlobSasPermissions.Write);
 
-        var sasUri = blobClient.GenerateSasUri(sasBuilder);
+        var sasUri = await GenerateSasUriAsync(blobClient, sasBuilder, ct);
         
         // Append comp=block and blockid to the URI for Azure Block Blob PUT Block
         var uriBuilder = new UriBuilder(sasUri);
