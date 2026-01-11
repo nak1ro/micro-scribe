@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Shield, CreditCard, RefreshCw, Lock } from "lucide-react";
+import { Lock, CreditCard, RefreshDouble, Shield } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { trustSignals } from "../data";
 
@@ -9,7 +9,7 @@ import { trustSignals } from "../data";
 const iconMap: Record<string, React.ElementType> = {
     Shield,
     CreditCard,
-    RefreshCw,
+    RefreshCw: RefreshDouble,
     Lock,
 };
 

@@ -1,6 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
-import { Mic2, Twitter, Github } from "lucide-react";
+import { Microphone, X as TwitterIcon, Github } from "iconoir-react";
 import { cn } from "@/lib/utils";
 
 const footerLinks = {
@@ -14,7 +14,7 @@ const footerLinks = {
         { href: "/cookies", label: "Cookie Policy" },
     ],
     social: [
-        { href: "https://twitter.com", label: "Twitter", icon: Twitter },
+        { href: "https://twitter.com", label: "Twitter", icon: TwitterIcon },
         { href: "https://github.com", label: "GitHub", icon: Github },
     ],
 };
@@ -33,7 +33,7 @@ export function Footer() {
                             href="/"
                             className="flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity"
                         >
-                            <Mic2 className="h-6 w-6 text-primary" />
+                            <Microphone className="h-6 w-6 text-primary" />
                             <span className="text-lg font-semibold">ScribeRocket</span>
                         </Link>
                         <p className="text-sm text-muted-foreground leading-relaxed">

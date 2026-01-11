@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Mic2, Sparkles } from "lucide-react";
+import { Microphone, Sparks } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthTabs, type AuthMode } from "./AuthTabs";
@@ -90,7 +90,7 @@ export function AuthCard() {
                         <div className="inline-flex items-center justify-center gap-2 mb-4">
                             <div className="relative">
                                 <div className="absolute inset-0 bg-primary/30 blur-xl rounded-full" />
-                                <Mic2 className="relative h-9 w-9 text-primary" />
+                                <Microphone className="relative h-9 w-9 text-primary" />
                             </div>
                             <span className="text-xl font-bold text-foreground">
                                 ScribeRocket
@@ -103,7 +103,7 @@ export function AuthCard() {
                             ) : (
                                 <>
                                     Create your account
-                                    <Sparkles className="h-5 w-5 text-primary animate-pulse" />
+                                    <Sparks className="h-5 w-5 text-primary animate-pulse" />
                                 </>
                             )}
                         </h1>

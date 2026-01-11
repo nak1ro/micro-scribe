@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Search, ArrowUpDown, Check, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, Check, ArrowUp, ArrowDown } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { TranscriptionList, DeleteConfirmationModal, ExportModal } from "@/features/transcription";
 import { FolderPills } from "@/features/workspace/folders/components/FolderPills";

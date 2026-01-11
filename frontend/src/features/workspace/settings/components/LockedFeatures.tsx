@@ -1,15 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { Infinity, Zap, Languages, Database, Lock } from "lucide-react";
+import { Infinite, Flash, Language, Database, Lock } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
 import { lockedFeatures } from "../data";
 
 const iconMap: Record<string, React.ElementType> = {
-    Infinity,
-    Zap,
-    Languages,
+    Infinity: Infinite,
+    Zap: Flash,
+    Languages: Language,
     Database,
 };
 
@@ -30,7 +30,7 @@ export function LockedFeatures({ onUpgrade }: LockedFeaturesProps) {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                 {lockedFeatures.map((feature, index) => {
-                    const Icon = iconMap[feature.icon] || Zap;
+                    const Icon = iconMap[feature.icon] || Flash;
                     return (
                         <div
                             key={index}

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Receipt, Check, Clock, ChevronDown, ChevronUp, Download } from "lucide-react";
+import { Page, Check, Clock, NavArrowDown, NavArrowUp, Download } from "iconoir-react";
 import { Button } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import type { InvoiceItem } from "@/types/api/billing";
@@ -23,7 +23,7 @@ export function BillingHistorySection({ invoices, hasMore, isLoading }: BillingH
             <div className="rounded-xl border border-border bg-card p-6">
                 <div className="flex items-center gap-4">
                     <div className="p-2 rounded-lg bg-muted">
-                        <Receipt className="h-5 w-5 text-muted-foreground" />
+                        <Page className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
                         <h3 className="text-lg font-semibold text-foreground">
@@ -41,7 +41,7 @@ export function BillingHistorySection({ invoices, hasMore, isLoading }: BillingH
             <div className="rounded-xl border border-border bg-card p-6">
                 <div className="flex items-center gap-4">
                     <div className="p-2 rounded-lg bg-muted">
-                        <Receipt className="h-5 w-5 text-muted-foreground" />
+                        <Page className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
                         <h3 className="text-lg font-semibold text-foreground">
@@ -59,7 +59,7 @@ export function BillingHistorySection({ invoices, hasMore, isLoading }: BillingH
             {/* Header */}
             <div className="flex items-center gap-4 p-6 border-b border-border">
                 <div className="p-2 rounded-lg bg-muted">
-                    <Receipt className="h-5 w-5 text-muted-foreground" />
+                    <Page className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div>
                     <h3 className="text-lg font-semibold text-foreground">
@@ -117,12 +117,12 @@ export function BillingHistorySection({ invoices, hasMore, isLoading }: BillingH
                     >
                         {isExpanded ? (
                             <>
-                                <ChevronUp className="h-4 w-4" />
+                                <NavArrowUp className="h-4 w-4" />
                                 Show less
                             </>
                         ) : (
                             <>
-                                <ChevronDown className="h-4 w-4" />
+                                <NavArrowDown className="h-4 w-4" />
                                 View all invoices
                             </>
                         )}
@@ -175,7 +175,7 @@ function InvoiceRow({ invoice }: { invoice: InvoiceItem }) {
 }
 
 function StatusBadge({ status }: { status: InvoiceItem["status"] }) {
-    const config = {
+    const config: Record<string, { icon: typeof Check; label: string; className: string }> = {
         paid: {
             icon: Check,
             label: "Paid",
@@ -193,11 +193,18 @@ function StatusBadge({ status }: { status: InvoiceItem["status"] }) {
         },
     };
 
-    const { icon: Icon, label, className } = config[status];
+    // Fallback for unknown statuses
+    const defaultConfig = {
+        icon: Clock,
+        label: status.charAt(0).toUpperCase() + status.slice(1),
+        className: "bg-muted text-muted-foreground",
+    };
+
+    const { icon: Icon, label, className } = config[status] ?? defaultConfig;
 
     return (
         <span className={cn(
-            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
+            "inline-flex items-center gap-1 px-2 py-0.5 h-5 rounded-full text-xs font-medium",
             className
         )}>
             <Icon className="h-3 w-3" />

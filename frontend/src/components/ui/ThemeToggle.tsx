@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useTheme } from "next-themes";
-import { Sun, Moon } from "lucide-react";
+import { SunLight, HalfMoon } from "iconoir-react";
 import { cn } from "@/lib/utils";
 
 export function ThemeToggle() {
@@ -21,7 +21,7 @@ export function ThemeToggle() {
                 className="p-2 rounded-md text-muted-foreground"
                 aria-label="Toggle theme"
             >
-                <Sun className="h-5 w-5" />
+                <SunLight className="h-5 w-5" />
             </button>
         );
     }
@@ -40,7 +40,7 @@ export function ThemeToggle() {
             )}
             aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
         >
-            {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            {isDark ? <SunLight className="h-5 w-5" /> : <HalfMoon className="h-5 w-5" />}
         </button>
     );
 }

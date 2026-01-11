@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, X } from "lucide-react";
+import { Check, Xmark } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { featureComparisonData } from "../data";
 
@@ -116,7 +116,7 @@ function FeatureValue({
         return (
             <div className="flex justify-center">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center bg-muted">
-                    <X className="h-4 w-4 text-muted-foreground/50" />
+                    <Xmark className="h-4 w-4 text-muted-foreground/50" />
                 </div>
             </div>
         );
