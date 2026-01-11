@@ -14,8 +14,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-    title: 'ScribeApi - Transcription Service',
-    description: 'AI-powered audio/video transcription',
+    title: 'ScribeRocket - AI Transcription',
+    description: 'Transcribe audio in minutes, not hours. AI-powered transcription with timestamps, summaries, and translations.',
 };
 
 export default function RootLayout({
@@ -28,8 +28,7 @@ export default function RootLayout({
             <body className={plusJakartaSans.className}>
                 <ThemeProvider
                     attribute="class"
-                    defaultTheme="system"
-                    enableSystem
+                    defaultTheme="light"
                     disableTransitionOnChange
                 >
                     <AuthProvider>

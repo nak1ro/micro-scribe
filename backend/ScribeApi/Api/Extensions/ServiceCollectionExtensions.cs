@@ -183,7 +183,19 @@ public static class ServiceCollectionExtensions
         // Custom services
         services.AddScoped<TransactionFilter>();
         services.AddScoped<IAuthService, AuthService>();
+        
+        // Email Service Strategy
+        var emailProvider = configuration["EmailSettings:Provider"] ?? "Smtp"; // Default to Smtp/MailHog
+        if (emailProvider.Equals("Azure", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddScoped<IEmailSender, AzureEmailSender>();
+        }
+        else
+        {
+            services.AddScoped<IEmailSender, SmtpEmailSender>();
+        }
         services.AddScoped<IEmailService, EmailService>();
+        
         services.AddScoped<IExternalAuthService, ExternalAuthService>();
         services.AddScoped<IOAuthService, OAuthService>();
         services.AddScoped<IAuthQueries, AuthQueries>();

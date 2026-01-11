@@ -60,5 +60,9 @@ export function getProcessingStepText(
         return "Cancelled";
     }
 
+    if (statusLower === "uploading") {
+        return "Uploading";
+    }
+
     return status;
 }
