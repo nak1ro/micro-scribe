@@ -10,9 +10,8 @@ namespace ScribeApi.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "IX_Subscriptions_UserId",
-                table: "Subscriptions");
+            // Safely drop index if it exists (using raw SQL for PostgreSQL)
+            migrationBuilder.Sql("DROP INDEX IF EXISTS \"IX_Subscriptions_UserId\";");
         }
 
         /// <inheritdoc />
