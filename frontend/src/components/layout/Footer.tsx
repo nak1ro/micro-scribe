@@ -1,6 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
-import { Microphone, X as TwitterIcon, Github } from "iconoir-react";
+import { Rocket, X as TwitterIcon, Github } from "iconoir-react";
 import { cn } from "@/lib/utils";
 
 const footerLinks = {
@@ -33,7 +33,7 @@ export function Footer() {
                             href="/"
                             className="flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity"
                         >
-                            <Microphone className="h-6 w-6 text-primary" />
+                            <Rocket className="h-6 w-6 text-primary" />
                             <span className="text-lg font-semibold">ScribeRocket</span>
                         </Link>
                         <p className="text-sm text-muted-foreground leading-relaxed">

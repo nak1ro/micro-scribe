@@ -72,6 +72,9 @@ export function UseCasesSection() {
                         isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
                     )}
                 >
+                    <span className="inline-block px-4 py-1.5 mb-6 text-sm font-medium text-primary bg-primary/10 rounded-full">
+                        Who's it for
+                    </span>
                     <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4 tracking-tight">
                         Built for{" "}
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/65">
@@ -90,90 +93,48 @@ export function UseCasesSection() {
                             key={useCase.id}
                             className={cn(
                                 "group relative rounded-2xl overflow-hidden cursor-pointer",
-                                "hover:scale-[1.02] hover:shadow-2xl",
+                                "hover-lift",
                                 // Size variants for asymmetric layout
                                 useCase.size === "large" && "md:col-span-2 md:row-span-2",
                                 useCase.size === "medium" && "lg:col-span-2",
                                 useCase.size === "small" && "col-span-1",
                                 // Scroll animation
-                                isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                                "transition-opacity duration-500",
+                                isInView ? "opacity-100" : "opacity-0"
                             )}
-                            style={{
-                                transition: `opacity 700ms ${150 + index * 100}ms, transform 700ms ${150 + index * 100}ms, box-shadow 500ms, scale 500ms`,
-                            }}
                         >
-                            {/* Background Image with Grayscale */}
+                            {/* Background Image */}
                             <div className="absolute inset-0">
                                 <Image
                                     src={useCase.image}
                                     alt={useCase.title}
                                     fill
-                                    className={cn(
-                                        "object-cover",
-                                        "grayscale group-hover:grayscale-0",
-                                        "scale-105 group-hover:scale-100",
-                                        "transition-all duration-700"
-                                    )}
+                                    className="object-cover"
                                 />
                             </div>
 
                             {/* Gradient Overlay */}
-                            <div
-                                className={cn(
-                                    "absolute inset-0",
-                                    "bg-gradient-to-t from-black/90 via-black/50 to-transparent",
-                                    "group-hover:from-black/70 group-hover:via-transparent",
-                                    "transition-all duration-500"
-                                )}
-                            />
-
-                            {/* Color Accent Overlay on Hover */}
-                            <div
-                                className={cn(
-                                    "absolute inset-0 opacity-0 group-hover:opacity-30",
-                                    "bg-gradient-to-br",
-                                    useCase.accent,
-                                    "transition-opacity duration-500"
-                                )}
-                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
 
                             {/* Content */}
                             <div className="absolute inset-0 p-6 flex flex-col justify-end">
                                 <h3 className={cn(
                                     "font-bold text-white mb-2",
-                                    "transform group-hover:-translate-y-1 transition-transform duration-300",
                                     useCase.size === "large" ? "text-3xl" : "text-xl"
                                 )}>
                                     {useCase.title}
                                 </h3>
                                 <p className={cn(
                                     "text-white/80 leading-relaxed",
-                                    "transform translate-y-4 opacity-0",
-                                    "group-hover:translate-y-0 group-hover:opacity-100",
-                                    "transition-all duration-300 delay-100",
+                                    "opacity-0 group-hover:opacity-100",
+                                    "transition-opacity duration-300",
                                     useCase.size === "large" ? "text-lg" : "text-sm"
                                 )}>
                                     {useCase.description}
                                 </p>
                             </div>
-
-                            {/* Corner accent */}
-                            <div className={cn(
-                                "absolute top-4 right-4 w-3 h-3 rounded-full",
-                                "bg-gradient-to-br",
-                                useCase.accent,
-                                "opacity-0 group-hover:opacity-100",
-                                "transition-opacity duration-300"
-                            )} />
                         </div>
                     ))}
-                </div>
-
-                {/* Bottom tagline */}
-                <div className="text-center mt-12">
-                    <p className="text-muted-foreground">
-                        From solo creators to enterprise teams, ScribeRocket adapts to your workflow
-                    </p>
                 </div>
             </div>
         </section>

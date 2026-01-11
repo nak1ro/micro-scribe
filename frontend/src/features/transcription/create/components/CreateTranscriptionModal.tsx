@@ -445,7 +445,7 @@ export function CreateTranscriptionModal({
                                                 Daily limit reached. <Link href="/pricing" className="underline hover:no-underline">Upgrade to Pro</Link> for unlimited transcriptions.
                                             </span>
                                         ) : (
-                                            <span className="text-warning-foreground">
+                                            <span className="text-foreground">
                                                 <span className="font-medium">{remainingToday}/{dailyLimit}</span> free transcriptions remaining today.
                                             </span>
                                         )}
@@ -576,7 +576,7 @@ export function CreateTranscriptionModal({
                                                         isSelected
                                                             ? "border-primary bg-primary/10 text-primary"
                                                             : "border-input bg-background text-muted-foreground",
-                                                        !isSelected && !isRestricted && "hover:border-primary/50",
+                                                        !isSelected && !isRestricted && "hover-subtle hover:border-primary/50",
                                                         isRestricted && "opacity-50 cursor-not-allowed bg-muted border-transparent"
                                                     )}
                                                 >
@@ -584,7 +584,7 @@ export function CreateTranscriptionModal({
                                                         <span className="font-medium">{opt.label}</span>
                                                         {isRestricted && <Lock className="h-3.5 w-3.5 ml-auto" />}
                                                     </div>
-                                                    <div className="text-xs opacity-70 text-left">{opt.description}</div>
+                                                    <div className="text-xs text-muted-foreground text-left">{opt.description}</div>
                                                 </button>
                                             );
                                         })}

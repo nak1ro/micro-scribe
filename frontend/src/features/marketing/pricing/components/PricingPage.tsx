@@ -166,7 +166,7 @@ export function PricingPage() {
 
             {/* Final CTA */}
             <section
-                className="relative py-16 sm:py-24 overflow-hidden"
+                className="relative py-16 sm:py-24 mb-16 sm:mb-24 overflow-hidden"
                 ref={ctaRef}
             >
                 {/* Gradient background */}
@@ -205,3 +205,4 @@ export function PricingPage() {
         </LandingBackground>
     );
 }
+

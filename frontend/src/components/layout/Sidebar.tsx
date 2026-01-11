@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import {
-    Microphone,
+    Rocket,
     Sparks,
     SidebarCollapse,
     SidebarExpand,
@@ -36,7 +36,7 @@ const SIDEBAR_COLLAPSED_WIDTH = 68;
 
 export function Sidebar({ onNewTranscription }: SidebarProps) {
     const { isCollapsed, toggleCollapse, setCollapsed } = useSidebar();
-    const { data: usage } = useUsage();
+    const { data: usage, isLoading } = useUsage();
     const pathname = usePathname();
 
     // Auto-collapse logic based on route
@@ -55,6 +55,31 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
     // Check if we are in transcription view
     const isTranscriptionView = pathname?.includes("/transcriptions/");
 
+    // Loading skeleton
+    if (isLoading) {
+        return (
+            <>
+                {/* Desktop Sidebar Skeleton */}
+                <aside
+                    className={cn(
+                        "hidden lg:flex flex-col sticky self-start",
+                        "bg-card border-r border-border"
+                    )}
+                    style={{
+                        width: SIDEBAR_WIDTH,
+                        top: "var(--banner-height, 0px)",
+                        height: "calc(100vh - var(--banner-height, 0px))"
+                    }}
+                >
+                    <SidebarSkeleton />
+                </aside>
+                {/* Mobile Bottom Nav - always show */}
+                <MobileBottomNav onNewTranscription={onNewTranscription} isPremium={false} />
+            </>
+        );
+    }
+
+
     const sidebarContent = (
         <div className="flex flex-col h-full">
             {/* Brand Header */}
@@ -68,7 +93,7 @@ export function Sidebar({ onNewTranscription }: SidebarProps) {
                             href="/"
                             className="flex items-center gap-2.5 text-foreground hover:opacity-80 transition-opacity"
                         >
-                            <Microphone className="h-7 w-7 text-primary shrink-0" />
+                            <Rocket className="h-7 w-7 text-primary shrink-0" />
                             <span className="font-semibold text-base">ScribeRocket</span>
                         </Link>
                         {isTranscriptionView ? (
@@ -882,6 +907,53 @@ function FolderListItem({ name, color, itemCount, onClick, onEdit, onDelete }: F
                     )}
                 </div>
             )}
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Sidebar Loading Skeleton
+// ─────────────────────────────────────────────────────────────
+
+function SidebarSkeleton() {
+    return (
+        <div className="flex flex-col h-full animate-pulse">
+            {/* Brand Header Skeleton */}
+            <div className="h-16 flex items-center justify-between px-4 border-b border-border">
+                <div className="flex items-center gap-2.5">
+                    <div className="h-7 w-7 rounded-lg bg-muted" />
+                    <div className="h-4 w-24 rounded bg-muted" />
+                </div>
+                <div className="h-8 w-8 rounded-md bg-muted" />
+            </div>
+
+            {/* Upgrade Card Skeleton */}
+            <div className="px-4 py-2 mt-4">
+                <div className="h-20 rounded-xl bg-muted" />
+            </div>
+
+            {/* Usage Skeleton */}
+            <div className="mt-5 px-4 py-2">
+                <div className="h-14 rounded-lg bg-muted" />
+            </div>
+
+            {/* New Button Skeleton */}
+            <div className="px-4 mt-8 mb-8">
+                <div className="h-10 rounded-lg bg-muted" />
+            </div>
+
+            {/* Navigation Skeleton */}
+            <div className="px-3 py-2">
+                <div className="h-10 rounded-lg bg-muted" />
+            </div>
+
+            {/* Spacer */}
+            <div className="flex-1" />
+
+            {/* Bottom Account Skeleton */}
+            <div className="px-3 py-2 pb-4 border-t border-border mt-auto">
+                <div className="h-10 rounded-lg bg-muted" />
+            </div>
         </div>
     );
 }

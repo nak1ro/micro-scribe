@@ -30,7 +30,7 @@ export function Header() {
                 "transition-all duration-[var(--transition-fast)] ease-[var(--easing-soft)]"
             )}
         >
-            <div className="mx-auto h-full max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto h-full max-w-screen-2xl px-4 sm:px-6 lg:px-8">
                 <div className="flex h-full items-center justify-between">
                     {/* Left: Logo + Nav */}
                     <div className="flex items-center gap-8">
@@ -231,14 +231,16 @@ function UserMenu({ user }: UserMenuProps) {
                     )}
                 >
                     <div className="p-3 border-b border-border">
-                        <p className="text-sm font-medium text-foreground">{user.name}</p>
-                        <p className="text-xs text-muted-foreground">{user.email}</p>
+                        <p className="text-sm font-medium text-foreground truncate">{user.email}</p>
                     </div>
                     <div className="p-1">
-                        <DropdownLink href="/dashboard" icon={ViewGrid}>
-                            Dashboard
-                        </DropdownLink>
-                        <DropdownLink href="/dashboard/subscription" icon={CreditCard}>
+                        {/* Dashboard link - mobile only */}
+                        <div className="lg:hidden">
+                            <DropdownLink href="/dashboard" icon={ViewGrid}>
+                                Dashboard
+                            </DropdownLink>
+                        </div>
+                        <DropdownLink href="/account/billing" icon={CreditCard}>
                             Manage Subscription
                         </DropdownLink>
                         <ThemeMenuButton />

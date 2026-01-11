@@ -33,7 +33,7 @@ export function FinalCTASection() {
     const { ref, isInView } = useInView(0.2);
 
     return (
-        <section className="relative py-16 sm:py-20 md:min-h-[60vh] md:flex md:items-center overflow-hidden" ref={ref}>
+        <section className="relative py-16 sm:py-20 mb-16 sm:mb-24 md:min-h-[60vh] md:flex md:items-center overflow-hidden" ref={ref}>
             {/* Enhanced gradient background */}
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] sm:w-[900px] h-[300px] sm:h-[500px] rounded-full bg-gradient-to-r from-primary/20 via-primary/15 to-primary/10 blur-3xl" />
