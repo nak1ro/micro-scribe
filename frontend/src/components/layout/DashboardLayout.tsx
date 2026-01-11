@@ -33,7 +33,10 @@ function DashboardLayoutInner({
 
     return (
         <div
-            className="flex flex-col min-h-screen"
+            className={cn(
+                "flex flex-col",
+                noPadding ? "h-screen overflow-hidden" : "min-h-screen"
+            )}
             style={{ paddingTop: "var(--banner-height, 0px)" }}
         >
             {/* Full-width verification banner at the top (fixed position) */}

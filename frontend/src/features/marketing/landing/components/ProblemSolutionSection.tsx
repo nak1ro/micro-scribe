@@ -269,7 +269,7 @@ export function ProblemSolutionSection() {
                         Start Transcribing Free
                     </CTAButton>
                     <p className="mt-4 text-muted-foreground text-sm">
-                        No credit card required • 10 free transcriptions daily
+                        No credit card required • 3 free transcriptions daily
                     </p>
                 </div>
             </div>
