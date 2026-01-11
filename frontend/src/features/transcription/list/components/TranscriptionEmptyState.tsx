@@ -12,11 +12,12 @@ interface TranscriptionEmptyStateProps {
 }
 
 export function TranscriptionEmptyState({ onNewClick }: TranscriptionEmptyStateProps) {
-    const { isVerified, openModal: openVerificationModal } = useEmailVerification();
+    const { isVerified, isLoading, openModal: openVerificationModal } = useEmailVerification();
 
     // Wrap click handler with verification check
+    // Allow action while loading to prevent false-positive blocks
     const handleClick = (type: InputType) => {
-        if (isVerified) {
+        if (isLoading || isVerified) {
             onNewClick?.(type);
         } else {
             openVerificationModal();

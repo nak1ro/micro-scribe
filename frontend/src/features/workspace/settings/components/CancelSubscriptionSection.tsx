@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { AlertTriangle } from "lucide-react";
+import { WarningTriangle } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
 import { billingCopy } from "../data";
@@ -30,7 +30,7 @@ export function CancelSubscriptionSection({ onCancel, isLoading }: CancelSubscri
             >
                 <div className="flex items-start gap-4">
                     <div className="shrink-0 w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
-                        <AlertTriangle className="h-5 w-5 text-destructive" />
+                        <WarningTriangle className="h-5 w-5 text-destructive" />
                     </div>
                     <div className="flex-1">
                         <h3 className="text-lg font-semibold text-foreground">

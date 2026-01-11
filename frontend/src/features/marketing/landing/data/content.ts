@@ -11,7 +11,7 @@ export const siteConfig = {
 };
 
 export const heroContent = {
-    headline: "Transcribe Audio in Minutes with AI Accuracy",
+    headline: "Transcribe Audio in Minutes, Not Hours",
     subheadline:
         "AI-powered transcription with timestamps, summaries, and translations. Upload your audio or video and get results in seconds.",
     primaryCTA: {

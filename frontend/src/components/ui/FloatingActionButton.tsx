@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { Plus } from "lucide-react";
+import { Plus } from "iconoir-react";
 
 interface FloatingActionButtonProps {
     onClick?: () => void;

@@ -16,7 +16,7 @@ function DashboardPageContent() {
     const folderId = searchParams.get("folder");
 
     const { isModalOpen, openModal, closeModal } = useDashboardModal();
-    const { isVerified, openModal: openVerificationModal } = useEmailVerification();
+    const { isVerified, isLoading: isVerificationLoading, openModal: openVerificationModal } = useEmailVerification();
 
     // Clean up URL when closing modal
     const handleCloseModal = () => {
@@ -75,9 +75,10 @@ function DashboardPageContent() {
     };
 
     // Check for "action=new" in URL to open modal
+    // Allow action while loading to prevent false-positive blocks
     React.useEffect(() => {
         if (searchParams.get("action") === "new") {
-            if (isVerified) {
+            if (isVerificationLoading || isVerified) {
                 openModal();
             } else {
                 openVerificationModal();
@@ -85,7 +86,7 @@ function DashboardPageContent() {
                 router.replace("/dashboard");
             }
         }
-    }, [searchParams, openModal, isVerified, openVerificationModal, router]);
+    }, [searchParams, openModal, isVerified, isVerificationLoading, openVerificationModal, router]);
 
     // Check for "upgrade=success" in URL to show success message
     const [showUpgradeSuccess, setShowUpgradeSuccess] = React.useState(false);

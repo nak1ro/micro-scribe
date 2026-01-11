@@ -28,8 +28,8 @@ public class SubscriptionConfiguration : IEntityTypeConfiguration<Subscription>
             .HasDefaultValueSql("NOW()");
 
         builder.HasOne(x => x.User)
-            .WithOne(u => u.Subscription)
-            .HasForeignKey<Subscription>(x => x.UserId)
+            .WithMany(u => u.Subscriptions)
+            .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Cascade);
         
         builder.HasIndex(x => x.StripeSubscriptionId)

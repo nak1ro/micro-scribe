@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Folder, Plus, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Folder, Plus, MoreVert, EditPencil, Trash } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { useFolders, useDeleteFolder, FOLDER_COLORS } from "@/hooks";
 import { FolderModal } from "@/features/workspace/folders";
@@ -16,7 +16,7 @@ export function FolderPills() {
 
     const { data: folders, isLoading } = useFolders();
     const deleteFolderMutation = useDeleteFolder();
-    const { isVerified, openModal: openVerificationModal } = useEmailVerification();
+    const { isVerified, isLoading: isVerificationLoading, openModal: openVerificationModal } = useEmailVerification();
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     const [editingFolder, setEditingFolder] = React.useState<FolderDto | null>(null);
 
@@ -28,8 +28,9 @@ export function FolderPills() {
         }
     };
 
+    // Allow actions while loading to prevent false-positive blocks
     const handleNewFolder = () => {
-        if (!isVerified) {
+        if (!isVerificationLoading && !isVerified) {
             openVerificationModal();
             return;
         }
@@ -38,7 +39,7 @@ export function FolderPills() {
     };
 
     const handleEdit = (folder: FolderDto) => {
-        if (!isVerified) {
+        if (!isVerificationLoading && !isVerified) {
             openVerificationModal();
             return;
         }
@@ -52,7 +53,7 @@ export function FolderPills() {
     };
 
     const handleDelete = async (folderId: string) => {
-        if (!isVerified) {
+        if (!isVerificationLoading && !isVerified) {
             openVerificationModal();
             return;
         }
@@ -228,7 +229,7 @@ function FolderPill({ name, color, count, isActive, onClick, onEdit, onDelete, s
                                 : "text-muted-foreground hover:text-foreground hover:bg-muted"
                         )}
                     >
-                        <MoreVertical className="h-3.5 w-3.5" />
+                        <MoreVert className="h-3.5 w-3.5" />
                     </button>
                 )}
             </div>
@@ -252,7 +253,7 @@ function FolderPill({ name, color, count, isActive, onClick, onEdit, onDelete, s
                                     "transition-colors"
                                 )}
                             >
-                                <Pencil className="h-3.5 w-3.5" />
+                                <EditPencil className="h-3.5 w-3.5" />
                                 Edit
                             </button>
                             <button
@@ -263,7 +264,7 @@ function FolderPill({ name, color, count, isActive, onClick, onEdit, onDelete, s
                                     "transition-colors"
                                 )}
                             >
-                                <Trash2 className="h-3.5 w-3.5" />
+                                <Trash className="h-3.5 w-3.5" />
                                 Delete
                             </button>
                         </>

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown } from "lucide-react";
+import { NavArrowDown } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { pricingFAQContent } from "../data";
 
@@ -33,7 +33,7 @@ export function PricingFAQ() {
                         <span className="text-base font-medium text-foreground pr-6">
                             {faq.question}
                         </span>
-                        <ChevronDown
+                        <NavArrowDown
                             className={cn(
                                 "h-5 w-5 text-muted-foreground shrink-0 transition-transform duration-200",
                                 openIndex === index && "rotate-180"

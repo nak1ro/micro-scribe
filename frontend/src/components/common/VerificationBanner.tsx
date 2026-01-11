@@ -8,14 +8,14 @@ import { useEmailVerification } from "@/context/VerificationContext";
 const BANNER_HEIGHT = 52;
 
 export function VerificationBanner() {
-    const { isVerified, resendEmail, resendLoading, resendSuccess } = useEmailVerification();
+    const { isVerified, isLoading, resendEmail, resendLoading, resendSuccess } = useEmailVerification();
     const pathname = usePathname();
 
     // Hide on transcription viewer page
     const isTranscriptionView = pathname?.includes("/transcriptions/");
 
-    // Determine if banner is visible
-    const isVisible = !isVerified && !isTranscriptionView;
+    // Only show banner when loading is done AND user is definitely unverified
+    const isVisible = !isLoading && !isVerified && !isTranscriptionView;
 
     // Update CSS variable for layout offset
     useEffect(() => {

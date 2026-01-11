@@ -144,9 +144,9 @@ export function HeroSection() {
                         mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                     )}
                 >
-                    Your audio.
+                    Transcribe Audio
                     <br />
-                    <span className="text-primary">As searchable text.</span>
+                    <span className="text-primary">in Minutes, not Hours.</span>
                 </h1>
 
                 {/* Subheadline - stagger delay 200ms */}

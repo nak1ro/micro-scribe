@@ -189,15 +189,9 @@ public class AuthService : IAuthService
     public async Task ResendEmailConfirmationAsync(string email, CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByEmailAsync(email);
-        if (user == null)
+        if (user == null || user.EmailConfirmed)
         {
-            // Do not reveal if user exists
-            return;
-        }
-
-        if (user.EmailConfirmed)
-        {
-            // Already confirmed
+            // Don't reveal that the user does not exist or is already confirmed
             return;
         }
         
@@ -208,6 +202,18 @@ public class AuthService : IAuthService
     }
 
 
+
+    public async Task RefreshSessionAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            throw new NotFoundException($"User with ID {userId} not found.");
+        }
+
+        // Re-issue the authentication cookie with updated claims
+        await _signInManager.SignInAsync(user, isPersistent: true);
+    }
 
     public async Task<UserDto> GetUserByIdAsync(string userId, CancellationToken cancellationToken = default)
     {

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Mail, Lock, FileText, CreditCard, Trash, Palette, LogOut } from "lucide-react";
+import { Mail, Lock, Page, CreditCard, Trash, ColorFilter, LogOut } from "iconoir-react";
 import { Button, ThemeToggle } from "@/components/ui";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -54,7 +54,7 @@ export function AccountContent() {
 
             {/* Terms of Use Section */}
             <SettingsCard
-                icon={FileText}
+                icon={Page}
                 title="Terms of Use"
                 description="Read our terms and conditions"
             >
@@ -78,7 +78,7 @@ export function AccountContent() {
 
             {/* Appearance Section */}
             <SettingsCard
-                icon={Palette}
+                icon={ColorFilter}
                 title="Appearance"
                 description="Customize your interface theme"
             >

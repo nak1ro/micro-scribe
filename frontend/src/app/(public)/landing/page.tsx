@@ -21,8 +21,8 @@ export default function LandingPage() {
                 <HowItWorksSection />
                 <FeaturesSection />
                 <UseCasesSection />
-                <WhisperReviewsSection />
                 <PricingSection />
+                <WhisperReviewsSection />
                 <FAQSection />
                 <FinalCTASection />
             </LandingBackground>

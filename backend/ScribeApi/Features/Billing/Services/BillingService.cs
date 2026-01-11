@@ -64,7 +64,33 @@ public class BillingService : IBillingService
         // Create subscription with the actual customer ID
         var subscription = await _stripeClient.CreateSubscriptionAsync(actualCustomerId, priceId, idempotencyKey, ct);
 
-        _logger.LogInformation("Created subscription {SubscriptionId} for user {UserId}", subscription.Id, userId);
+        // OPTIMISTIC UPDATE: Update local DB immediately so UI reflects state without waiting for webhook
+        var user = await _context.Users.OfType<ApplicationUser>().FirstAsync(u => u.Id == userId, ct);
+        
+        var firstItem = subscription.Items.Data.FirstOrDefault();
+        
+        var localSub = new Subscription
+        {
+            UserId = userId,
+            StripeCustomerId = actualCustomerId,
+            StripeSubscriptionId = subscription.Id,
+            Status = StripeWebhookHandler.MapStripeStatus(subscription.Status),
+            // Default to Pro immediately on successful creation
+            CurrentPeriodStartUtc = firstItem?.CurrentPeriodStart ?? DateTime.UtcNow,
+            CurrentPeriodEndUtc = firstItem?.CurrentPeriodEnd ?? DateTime.UtcNow.AddHours(1),
+            User = user
+        };
+
+        if (localSub.Status == SubscriptionStatus.Active || 
+            localSub.Status == SubscriptionStatus.Trialing)
+        {
+            user.Plan = PlanType.Pro;
+        }
+
+        _context.Subscriptions.Add(localSub);
+        await _context.SaveChangesAsync(ct);
+
+        _logger.LogInformation("Created subscription {SubscriptionId} for user {UserId} (Optimistic Update)", subscription.Id, userId);
 
         return new SubscriptionResponse(subscription.Id, subscription.Status);
     }
@@ -173,13 +199,16 @@ public class BillingService : IBillingService
     public async Task<bool> CancelSubscriptionAsync(string userId, bool cancelImmediately = false, CancellationToken ct = default)
     {
         var subscription = await _context.Subscriptions
-            .Where(s => s.UserId == userId && s.Status == SubscriptionStatus.Active)
+            .Where(s => s.UserId == userId && 
+                       (s.Status == SubscriptionStatus.Active || 
+                        s.Status == SubscriptionStatus.Trialing || 
+                        s.Status == SubscriptionStatus.PastDue))
             .OrderByDescending(s => s.CreatedAtUtc)
             .FirstOrDefaultAsync(ct);
 
         if (subscription == null || string.IsNullOrEmpty(subscription.StripeSubscriptionId))
         {
-            _logger.LogWarning("No active subscription found for user {UserId}", userId);
+            _logger.LogWarning("No active/trialing/past_due subscription found for user {UserId}", userId);
             return false;
         }
 
@@ -207,7 +236,10 @@ public class BillingService : IBillingService
         CancellationToken ct = default)
     {
         var subscription = await _context.Subscriptions
-            .Where(s => s.UserId == userId && s.Status == SubscriptionStatus.Active)
+            .Where(s => s.UserId == userId && 
+                       (s.Status == SubscriptionStatus.Active || 
+                        s.Status == SubscriptionStatus.Trialing || 
+                        s.Status == SubscriptionStatus.PastDue))
             .OrderByDescending(s => s.CreatedAtUtc)
             .FirstOrDefaultAsync(ct);
 

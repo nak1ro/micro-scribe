@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { CreditCard } from "lucide-react";
+import { CreditCard } from "iconoir-react";
 import { Button } from "@/components/ui";
 import type { PaymentMethodResponse } from "@/types/api/billing";
 
