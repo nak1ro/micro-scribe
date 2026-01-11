@@ -12,11 +12,13 @@ public class EmailService : IEmailService
 {
     private readonly ILogger<EmailService> _logger;
     private readonly EmailSettings _settings;
+    private readonly IEmailSender _sender;
 
-    public EmailService(ILogger<EmailService> logger, IOptions<EmailSettings> settings)
+    public EmailService(ILogger<EmailService> logger, IOptions<EmailSettings> settings, IEmailSender sender)
     {
         _logger = logger;
         _settings = settings.Value;
+        _sender = sender;
     }
 
     public async Task SendEmailConfirmationAsync(string email, string userId, string token, CancellationToken cancellationToken = default)
@@ -36,7 +38,7 @@ public class EmailService : IEmailService
             <p>Or copy and paste this link into your browser:</p>
             <p>{link}</p>";
             
-        await SendEmailAsync(email, subject, body, cancellationToken);
+        await _sender.SendEmailAsync(email, subject, body, cancellationToken);
     }
 
     public async Task SendPasswordResetAsync(string email, string token, CancellationToken cancellationToken = default)
@@ -54,53 +56,13 @@ public class EmailService : IEmailService
             <p>Please reset your password by clicking the link below:</p>
             <p><a href='{link}'>Reset Password</a></p>";
             
-        await SendEmailAsync(email, subject, body, cancellationToken);
+        await _sender.SendEmailAsync(email, subject, body, cancellationToken);
     }
 
     public async Task SendWelcomeEmailAsync(string email, string username, CancellationToken cancellationToken = default)
     {
         var subject = "Welcome to ScribeApi!";
         var body = $"<p>Welcome {username}! We are glad to have you with us.</p>";
-        await SendEmailAsync(email, subject, body, cancellationToken);
-    }
-
-    private async Task SendEmailAsync(string to, string subject, string body, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("ScribeApi", _settings.From));
-            message.To.Add(new MailboxAddress("", to));
-            message.Subject = subject;
-
-            message.Body = new TextPart("html")
-            {
-                Text = body
-            };
-
-            using var client = new SmtpClient();
-            
-            // Accept all SSL certificates (in case of self-signed in dev). 
-            // ACS usually requires valid certs, so this callback might not be needed for prod but harmless if ACS cert relies on standard CA.
-            // However, sticking to the previous implementation pattern for consistency, but ACS uses STARTTLS on 587.
-            // client.ServerCertificateValidationCallback = (s, c, h, e) => true; 
-
-            await client.ConnectAsync(_settings.SmtpServer, _settings.Port, SecureSocketOptions.Auto, cancellationToken);
-
-            if (!string.IsNullOrEmpty(_settings.Username) && !string.IsNullOrEmpty(_settings.Password))
-            {
-                await client.AuthenticateAsync(_settings.Username, _settings.Password, cancellationToken);
-            }
-
-            await client.SendAsync(message, cancellationToken);
-            await client.DisconnectAsync(true, cancellationToken);
-            
-            _logger.LogInformation("Email sent successfully to {Email}", to);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send email to {Email}", to);
-            throw; 
-        }
+        await _sender.SendEmailAsync(email, subject, body, cancellationToken);
     }
 }

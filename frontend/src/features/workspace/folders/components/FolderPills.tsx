@@ -8,6 +8,8 @@ import { useFolders, useDeleteFolder, FOLDER_COLORS } from "@/hooks";
 import { FolderModal } from "@/features/workspace/folders";
 import { useEmailVerification } from "@/context/VerificationContext";
 import type { FolderColor, FolderDto } from "@/types/models/folder";
+import { useAddToFolder } from "@/hooks/useFolders";
+import { toast } from "sonner";
 
 export function FolderPills() {
     const router = useRouter();
@@ -16,6 +18,7 @@ export function FolderPills() {
 
     const { data: folders, isLoading } = useFolders();
     const deleteFolderMutation = useDeleteFolder();
+    const addToFolderMutation = useAddToFolder();
     const { isVerified, isLoading: isVerificationLoading, openModal: openVerificationModal } = useEmailVerification();
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     const [editingFolder, setEditingFolder] = React.useState<FolderDto | null>(null);
@@ -68,6 +71,28 @@ export function FolderPills() {
         }
     };
 
+    const handleDrop = async (e: React.DragEvent, folderId: string) => {
+        e.preventDefault();
+        const jobId = e.dataTransfer.getData("application/x-scribe-job-id");
+        if (!jobId) return;
+
+        if (!isVerificationLoading && !isVerified) {
+            openVerificationModal();
+            return;
+        }
+
+        try {
+            await addToFolderMutation.mutateAsync({
+                folderId,
+                jobIds: [jobId]
+            });
+            toast.success("Added to folder");
+        } catch (error) {
+            console.error("Failed to add to folder:", error);
+            toast.error("Failed to add to folder");
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="flex items-center gap-2">
@@ -99,6 +124,7 @@ export function FolderPills() {
                         onClick={() => handleFolderClick(folder.id)}
                         onEdit={() => handleEdit(folder)}
                         onDelete={() => handleDelete(folder.id)}
+                        onDrop={(e) => handleDrop(e, folder.id)}
                         showActions
                     />
                 ))}
@@ -132,13 +158,15 @@ interface FolderPillProps {
     onClick: () => void;
     onEdit?: () => void;
     onDelete?: () => void;
+    onDrop?: (e: React.DragEvent) => void;
     showActions?: boolean;
 }
 
-function FolderPill({ name, color, count, isActive, onClick, onEdit, onDelete, showActions }: FolderPillProps) {
+function FolderPill({ name, color, count, isActive, onClick, onEdit, onDelete, onDrop, showActions }: FolderPillProps) {
     const colors = color ? FOLDER_COLORS[color] : null;
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const [isConfirmingDelete, setIsConfirmingDelete] = React.useState(false);
+    const [isDragOver, setIsDragOver] = React.useState(false);
     const menuRef = React.useRef<HTMLDivElement>(null);
 
     // Close menu on outside click
@@ -184,6 +212,28 @@ function FolderPill({ name, color, count, isActive, onClick, onEdit, onDelete, s
         setIsConfirmingDelete(false);
     };
 
+    const handleDragOver = (e: React.DragEvent) => {
+        if (!onDrop) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        if (!onDrop) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(false);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        if (!onDrop) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(false);
+        onDrop(e);
+    };
+
     return (
         <div className="relative group" ref={menuRef}>
             <div
@@ -192,10 +242,14 @@ function FolderPill({ name, color, count, isActive, onClick, onEdit, onDelete, s
                     "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer",
                     "text-sm font-medium",
                     "border transition-all duration-150",
+                    isDragOver && "ring-2 ring-primary ring-offset-2 scale-105 bg-primary/10",
                     isActive
                         ? "bg-primary text-primary-foreground border-primary shadow-sm"
                         : "bg-card text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
                 )}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
             >
                 {colors && (
                     <Folder

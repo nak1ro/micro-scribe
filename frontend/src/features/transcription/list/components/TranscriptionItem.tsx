@@ -15,6 +15,7 @@ import {
     MoreHoriz
 } from "iconoir-react";
 import { Button } from "@/components/ui";
+import { toast } from "sonner";
 import type { TranscriptionListItem, TranscriptionStatus } from "@/types/models/transcription";
 
 interface TranscriptionItemProps {
@@ -57,8 +58,28 @@ export function TranscriptionItem({
 
     const isEven = index % 2 === 0;
 
+    const handleDragStart = (e: React.DragEvent) => {
+        e.dataTransfer.setData("application/x-scribe-job-id", item.id);
+        e.dataTransfer.effectAllowed = "move";
+        // Optional: Custom drag image or ghost could be set here
+
+        // Hint toast on first drag (simple implementation: always show or use local storage to show once)
+        // For now, let's just show it if it's not irritating. 
+        // Better: check if we've shown it before.
+        const hasShownHint = localStorage.getItem("scribe-drag-folder-hint");
+        if (!hasShownHint) {
+            toast("Drag to a folder to move", {
+                duration: 3000,
+                position: "bottom-center"
+            });
+            localStorage.setItem("scribe-drag-folder-hint", "true");
+        }
+    };
+
     return (
         <div
+            draggable
+            onDragStart={handleDragStart}
             onClick={handleItemClick}
             className={cn(
                 "group grid items-center gap-3 px-3 py-2.5",
