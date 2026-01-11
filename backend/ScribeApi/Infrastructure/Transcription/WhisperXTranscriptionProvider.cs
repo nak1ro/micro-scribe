@@ -86,7 +86,8 @@ public class WhisperXTranscriptionProvider : ITranscriptionProvider
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync(ct);
-                _logger.LogError("WhisperX failed: {Status} - {Error}", response.StatusCode, errorContent);
+                var headers = string.Join("; ", response.Headers.Select(h => $"{h.Key}={string.Join(",", h.Value)}"));
+                _logger.LogError("WhisperX failed: {Status} - {Error}. Headers: {Headers}", response.StatusCode, errorContent, headers);
                 throw new Exception($"WhisperX transcription failed: {response.StatusCode} - {errorContent}");
             }
 
