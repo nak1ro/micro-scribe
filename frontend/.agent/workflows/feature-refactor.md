@@ -19,6 +19,7 @@ This workflow guides the systematic refactoring of a Next.js feature module foll
   ├── types.ts
   └── index.ts
   ```
+- to see what are the files that should be inside the folders - just check auth feature for reference
 - User has provided the target feature path
 - Any deviations from standard structure must be discussed with user
 

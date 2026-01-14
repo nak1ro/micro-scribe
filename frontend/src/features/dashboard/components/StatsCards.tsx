@@ -4,6 +4,7 @@ import * as React from "react";
 import { FileAudio, Clock, Calendar, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TranscriptionListItem } from "@/types/models/transcription";
+import { useDashboardStats } from "../hooks";
 
 interface StatsCardsProps {
     items: TranscriptionListItem[];
@@ -11,17 +12,7 @@ interface StatsCardsProps {
 }
 
 export function StatsCards({ items, isLoading }: StatsCardsProps) {
-    const stats = React.useMemo(() => {
-        const now = new Date();
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-        const totalCount = items.length;
-        const thisWeek = items.filter((item) => new Date(item.uploadDate) >= weekAgo).length;
-        const totalDuration = items.reduce((sum, item) => sum + (item.duration ?? 0), 0);
-        const processing = items.filter((item) => item.status === "processing" || item.status === "pending").length;
-
-        return { totalCount, thisWeek, totalDuration, processing };
-    }, [items]);
+    const stats = useDashboardStats(items);
 
     const formatDuration = (seconds: number) => {
         const hours = Math.floor(seconds / 3600);
