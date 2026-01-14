@@ -1,4 +1,4 @@
-import { BillingContent } from "@/features/workspace/settings";
+import { BillingContent } from "@/features/billing";
 
 export default function BillingRoute() {
     return <BillingContent />;

@@ -1,4 +1,4 @@
-import { AccountContent } from "@/features/workspace/settings";
+import { AccountContent } from "@/features/settings";
 
 export default function AccountPage() {
     return <AccountContent />;

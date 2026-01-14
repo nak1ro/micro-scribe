@@ -4,7 +4,7 @@ import * as React from "react";
 import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CreateTranscriptionModal } from "@/features/transcription";
-import { DashboardContent, useDashboardModal } from "@/features/workspace/dashboard";
+import { DashboardContent, useDashboardModal } from "@/features/dashboard";
 import { useTranscriptions, useFolderItems, useFolder } from "@/hooks";
 import { useEmailVerification } from "@/context/VerificationContext";
 import { uploadAbortRegistry } from "@/services/upload/uploadAbortRegistry";

@@ -1,4 +1,4 @@
-import { CheckoutContent } from "@/features/billing/components/CheckoutContent";
+import { CheckoutContent } from "@/features/billing";
 
 export default function CheckoutPage() {
     return <CheckoutContent />;
