@@ -2,57 +2,51 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
 import { FormField } from "./FormField";
+import { loginSchema, LoginSchema } from "../schemas";
 
 interface LoginFormProps {
-    onSubmit?: (data: { email: string; password: string }) => Promise<void>;
+    onSubmit?: (data: LoginSchema) => Promise<void>;
 }
 
 export function LoginForm({ onSubmit }: LoginFormProps) {
-    const [email, setEmail] = React.useState("");
-    const [password, setPassword] = React.useState("");
     const [isLoading, setIsLoading] = React.useState(false);
-    const [errors, setErrors] = React.useState<{ email?: string; password?: string }>({});
 
-    const validate = () => {
-        const newErrors: typeof errors = {};
-        if (!email) {
-            newErrors.email = "Email is required";
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            newErrors.email = "Invalid email address";
-        }
-        if (!password) {
-            newErrors.password = "Password is required";
-        }
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+    } = useForm<LoginSchema>({
+        resolver: zodResolver(loginSchema),
+        defaultValues: {
+            email: "",
+            password: "",
+        },
+    });
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!validate()) return;
-
+    const submitHandler = async (data: LoginSchema) => {
         setIsLoading(true);
         try {
-            await onSubmit?.({ email, password });
+            await onSubmit?.(data);
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(submitHandler)} className="space-y-4">
             <FormField
                 id="login-email"
                 label="Email"
                 type="email"
                 placeholder="you@example.com"
-                value={email}
-                onChange={setEmail}
-                error={errors.email}
                 autoComplete="email"
+                error={errors.email}
+                {...register("email")}
             />
 
             <FormField
@@ -60,10 +54,8 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
                 label="Password"
                 type="password"
                 placeholder="••••••••"
-                value={password}
-                onChange={setPassword}
-                error={errors.password}
                 autoComplete="current-password"
+                error={errors.password}
                 labelExtra={
                     <Link
                         href="/auth/forgot-password"
@@ -75,6 +67,7 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
                         Forgot password?
                     </Link>
                 }
+                {...register("password")}
             />
 
             <Button type="submit" className="w-full" size="lg" isLoading={isLoading}>

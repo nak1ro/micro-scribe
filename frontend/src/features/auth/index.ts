@@ -1,7 +1,7 @@
-export { AuthCard } from "./components/AuthCard";
-export { AuthTabs, type AuthMode } from "./components/AuthTabs";
-export { LoginForm } from "./components/LoginForm";
-export { SignUpForm } from "./components/SignUpForm";
-export { OAuthButtons } from "./components/OAuthButtons";
-export { FormField } from "./components/FormField";
-
+// Auth Feature Barrel Exports
+export { AuthCard, AuthTabs, type AuthMode } from "./components/auth-card";
+export { LoginForm } from "./forms/LoginForm";
+export { RegisterForm as SignUpForm } from "./forms/RegisterForm";
+export { OAuthButtons, OAuthCallback } from "./components/oauth";
+export { FormField } from "./forms/FormField";
+export { ConfirmEmailContent } from "./components/confirm-email";

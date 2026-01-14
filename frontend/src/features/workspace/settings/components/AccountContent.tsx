@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Mail, Lock, Page, CreditCard, Trash, ColorFilter, LogOut } from "iconoir-react";
 import { Button, ThemeToggle } from "@/components/ui";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 
 // Account settings page content
 export function AccountContent() {

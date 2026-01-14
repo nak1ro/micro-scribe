@@ -58,3 +58,10 @@ export interface UserResponse {
     emailConfirmed: boolean;
     roles: string[];
 }
+
+// Standardized auth error for API responses
+export interface AuthError {
+    status: number;
+    message: string;
+    detail?: string;
+}

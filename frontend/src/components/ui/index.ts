@@ -9,3 +9,7 @@ export { Textarea, type TextareaProps } from "./Textarea";
 export { ThemeToggle } from "./ThemeToggle";
 export { CTAButton, type CTAButtonProps } from "./CTAButton";
 export { ConfirmationDialog } from "./ConfirmationDialog";
+export { Alert } from "./Alert";
+export { Divider } from "./Divider";
+export { IconWrapper } from "./IconWrapper";
+export { BackgroundGlow } from "./BackgroundGlow";

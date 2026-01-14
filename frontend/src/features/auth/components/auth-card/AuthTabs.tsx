@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { AuthTabButton as TabButton } from "./AuthTabButton";
 
 type AuthMode = "login" | "signup";
 
@@ -46,33 +47,6 @@ export function AuthTabs({ activeTab, onTabChange }: AuthTabsProps) {
                 )}
             />
         </div>
-    );
-}
-
-interface TabButtonProps {
-    isActive: boolean;
-    onClick: () => void;
-    children: React.ReactNode;
-}
-
-function TabButton({ isActive, onClick, children }: TabButtonProps) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            className={cn(
-                "flex-1 py-3 text-sm font-medium",
-                "transition-colors duration-[var(--transition-fast)] ease-[var(--easing-soft)]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                isActive
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-            )}
-            aria-selected={isActive}
-            role="tab"
-        >
-            {children}
-        </button>
     );
 }
 

@@ -1,8 +1,8 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, ReactNode } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { authApi } from "@/services/auth";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { authApi } from "@/features/auth/api/client";
 
 export interface VerificationContextType {
     isVerified: boolean;

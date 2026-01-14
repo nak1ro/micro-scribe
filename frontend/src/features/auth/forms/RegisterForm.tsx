@@ -1,84 +1,54 @@
 "use client";
 
 import * as React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
 import { FormField } from "./FormField";
+import { registerSchema, RegisterSchema } from "../schemas";
 
-interface SignUpFormData {
-    email: string;
-    password: string;
+interface RegisterFormProps {
+    onSubmit?: (data: { email: string; password: string }) => Promise<void>;
 }
 
-interface SignUpFormProps {
-    onSubmit?: (data: SignUpFormData) => Promise<void>;
-}
-
-export function SignUpForm({ onSubmit }: SignUpFormProps) {
-    const [email, setEmail] = React.useState("");
-    const [password, setPassword] = React.useState("");
-    const [confirmPassword, setConfirmPassword] = React.useState("");
-    const [acceptTerms, setAcceptTerms] = React.useState(false);
+export function RegisterForm({ onSubmit }: RegisterFormProps) {
     const [isLoading, setIsLoading] = React.useState(false);
-    const [errors, setErrors] = React.useState<{
-        email?: string;
-        password?: string;
-        confirmPassword?: string;
-        terms?: string;
-    }>({});
 
-    const validate = () => {
-        const newErrors: typeof errors = {};
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+    } = useForm<RegisterSchema>({
+        resolver: zodResolver(registerSchema),
+        defaultValues: {
+            email: "",
+            password: "",
+            confirmPassword: "",
+            acceptTerms: false,
+        },
+    });
 
-        if (!email) {
-            newErrors.email = "Email is required";
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            newErrors.email = "Invalid email address";
-        }
-
-        if (!password) {
-            newErrors.password = "Password is required";
-        } else if (password.length < 8) {
-            newErrors.password = "Password must be at least 8 characters";
-        }
-
-        if (!confirmPassword) {
-            newErrors.confirmPassword = "Please confirm your password";
-        } else if (password !== confirmPassword) {
-            newErrors.confirmPassword = "Passwords do not match";
-        }
-
-        if (!acceptTerms) {
-            newErrors.terms = "You must accept the terms";
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!validate()) return;
-
+    const submitHandler = async (data: RegisterSchema) => {
         setIsLoading(true);
         try {
-            await onSubmit?.({ email, password });
+            // Only send email and password to parent handler
+            await onSubmit?.({ email: data.email, password: data.password });
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(submitHandler)} className="space-y-4">
             <FormField
                 id="signup-email"
                 label="Email"
                 type="email"
                 placeholder="you@example.com"
-                value={email}
-                onChange={setEmail}
-                error={errors.email}
                 autoComplete="email"
+                error={errors.email}
+                {...register("email")}
             />
 
             <FormField
@@ -86,10 +56,9 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
                 label="Password"
                 type="password"
                 placeholder="••••••••"
-                value={password}
-                onChange={setPassword}
-                error={errors.password}
                 autoComplete="new-password"
+                error={errors.password}
+                {...register("password")}
             />
 
             <FormField
@@ -97,10 +66,9 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
                 label="Confirm password"
                 type="password"
                 placeholder="••••••••"
-                value={confirmPassword}
-                onChange={setConfirmPassword}
-                error={errors.confirmPassword}
                 autoComplete="new-password"
+                error={errors.confirmPassword}
+                {...register("confirmPassword")}
             />
 
             {/* Terms checkbox */}
@@ -108,13 +76,12 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
                 <input
                     type="checkbox"
                     id="signup-terms"
-                    checked={acceptTerms}
-                    onChange={(e) => setAcceptTerms(e.target.checked)}
                     className={cn(
                         "mt-0.5 h-4 w-4 rounded border-input",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                         "accent-primary"
                     )}
+                    {...register("acceptTerms")}
                 />
                 <div>
                     <label
@@ -140,9 +107,9 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
                             Privacy Policy
                         </a>
                     </label>
-                    {errors.terms && (
+                    {errors.acceptTerms && (
                         <p className="text-xs text-destructive animate-fade-in mt-1">
-                            {errors.terms}
+                            {errors.acceptTerms.message}
                         </p>
                     )}
                 </div>

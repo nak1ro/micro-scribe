@@ -5,7 +5,7 @@ import { useStripe, useElements, PaymentElement } from "@stripe/react-stripe-js"
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui";
 import { useSubscribe } from "@/features/billing";
-import { authApi } from "@/services/auth";
+import { authApi } from "@/features/auth/api/client";
 import type { BillingInterval } from "@/types/api/billing";
 
 interface CheckoutFormProps {

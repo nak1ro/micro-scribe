@@ -1,8 +1,8 @@
 "use client";
 
 import React, { createContext, useEffect, useState, useCallback, ReactNode, FC } from 'react';
-import { UserResponse, LoginRequest, RegisterRequest } from '@/types/api/auth';
-import { authApi } from '@/services/auth/api';
+import { UserResponse, LoginRequest, RegisterRequest } from '@/features/auth/types';
+import { authApi } from '@/features/auth/api/client';
 import { UNAUTHORIZED_EVENT } from '@/services/api';
 import { signalRService } from '@/services/signalR';
 
