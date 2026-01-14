@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { billingApi } from "@/services/billing";
-import type { SetupIntentRequest, SubscribeRequest, PortalRequest, ChangePlanRequest } from "@/types/api/billing";
+import { billingApi } from "../api";
+import type { SetupIntentRequest, SubscribeRequest, PortalRequest, ChangePlanRequest } from "../types";
 
 export const useBillingConfig = () => {
     return useQuery({

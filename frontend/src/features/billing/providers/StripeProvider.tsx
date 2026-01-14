@@ -38,17 +38,17 @@ export function StripeProvider({ publishableKey, clientSecret, children }: Strip
         [publishableKey]
     );
 
-    // Theme-aware appearance
+    // Theme-aware appearance using CSS variables
     const appearance: Appearance = React.useMemo(() => {
         const isDark = resolvedTheme === "dark";
 
         return {
             theme: isDark ? "night" : "stripe",
             variables: {
-                colorPrimary: "hsl(252 100% 68%)",
-                colorBackground: isDark ? "hsl(240 10% 10%)" : "hsl(0 0% 100%)",
-                colorText: isDark ? "hsl(0 0% 95%)" : "hsl(0 0% 15%)",
-                colorDanger: "hsl(0 84% 60%)",
+                colorPrimary: "hsl(var(--primary))",
+                colorBackground: "hsl(var(--card))",
+                colorText: "hsl(var(--foreground))",
+                colorDanger: "hsl(var(--destructive))",
                 fontFamily: "system-ui, sans-serif",
                 borderRadius: "8px",
             },

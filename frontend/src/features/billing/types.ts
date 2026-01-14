@@ -1,8 +1,9 @@
+// Billing configuration
 export interface BillingConfig {
     publishableKey: string;
 }
 
-export type BillingInterval = 'Monthly' | 'Yearly';
+export type BillingInterval = "Monthly" | "Yearly";
 
 // SetupIntent for Stripe Elements
 export interface SetupIntentRequest {
@@ -82,4 +83,12 @@ export interface InvoiceListResponse {
     invoices: InvoiceItem[];
     hasMore: boolean;
     nextCursor: string | null;
+}
+
+// Error response (RFC 7807)
+export interface BillingError {
+    type?: string;
+    title: string;
+    status: number;
+    detail?: string;
 }

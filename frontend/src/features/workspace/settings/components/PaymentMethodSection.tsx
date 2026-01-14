@@ -3,7 +3,7 @@
 import * as React from "react";
 import { CreditCard } from "iconoir-react";
 import { Button } from "@/components/ui";
-import type { PaymentMethodResponse } from "@/types/api/billing";
+import type { PaymentMethodResponse } from "@/features/billing";
 
 interface PaymentMethodSectionProps {
     paymentMethod: PaymentMethodResponse | null | undefined;

@@ -1,12 +1,9 @@
 "use client";
 
-import * as React from "react";
-import { useStripe, useElements, PaymentElement } from "@stripe/react-stripe-js";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui";
-import { useSubscribe } from "@/features/billing";
-import { authApi } from "@/features/auth/api/client";
-import type { BillingInterval } from "@/types/api/billing";
+import { PaymentElement } from "@stripe/react-stripe-js";
+import { Button, Alert } from "@/components/ui";
+import { useCheckoutSubmit } from "@/features/billing";
+import type { BillingInterval } from "../types";
 
 interface CheckoutFormProps {
     interval: BillingInterval;
@@ -14,92 +11,23 @@ interface CheckoutFormProps {
 
 // Payment form with Stripe Elements
 export function CheckoutForm({ interval }: CheckoutFormProps) {
-    const stripe = useStripe();
-    const elements = useElements();
-    const router = useRouter();
-    const subscribeMutation = useSubscribe();
-
-    const [isProcessing, setIsProcessing] = React.useState(false);
-    const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!stripe || !elements) {
-            return;
-        }
-
-        setIsProcessing(true);
-        setErrorMessage(null);
-
-        // Confirm the SetupIntent
-        const { setupIntent, error } = await stripe.confirmSetup({
-            elements,
-            confirmParams: {
-                return_url: window.location.href,
-            },
-            redirect: "if_required",
-        });
-
-        if (error) {
-            // Handle case where SetupIntent already succeeded (user clicked twice)
-            if (error.code === "setup_intent_unexpected_state") {
-                // Try to get the payment method from the existing setupIntent
-                const paymentMethodId = (error as any).setup_intent?.payment_method;
-                if (paymentMethodId) {
-                    try {
-                        await subscribeMutation.mutateAsync({
-                            paymentMethodId,
-                            interval,
-                        });
-                        // Refresh session to get updated cookie with new plan claims
-                        await authApi.refreshSession();
-                        router.push("/dashboard?upgrade=success");
-                        return;
-                    } catch {
-                        setErrorMessage("Failed to create subscription. Please try again.");
-                        setIsProcessing(false);
-                        return;
-                    }
-                }
-            }
-            setErrorMessage(error.message ?? "An error occurred");
-            setIsProcessing(false);
-            return;
-        }
-
-        if (setupIntent && setupIntent.payment_method) {
-            // Create subscription on backend
-            try {
-                await subscribeMutation.mutateAsync({
-                    paymentMethodId: setupIntent.payment_method as string,
-                    interval,
-                });
-                // Refresh session to get updated cookie with new plan claims
-                await authApi.refreshSession();
-                router.push("/dashboard?upgrade=success");
-            } catch {
-                setErrorMessage("Failed to create subscription. Please try again.");
-                setIsProcessing(false);
-            }
-        }
-    };
+    const { handleSubmit, isProcessing, errorMessage, isReady } = useCheckoutSubmit({ interval });
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
             <PaymentElement />
 
             {errorMessage && (
-                <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                <Alert variant="destructive">
                     {errorMessage}
-                </div>
+                </Alert>
             )}
 
             <Button
                 type="submit"
                 size="lg"
                 className="w-full"
-                disabled={!stripe || isProcessing}
+                disabled={!isReady || isProcessing}
                 isLoading={isProcessing}
             >
                 {isProcessing ? "Processing..." : "Subscribe Now"}

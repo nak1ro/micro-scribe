@@ -4,7 +4,7 @@ import * as React from "react";
 import { Page, Check, Clock, NavArrowDown, NavArrowUp, Download } from "iconoir-react";
 import { Button } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import type { InvoiceItem } from "@/types/api/billing";
+import type { InvoiceItem } from "@/features/billing";
 
 interface BillingHistorySectionProps {
     invoices: InvoiceItem[];

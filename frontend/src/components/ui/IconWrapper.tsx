@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 interface IconWrapperProps extends React.HTMLAttributes<HTMLDivElement> {
     size?: "sm" | "md" | "lg";
-    variant?: "primary" | "secondary" | "destructive" | "success" | "neutral";
+    variant?: "primary" | "secondary" | "destructive" | "success" | "warning" | "neutral";
 }
 
 export function IconWrapper({ className, size = "md", variant = "primary", children, ...props }: IconWrapperProps) {
@@ -17,7 +17,8 @@ export function IconWrapper({ className, size = "md", variant = "primary", child
         primary: "bg-primary/10 text-primary",
         secondary: "bg-secondary/10 text-secondary",
         destructive: "bg-destructive/10 text-destructive",
-        success: "bg-success/10 text-success", // Using simplified token mapping
+        success: "bg-success/10 text-success",
+        warning: "bg-warning/10 text-warning",
         neutral: "bg-muted text-muted-foreground"
     };
 

@@ -1,5 +1,6 @@
-import { apiClient, API_ENDPOINTS } from "@/services/api";
+import { apiClient } from "@/services/api";
 import { isAxiosError } from "axios";
+import { BILLING_ENDPOINTS } from "./routes";
 import type {
     BillingConfig,
     SetupIntentRequest,
@@ -14,17 +15,17 @@ import type {
     CancelSubscriptionResponse,
     PaymentMethodResponse,
     InvoiceListResponse,
-} from "@/types/api/billing";
+} from "../types";
 
 export const billingApi = {
     getConfig: async (): Promise<BillingConfig> => {
-        const response = await apiClient.get<BillingConfig>(API_ENDPOINTS.BILLING.CONFIG);
+        const response = await apiClient.get<BillingConfig>(BILLING_ENDPOINTS.CONFIG);
         return response.data;
     },
 
     createSetupIntent: async (payload: SetupIntentRequest): Promise<SetupIntentResponse> => {
         const response = await apiClient.post<SetupIntentResponse>(
-            API_ENDPOINTS.BILLING.SETUP_INTENT,
+            BILLING_ENDPOINTS.SETUP_INTENT,
             payload
         );
         return response.data;
@@ -32,25 +33,25 @@ export const billingApi = {
 
     subscribe: async (payload: SubscribeRequest): Promise<SubscribeResponse> => {
         const response = await apiClient.post<SubscribeResponse>(
-            API_ENDPOINTS.BILLING.SUBSCRIBE,
+            BILLING_ENDPOINTS.SUBSCRIBE,
             payload
         );
         return response.data;
     },
 
     createPortalSession: async (payload: PortalRequest): Promise<PortalResponse> => {
-        const response = await apiClient.post<PortalResponse>(API_ENDPOINTS.BILLING.PORTAL, payload);
+        const response = await apiClient.post<PortalResponse>(BILLING_ENDPOINTS.PORTAL, payload);
         return response.data;
     },
 
     getSubscriptionStatus: async (): Promise<SubscriptionStatusResponse> => {
-        const response = await apiClient.get<SubscriptionStatusResponse>(API_ENDPOINTS.BILLING.SUBSCRIPTION);
+        const response = await apiClient.get<SubscriptionStatusResponse>(BILLING_ENDPOINTS.SUBSCRIPTION);
         return response.data;
     },
 
     changePlan: async (payload: ChangePlanRequest): Promise<ChangePlanResponse> => {
         const response = await apiClient.put<ChangePlanResponse>(
-            API_ENDPOINTS.BILLING.CHANGE_PLAN,
+            BILLING_ENDPOINTS.CHANGE_PLAN,
             payload
         );
         return response.data;
@@ -58,7 +59,7 @@ export const billingApi = {
 
     cancelSubscription: async (cancelImmediately = false): Promise<CancelSubscriptionResponse> => {
         const response = await apiClient.delete<CancelSubscriptionResponse>(
-            `${API_ENDPOINTS.BILLING.CANCEL}?cancelImmediately=${cancelImmediately}`
+            `${BILLING_ENDPOINTS.CANCEL}?cancelImmediately=${cancelImmediately}`
         );
         return response.data;
     },
@@ -66,7 +67,7 @@ export const billingApi = {
     getPaymentMethod: async (): Promise<PaymentMethodResponse | null> => {
         try {
             const response = await apiClient.get<PaymentMethodResponse>(
-                API_ENDPOINTS.BILLING.PAYMENT_METHOD
+                BILLING_ENDPOINTS.PAYMENT_METHOD
             );
             return response.data;
         } catch (error) {
@@ -81,7 +82,7 @@ export const billingApi = {
         const params = new URLSearchParams({ limit: limit.toString() });
         if (startingAfter) params.append("startingAfter", startingAfter);
         const response = await apiClient.get<InvoiceListResponse>(
-            `${API_ENDPOINTS.BILLING.INVOICES}?${params}`
+            `${BILLING_ENDPOINTS.INVOICES}?${params}`
         );
         return response.data;
     },

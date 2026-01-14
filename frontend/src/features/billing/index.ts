@@ -1,2 +1,4 @@
-// Only export hooks - Stripe components should be imported directly to avoid loading Stripe.js globally
-export * from "./hooks/useBilling";
+// Public API for billing feature
+export * from "./hooks";
+export * from "./types";
+export { billingApi } from "./api";
