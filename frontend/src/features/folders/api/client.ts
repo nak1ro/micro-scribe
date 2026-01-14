@@ -1,50 +1,50 @@
-import { API_ENDPOINTS } from "../api/endpoints";
+import { apiClient } from "@/services/api/client";
+import { FOLDER_ENDPOINTS } from "./routes";
 import {
     CreateFolderRequest,
     FolderDto,
     UpdateFolderItemsRequest,
     UpdateFolderRequest
-} from "@/types/models/folder";
+} from "../types";
 import { TranscriptionJobListItem, PagedResponse } from "@/types/api/transcription";
-import { apiClient } from "../api/client";
 
 export const FoldersService = {
     // CRUD
     getAll: async () => {
-        return apiClient.get<FolderDto[]>(API_ENDPOINTS.FOLDERS.LIST);
+        return apiClient.get<FolderDto[]>(FOLDER_ENDPOINTS.LIST);
     },
 
     getById: async (id: string) => {
-        return apiClient.get<FolderDto>(API_ENDPOINTS.FOLDERS.GET(id));
+        return apiClient.get<FolderDto>(FOLDER_ENDPOINTS.GET(id));
     },
 
     create: async (data: CreateFolderRequest) => {
-        return apiClient.post<FolderDto>(API_ENDPOINTS.FOLDERS.CREATE, data);
+        return apiClient.post<FolderDto>(FOLDER_ENDPOINTS.CREATE, data);
     },
 
     update: async (id: string, data: UpdateFolderRequest) => {
-        return apiClient.put<FolderDto>(API_ENDPOINTS.FOLDERS.UPDATE(id), data);
+        return apiClient.put<FolderDto>(FOLDER_ENDPOINTS.UPDATE(id), data);
     },
 
     delete: async (id: string) => {
-        return apiClient.delete<void>(API_ENDPOINTS.FOLDERS.DELETE(id));
+        return apiClient.delete<void>(FOLDER_ENDPOINTS.DELETE(id));
     },
 
     // Items
     addItems: async (folderId: string, jobIds: string[]) => {
         const payload: UpdateFolderItemsRequest = { transcriptionJobIds: jobIds };
-        return apiClient.post<void>(API_ENDPOINTS.FOLDERS.ADD_ITEMS(folderId), payload);
+        return apiClient.post<void>(FOLDER_ENDPOINTS.ADD_ITEMS(folderId), payload);
     },
 
     removeItems: async (folderId: string, jobIds: string[]) => {
         const payload: UpdateFolderItemsRequest = { transcriptionJobIds: jobIds };
-        return apiClient.delete<void>(API_ENDPOINTS.FOLDERS.REMOVE_ITEMS(folderId), {
+        return apiClient.delete<void>(FOLDER_ENDPOINTS.REMOVE_ITEMS(folderId), {
             data: payload
         });
     },
 
     listItems: async (folderId: string, page = 1, pageSize = 20) => {
-        return apiClient.get<PagedResponse<TranscriptionJobListItem>>(API_ENDPOINTS.FOLDERS.LIST_ITEMS(folderId), {
+        return apiClient.get<PagedResponse<TranscriptionJobListItem>>(FOLDER_ENDPOINTS.LIST_ITEMS(folderId), {
             params: { page, pageSize },
         });
     },

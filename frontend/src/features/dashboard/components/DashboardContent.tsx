@@ -2,8 +2,7 @@
 
 import * as React from "react";
 import { TranscriptionList, DeleteConfirmationModal, ExportModal } from "@/features/transcription";
-import { FolderPills } from "@/features/folders";
-import { useAddToFolder } from "@/hooks";
+import { FolderPills, useAddToFolder } from "@/features/folders";
 import type { TranscriptionListItem } from "@/types/models/transcription";
 import type { SortOption, SortDirection } from "../types";
 import { DashboardHeader } from "./DashboardHeader";

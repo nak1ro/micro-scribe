@@ -22,10 +22,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/context/SidebarContext";
 import { useUsage } from "@/hooks/useUsage";
-import { useFolders, useDeleteFolder, FOLDER_COLORS } from "@/hooks";
+import { useFolders, useDeleteFolder, FOLDER_COLORS, type FolderColor, FolderModal } from "@/features/folders";
 import { PlanType } from "@/types/api/usage";
-import { FolderColor } from "@/types/models/folder";
-import { FolderModal } from "@/features/folders";
 
 interface SidebarProps {
     onNewTranscription?: () => void;

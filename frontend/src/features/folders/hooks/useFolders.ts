@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { FoldersService } from "@/services";
-import { CreateFolderRequest, FolderDto, UpdateFolderRequest, FolderColor } from "@/types/models/folder";
+import { FoldersService } from "../api/client";
+import { CreateFolderRequest, FolderDto, UpdateFolderRequest, FolderColor } from "../types";
 
 // Query keys
 export const folderKeys = {

@@ -4,8 +4,8 @@ import * as React from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
-import { useCreateFolder, useUpdateFolder, FOLDER_COLORS } from "@/hooks";
-import { FolderColor, FolderDto } from "@/types/models/folder";
+import { useCreateFolder, useUpdateFolder, FOLDER_COLORS } from "../hooks";
+import type { FolderColor, FolderDto } from "../types";
 
 interface FolderModalProps {
     isOpen: boolean;

@@ -4,8 +4,7 @@ import * as React from "react";
 import { Download, Trash, Xmark, ShareIos, FolderPlus, NavArrowDown } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
-import { useFolders, FOLDER_COLORS } from "@/hooks";
-import { FolderDto } from "@/types/models/folder";
+import { useFolders, FOLDER_COLORS, type FolderDto } from "@/features/folders";
 
 interface BulkActionBarProps {
     selectedCount: number;
