@@ -48,6 +48,9 @@ try
     // Configure Hangfire AFTER migrations (uses async with retry)
     await app.UseHangfireConfigAsync();
 
+    // Configure Azurite CORS if in Development
+    await app.ConfigureDevelopmentStorageAsync();
+
     Console.WriteLine("[STARTUP] Starting application...");
     app.Run();
 }

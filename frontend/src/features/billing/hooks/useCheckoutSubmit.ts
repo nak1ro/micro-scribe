@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 import { useStripe, useElements } from "@stripe/react-stripe-js";
 import { useRouter } from "next/navigation";

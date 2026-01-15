@@ -9,7 +9,7 @@ export type OAuthProviderId = "google" | "microsoft";
 const OAUTH_CONFIG = {
     google: {
         authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
-        clientIdEnvKey: "NEXT_PUBLIC_GOOGLE_CLIENT_ID",
+        clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
         scope: "openid email profile",
         extraParams: {
             access_type: "offline",
@@ -18,7 +18,7 @@ const OAUTH_CONFIG = {
     },
     microsoft: {
         authUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
-        clientIdEnvKey: "NEXT_PUBLIC_MICROSOFT_CLIENT_ID",
+        clientId: process.env.NEXT_PUBLIC_MICROSOFT_CLIENT_ID,
         scope: "openid email profile User.Read offline_access",
         extraParams: {
             response_mode: "query",
@@ -34,13 +34,13 @@ export function getOrigin(): string {
 export function useOAuth() {
     const handleOAuthLogin = useCallback((providerId: OAuthProviderId): AuthError | null => {
         const config = OAUTH_CONFIG[providerId];
-        const clientId = process.env[config.clientIdEnvKey];
+        const clientId = config.clientId;
 
         if (!clientId) {
             const error: AuthError = {
                 status: 500,
                 message: `Missing ${providerId} client ID`,
-                detail: `Environment variable ${config.clientIdEnvKey} is not set`,
+                detail: `Environment variable for ${providerId} client ID is not set`,
             };
             console.error(error.message);
             return error;

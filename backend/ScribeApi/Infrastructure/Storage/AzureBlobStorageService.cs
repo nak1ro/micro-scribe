@@ -106,7 +106,7 @@ public class AzureBlobStorageService : IFileStorageService
             BlobName = key,
             Resource = "b",
             ExpiresOn = expiry,
-            Protocol = SasProtocol.Https
+            Protocol = blobClient.Uri.Scheme == "https" ? SasProtocol.Https : SasProtocol.HttpsAndHttp
         };
         
         sasBuilder.SetPermissions(BlobSasPermissions.Write);
@@ -130,7 +130,7 @@ public class AzureBlobStorageService : IFileStorageService
             BlobName = key,
             Resource = "b",
             ExpiresOn = expiresOn,
-            Protocol = SasProtocol.Https
+            Protocol = blobClient.Uri.Scheme == "https" ? SasProtocol.Https : SasProtocol.HttpsAndHttp
         };
         
         sasBuilder.SetPermissions(BlobSasPermissions.Read);
@@ -165,7 +165,7 @@ public class AzureBlobStorageService : IFileStorageService
             BlobName = key,
             Resource = "b",
             ExpiresOn = expiry,
-            Protocol = SasProtocol.Https
+            Protocol = blobClient.Uri.Scheme == "https" ? SasProtocol.Https : SasProtocol.HttpsAndHttp
         };
         
         sasBuilder.SetPermissions(BlobSasPermissions.Write);

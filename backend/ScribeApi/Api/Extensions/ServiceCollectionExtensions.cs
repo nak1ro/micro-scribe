@@ -269,6 +269,17 @@ public static class ServiceCollectionExtensions
             services.Configure<AzureBlobSettings>(configuration.GetSection("Storage:AzureBlob"));
             
             services.AddSingleton(x => {
+                 // Priority:
+                 // 1. Connection String is "UseDevelopmentStorage=true" (Local Dev) -> Use Connection String
+                 // 2. ServiceUrl is present (Production/Managed Identity) -> Use Managed Identity
+                 // 3. Connection String is present -> Use Connection String
+                 
+                 if (!string.IsNullOrEmpty(blobSettings?.ConnectionString) && 
+                     blobSettings.ConnectionString.Contains("UseDevelopmentStorage=true", StringComparison.OrdinalIgnoreCase))
+                 {
+                      return new BlobServiceClient(blobSettings.ConnectionString);
+                 }
+
                 if (!string.IsNullOrEmpty(blobSettings?.ServiceUrl))
                 {
                     // Managed Identity

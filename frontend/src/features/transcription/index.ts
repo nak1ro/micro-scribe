@@ -1,10 +1,16 @@
-// public API for transcription feature
-export * from './components';
-export * from './types';
-export * from './constants';
-export * from './hooks/useAudioSync';
-export * from './hooks/useTranscriptions';
-export * from './hooks/useAnalysis';
-export * from './hooks/useSegmentEdit';
-export * from './hooks/useSignalREvents';
-// export * from './utils'; // if needed
+export { TranscriptionList } from "./dashboard/components/layout/TranscriptionList";
+export { CreateTranscriptionModal } from "./creation/components/modal/CreateTranscriptionModal";
+export { TranscriptionViewerNew } from "./viewer/components/layout/TranscriptionViewerNew";
+export { ExportModal } from "./viewer/components/modals/ExportModal";
+export { DeleteConfirmationModal } from "./dashboard/components/modals/DeleteConfirmationModal";
+
+// Re-export types
+export * from "./types";
+export * from "./constants";
+
+// Re-export hooks
+export * from "./player/hooks/useAudioSync";
+export * from "./hooks/useTranscriptions";
+export * from "./analysis/hooks/useAnalysis";
+export * from "./viewer/hooks/useSegmentEdit";
+export * from "./hooks/useSignalREvents";

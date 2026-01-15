@@ -87,9 +87,11 @@ export const SUPPORTED_FILE_TYPES = [
 ];
 
 // Quality options for transcription
+// Quality options for transcription
 export const QUALITY_OPTIONS = [
-    { id: "standard", label: "Standard", description: "Faster processing" },
-    { id: "enhanced", label: "Enhanced", description: "Higher accuracy" },
+    { id: "fast", label: "Fast", description: "Quick results, lower accuracy" },
+    { id: "balanced", label: "Balanced", description: "Good balance of speed and accuracy" },
+    { id: "accurate", label: "Accurate", description: "Highest accuracy, slower processing" },
 ] as const;
 
 // Analysis view display titles for ViewerHeader
