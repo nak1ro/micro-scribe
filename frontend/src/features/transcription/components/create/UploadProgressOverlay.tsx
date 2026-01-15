@@ -3,7 +3,7 @@
 import * as React from "react";
 import { RefreshDouble } from "iconoir-react";
 import { Button } from "@/components/ui";
-import { UploadStatus } from "@/types/models/upload";
+import { UploadStatus } from "@/features/transcription/types";
 
 interface UploadProgressOverlayProps {
     status: UploadStatus;

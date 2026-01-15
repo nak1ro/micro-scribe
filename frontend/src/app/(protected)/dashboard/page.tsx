@@ -5,10 +5,10 @@ import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CreateTranscriptionModal } from "@/features/transcription";
 import { DashboardContent, useDashboardModal } from "@/features/dashboard";
-import { useTranscriptions } from "@/hooks";
+import { useTranscriptions } from "@/features/transcription/hooks/useTranscriptions";
 import { useFolderItems, useFolder } from "@/features/folders";
 import { useEmailVerification } from "@/context/VerificationContext";
-import { uploadAbortRegistry } from "@/services/upload/uploadAbortRegistry";
+import { uploadAbortRegistry } from "@/features/transcription/services/upload/uploadAbortRegistry";
 import type { TranscriptionListItem } from "@/types/models/transcription";
 
 function DashboardPageContent() {

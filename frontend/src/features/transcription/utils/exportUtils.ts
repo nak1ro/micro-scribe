@@ -1,7 +1,7 @@
 
 import { saveAs } from "file-saver";
 import type { ExportFormat } from "../types";
-import { transcriptionApi } from "@/services/transcription";
+import { transcriptionApi } from "@/features/transcription/api";
 import { API_ENDPOINTS } from "@/services/api";
 
 export const handleExport = async (

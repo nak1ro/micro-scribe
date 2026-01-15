@@ -22,11 +22,7 @@ export function NewTranscriptionButtons({
                 variant="default"
                 size="lg"
                 className="gap-2"
-                onClick={() => {
-                    // TODO: Implement file upload modal
-                    console.log("Upload file clicked");
-                    onUploadClick?.();
-                }}
+                onClick={() => onUploadClick?.()}
             >
                 <CloudUpload className="h-5 w-5" />
                 <span>Upload File</span>
@@ -36,11 +32,7 @@ export function NewTranscriptionButtons({
                 variant="outline"
                 size="lg"
                 className="gap-2"
-                onClick={() => {
-                    // TODO: Implement YouTube URL modal
-                    console.log("YouTube link clicked");
-                    onYoutubeClick?.();
-                }}
+                onClick={() => onYoutubeClick?.()}
             >
                 <Youtube className="h-5 w-5" />
                 <span>YouTube Link</span>
@@ -50,11 +42,7 @@ export function NewTranscriptionButtons({
                 variant="outline"
                 size="lg"
                 className="gap-2"
-                onClick={() => {
-                    // TODO: Implement microphone recording
-                    console.log("Record mic clicked");
-                    onMicClick?.();
-                }}
+                onClick={() => onMicClick?.()}
             >
                 <Microphone className="h-5 w-5" />
                 <span>Record Mic</span>

@@ -4,6 +4,7 @@ import * as React from "react";
 import { Download, Trash, Xmark, ShareIos, FolderPlus, NavArrowDown } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
+import { useOnClickOutside } from "@/hooks";
 import { useFolders, FOLDER_COLORS, type FolderDto } from "@/features/folders";
 
 interface BulkActionBarProps {
@@ -28,17 +29,7 @@ export function BulkActionBar({
     const dropdownRef = React.useRef<HTMLDivElement>(null);
 
     // Close dropdown on outside click
-    React.useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-                setShowFolderDropdown(false);
-            }
-        };
-        if (showFolderDropdown) {
-            document.addEventListener("mousedown", handleClickOutside);
-            return () => document.removeEventListener("mousedown", handleClickOutside);
-        }
-    }, [showFolderDropdown]);
+    useOnClickOutside(dropdownRef, () => setShowFolderDropdown(false));
 
     const handleFolderSelect = (folder: FolderDto) => {
         onMoveToFolder?.(folder.id);

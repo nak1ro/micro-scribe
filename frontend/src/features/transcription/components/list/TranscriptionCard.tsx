@@ -15,7 +15,8 @@ import {
 } from "iconoir-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
-import { getProcessingStepText } from "@/features/transcription/utils";
+import { getProcessingStepText, formatDuration } from "@/features/transcription/utils";
+import { StatusBadge } from "./StatusBadge";
 import type { TranscriptionListItem, TranscriptionStatus } from "@/types/models/transcription";
 
 interface TranscriptionCardProps {
@@ -51,13 +52,7 @@ export function TranscriptionCard({
         day: "numeric",
     });
 
-    const formatDuration = (seconds: number) => {
-        const totalSeconds = Math.round(seconds);
-        const hours = Math.floor(totalSeconds / 3600);
-        const mins = Math.floor((totalSeconds % 3600) / 60);
-        if (hours > 0) return `${hours}h ${mins}m`;
-        return `${mins}m`;
-    };
+
 
     const handleCardClick = () => {
         if (IN_PROGRESS_STATUSES.includes(item.status)) return;
@@ -215,55 +210,5 @@ export function TranscriptionCard({
     );
 }
 
-// Status Badge Component
-interface StatusBadgeProps {
-    status: TranscriptionStatus;
-    processingStep?: string | null;
-}
 
-function StatusBadge({ status, processingStep }: StatusBadgeProps) {
-    const config: Record<TranscriptionStatus, {
-        icon: React.ComponentType<{ className?: string }>;
-        className: string;
-    }> = {
-        uploading: {
-            icon: RefreshDouble,
-            className: "bg-primary/10 text-primary",
-        },
-        pending: {
-            icon: Clock,
-            className: "bg-warning/10 text-warning",
-        },
-        processing: {
-            icon: RefreshDouble,
-            className: "bg-info/10 text-info",
-        },
-        completed: {
-            icon: CheckCircle,
-            className: "bg-success/10 text-success",
-        },
-        failed: {
-            icon: XmarkCircle,
-            className: "bg-destructive/10 text-destructive",
-        },
-        cancelled: {
-            icon: Prohibition,
-            className: "bg-muted text-muted-foreground",
-        },
-    };
-
-    const { icon: Icon, className } = config[status];
-    const isAnimated = status === "processing" || status === "uploading";
-    const label = getProcessingStepText(status, processingStep ?? null);
-
-    return (
-        <span className={cn(
-            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-sm font-medium",
-            className
-        )}>
-            <Icon className={cn("h-3 w-3", isAnimated && "animate-spin")} />
-            {label}
-        </span>
-    );
-}
 

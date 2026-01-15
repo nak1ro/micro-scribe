@@ -3,6 +3,8 @@
 import * as React from "react";
 import { cn, getLanguageName } from "@/lib/utils";
 import { NavArrowDown, Language, Check, RefreshDouble, Plus } from "iconoir-react";
+import { useOnClickOutside } from "@/hooks";
+import { AVAILABLE_LANGUAGES } from "@/features/transcription/constants";
 
 interface LanguageMenuProps {
     sourceLanguage: string;
@@ -16,20 +18,6 @@ interface LanguageMenuProps {
     disabled?: boolean;
     className?: string;
 }
-
-// Available languages for translation
-const AVAILABLE_LANGUAGES = [
-    { code: "en", name: "English" },
-    { code: "es", name: "Spanish" },
-    { code: "fr", name: "French" },
-    { code: "de", name: "German" },
-    { code: "it", name: "Italian" },
-    { code: "pt", name: "Portuguese" },
-    { code: "uk", name: "Ukrainian" },
-    { code: "ru", name: "Russian" },
-    { code: "zh", name: "Chinese" },
-    { code: "ja", name: "Japanese" },
-];
 
 export function LanguageMenu({
     sourceLanguage,
@@ -49,18 +37,7 @@ export function LanguageMenu({
     const isTranslating = translationStatus === "Pending" || translationStatus === "Translating";
 
     // Close on click outside
-    React.useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-                setIsOpen(false);
-            }
-        };
-
-        if (isOpen) {
-            document.addEventListener("mousedown", handleClickOutside);
-        }
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [isOpen]);
+    useOnClickOutside(menuRef, () => setIsOpen(false));
 
     // Get current display language name for button
     const currentLangName = displayLanguage

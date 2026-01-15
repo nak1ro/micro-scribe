@@ -13,3 +13,4 @@ export { Alert } from "./Alert";
 export { Divider } from "./Divider";
 export { IconWrapper } from "./IconWrapper";
 export { BackgroundGlow } from "./BackgroundGlow";
+export { Toggle } from "./Toggle";

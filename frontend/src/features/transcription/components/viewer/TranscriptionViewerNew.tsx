@@ -5,27 +5,29 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { RefreshDouble, WarningCircle } from "iconoir-react";
 import { Button } from "@/components/ui";
-import { useTranscriptionJob } from "@/hooks/useTranscriptions";
-import { useAnalysis } from "@/hooks/useAnalysis";
-import { useSegmentEdit } from "@/hooks/useSegmentEdit";
+import { useTranscriptionJob } from "@/features/transcription/hooks/useTranscriptions";
+import { useAnalysis } from "@/features/transcription/hooks/useAnalysis";
+import { useSegmentEdit } from "@/features/transcription/hooks/useSegmentEdit";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { useEmailVerification } from "@/context/VerificationContext";
 
 import { ViewerHeader } from "./ViewerHeader";
 import { ViewerLayout } from "./ViewerLayout";
-import { TranscriptContent } from "./TranscriptContent";
-import { AudioPlayer } from "./AudioPlayer";
+import { ViewerSkeleton } from "./ViewerSkeleton";
+import { ViewerStatus, ViewerError } from "./ViewerStatus";
+import { TranscriptContent } from "../transcript/TranscriptContent";
+import { AudioPlayer } from "../player/AudioPlayer";
 import { ActionsSidebar } from "./ActionsSidebar";
-import { SegmentEditModal } from "./SegmentEditModal";
+import { SegmentEditModal } from "../modals/SegmentEditModal";
 import { ActionItemsView } from "@/features/transcription";
 import { MeetingMinutesView } from "@/features/transcription";
 import { AnalysisContentView } from "@/features/transcription";
 import { useAudioSync } from "@/features/transcription";
 import { handleExport as exportFile } from "@/features/transcription/utils";
 import { getProcessingStepText } from "@/features/transcription/utils";
-import { transcriptionApi } from "@/services/transcription";
+import { transcriptionApi } from "@/features/transcription/api";
 import type { TranscriptionData, ExportFormat, ViewerSegment } from "@/features/transcription/types";
-import type { AnalysisType, TranscriptionAnalysisDto } from "@/types/api/analysis";
+import type { AnalysisType, TranscriptionAnalysisDto } from "@/features/transcription/types/analysis";
 
 interface TranscriptionViewerNewProps {
     // For now, use mock data. Later, this will accept jobId and fetch real data
@@ -111,7 +113,6 @@ export function TranscriptionViewerNew({
     // Handler to switch analysis view
     const handleSelectAnalysisView = React.useCallback((view: "transcript" | AnalysisType | TranscriptionAnalysisDto) => {
         const targetView = typeof view === 'string' ? view : view.analysisType;
-        console.log("[TranscriptionViewerNew] Switching to view:", targetView);
         setCurrentAnalysisView(targetView);
     }, []);
 
@@ -196,9 +197,8 @@ export function TranscriptionViewerNew({
         try {
             // Export in the currently displayed language
             await exportFile(format, data.id, displayLanguage, data.audioUrl);
-        } catch (error) {
-            console.error("Export failed:", error);
-            // TODO: Add toast notification here
+        } catch {
+            // TODO: Add toast notification for export errors
         } finally {
             setIsExporting(false);
         }
@@ -248,13 +248,9 @@ export function TranscriptionViewerNew({
             await transcriptionApi.translateJob(data.id, targetLanguage);
             // Immediately refetch to pick up the new translationStatus and start polling
             await refetch();
-        } catch (error: unknown) {
-            // Extract useful error info from Axios errors
-            const axiosError = error as { response?: { data?: { detail?: string; message?: string }; status?: number } };
-            const message = axiosError.response?.data?.detail
-                || axiosError.response?.data?.message
-                || `Request failed with status ${axiosError.response?.status}`;
-            console.error("Failed to start translation:", message, error);
+        } catch {
+            // Translation failed - silently fail for now
+            // TODO: Add toast notification for translation errors
         }
     };
 
@@ -286,65 +282,12 @@ export function TranscriptionViewerNew({
 
     // Loading state - skeleton UI
     if (isLoading && !providedData) {
-        return (
-            <div className="flex flex-col h-screen bg-background">
-                {/* Header skeleton */}
-                <div className="h-16 border-b border-border px-6 flex items-center gap-4">
-                    <div className="h-8 w-8 rounded-md bg-muted animate-pulse" />
-                    <div className="h-5 w-48 rounded bg-muted animate-pulse" />
-                </div>
-
-                {/* Content skeleton */}
-                <div className="flex-1 p-6 md:p-8 space-y-6 overflow-hidden">
-                    {/* Transcript text skeleton lines */}
-                    {Array.from({ length: 8 }).map((_, i) => (
-                        <div key={i} className="space-y-2">
-                            {/* Timestamp + speaker skeleton */}
-                            <div className="flex items-center gap-3">
-                                <div className="h-4 w-16 rounded bg-muted animate-pulse" />
-                                <div className="h-4 w-20 rounded bg-muted animate-pulse" />
-                            </div>
-                            {/* Text lines skeleton - deterministic widths to avoid hydration mismatch */}
-                            <div className="space-y-2 pl-0">
-                                <div
-                                    className="h-4 rounded bg-muted animate-pulse"
-                                    style={{ width: `${70 + ((i * 13) % 25)}%` }}
-                                />
-                                <div
-                                    className="h-4 rounded bg-muted animate-pulse"
-                                    style={{ width: `${50 + ((i * 17) % 40)}%` }}
-                                />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Audio player skeleton */}
-                <div className="h-24 border-t border-border px-6 flex items-center gap-4">
-                    <div className="h-4 w-12 rounded bg-muted animate-pulse" />
-                    <div className="flex-1 h-2 rounded-full bg-muted animate-pulse" />
-                    <div className="h-4 w-12 rounded bg-muted animate-pulse" />
-                </div>
-            </div>
-        );
+        return <ViewerSkeleton />;
     }
 
     // Error state
     if (error && !providedData && !data) {
-        return (
-            <div className="flex flex-col h-screen bg-background items-center justify-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
-                    <WarningCircle className="h-8 w-8 text-destructive" />
-                </div>
-                <div className="text-center">
-                    <p className="font-semibold text-foreground mb-1">Failed to load transcription</p>
-                    <p className="text-sm text-muted-foreground">{error.message}</p>
-                </div>
-                <Button variant="ghost" onClick={handleBack}>
-                    Back to Dashboard
-                </Button>
-            </div>
-        );
+        return <ViewerError error={error} onBack={handleBack} />;
     }
 
     if (!data) {
@@ -354,53 +297,7 @@ export function TranscriptionViewerNew({
     // Pending/Processing state
     if (data.status === "pending" || data.status === "processing") {
         const stepText = getProcessingStepText(data.status, data.processingStep);
-        return (
-            <div className="flex flex-col h-screen bg-background">
-                <ViewerHeader
-                    data={data}
-                    onToggleSidebar={() => setIsSidebarOpen(true)}
-                />
-                <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-                    <RefreshDouble className="h-10 w-10 text-primary animate-spin" />
-                    <div className="text-center">
-                        <p className="font-semibold text-foreground mb-1">
-                            {stepText}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                            This may take a few minutes depending on the file length.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // Failed state
-    if (data.status === "failed") {
-        return (
-            <div className="flex flex-col h-screen bg-background">
-                <ViewerHeader
-                    data={data}
-                    onToggleSidebar={() => setIsSidebarOpen(true)}
-                />
-                <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
-                    <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
-                        <WarningCircle className="h-8 w-8 text-destructive" />
-                    </div>
-                    <div className="text-center">
-                        <p className="font-semibold text-foreground mb-1">
-                            Transcription failed
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                            An error occurred during transcription.
-                        </p>
-                    </div>
-                    <Button variant="ghost" onClick={handleBack}>
-                        Back to Dashboard
-                    </Button>
-                </div>
-            </div>
-        );
+        return <ViewerStatus data={data} onToggleSidebar={() => setIsSidebarOpen(true)} onBack={handleBack} />;
     }
 
     // Completed state - full viewer
@@ -486,20 +383,17 @@ export function TranscriptionViewerNew({
                     <ActionItemsView
                         actionItemsAnalysis={getAnalysisByType("ActionItems")}
                         displayLanguage={displayLanguage}
-                        onBack={() => setCurrentAnalysisView("transcript")}
                     />
                 ) : currentAnalysisView === "MeetingMinutes" ? (
                     <MeetingMinutesView
                         minutesAnalysis={getAnalysisByType("MeetingMinutes")}
                         displayLanguage={displayLanguage}
-                        onBack={() => setCurrentAnalysisView("transcript")}
                     />
                 ) : ["ShortSummary", "LongSummary", "Topics", "Sentiment"].includes(currentAnalysisView) ? (
                     <AnalysisContentView
                         analysis={getAnalysisByType(currentAnalysisView as AnalysisType)}
                         analysisType={currentAnalysisView}
                         displayLanguage={displayLanguage}
-                        onBack={() => setCurrentAnalysisView("transcript")}
                     />
                 ) : (
                     <TranscriptContent

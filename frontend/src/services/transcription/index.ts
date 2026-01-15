@@ -1,1 +1,0 @@
-export { transcriptionApi } from "./api";

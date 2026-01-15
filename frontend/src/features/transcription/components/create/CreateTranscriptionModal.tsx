@@ -2,16 +2,19 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { cn, formatFileSize } from "@/lib/utils";
-import { Xmark, CloudUpload, Youtube, Microphone, Folder, Trash, CheckCircle, WarningCircle, Crown, Lock } from "iconoir-react";
+import { cn } from "@/lib/utils";
+import { Xmark, CloudUpload, Youtube, Microphone, CheckCircle, WarningCircle, Crown, Lock } from "iconoir-react";
 import { Button } from "@/components/ui";
 import { VoiceRecordingTab } from "./VoiceRecordingTab";
 import { UploadProgressOverlay } from "./UploadProgressOverlay";
-import { TranscriptionQuality } from "@/types/api/transcription";
-import { useFileUpload } from "@/hooks/useFileUpload";
+import { TabButton } from "./TabButton";
+import { MultiFileUploadTab } from "./MultiFileUploadTab";
+import { YouTubeTab } from "./YouTubeTab";
+import { SOURCE_LANGUAGES, TRANSCRIPTION_QUALITY_OPTIONS, SUPPORTED_FORMATS } from "./constants";
+import { TranscriptionQuality } from "@/features/transcription/types";
+import { useFileUpload } from "@/features/transcription/hooks/useFileUpload";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { PLANS } from "@/lib/plans";
-import type { UploadStatus } from "@/types/models/upload";
 
 // ─────────────────────────────────────────────────────────────
 // Types
@@ -46,33 +49,7 @@ export interface TranscriptionFormData {
     enableSpeakerDiarization: boolean;
 }
 
-// ─────────────────────────────────────────────────────────────
-// Languages & Quality Options
-// ─────────────────────────────────────────────────────────────
 
-const LANGUAGES = [
-    { code: "auto", label: "Auto-detect" },
-    { code: "en", label: "English" },
-    { code: "pl", label: "Polish" },
-    { code: "de", label: "German" },
-    { code: "fr", label: "French" },
-    { code: "es", label: "Spanish" },
-    { code: "it", label: "Italian" },
-    { code: "pt", label: "Portuguese" },
-    { code: "nl", label: "Dutch" },
-    { code: "ru", label: "Russian" },
-    { code: "ja", label: "Japanese" },
-    { code: "ko", label: "Korean" },
-    { code: "zh", label: "Chinese" },
-];
-
-const QUALITY_OPTIONS = [
-    { value: TranscriptionQuality.Fast, label: "Fast", description: "Quickest results" },
-    { value: TranscriptionQuality.Balanced, label: "Balanced", description: "Best trade-off" },
-    { value: TranscriptionQuality.Accurate, label: "Most Accurate", description: "Highest quality" },
-];
-
-const SUPPORTED_FORMATS = [".mp3", ".mp4", ".m4a", ".mov", ".aac", ".wav", ".ogg", ".opus", ".mpeg", ".wma", ".wmv"];
 
 // ─────────────────────────────────────────────────────────────
 // Main Modal Component
@@ -284,7 +261,6 @@ export function CreateTranscriptionModal({
             });
         } else if (activeTab === "youtube") {
             // TODO: Implement YouTube handling
-            console.log("YouTube URL:", youtubeUrl);
         } else if (activeTab === "voice" && audioBlob) {
             onClose();
             reset();
@@ -520,7 +496,7 @@ export function CreateTranscriptionModal({
                                             "focus:outline-none focus:ring-2 focus:ring-ring"
                                         )}
                                     >
-                                        {LANGUAGES.map((lang) => (
+                                        {SOURCE_LANGUAGES.map((lang) => (
                                             <option key={lang.code} value={lang.code}>
                                                 {lang.label}
                                             </option>
@@ -562,7 +538,7 @@ export function CreateTranscriptionModal({
                                         Model Speed
                                     </label>
                                     <div className="flex flex-col sm:flex-row gap-2">
-                                        {QUALITY_OPTIONS.map((opt) => {
+                                        {TRANSCRIPTION_QUALITY_OPTIONS.map((opt) => {
                                             const isRestricted = !limits.allModels && opt.value !== TranscriptionQuality.Balanced;
                                             const isSelected = quality === opt.value;
 
@@ -614,396 +590,3 @@ export function CreateTranscriptionModal({
         </div>
     );
 }
-
-
-
-// ─────────────────────────────────────────────────────────────
-// Tab Button
-// ─────────────────────────────────────────────────────────────
-
-interface TabButtonProps {
-    active: boolean;
-    onClick: () => void;
-    icon: React.ComponentType<{ className?: string }>;
-    label: string;
-    disabled?: boolean;
-    badge?: string;
-}
-
-function TabButton({ active, onClick, icon: Icon, label, disabled, badge }: TabButtonProps) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            disabled={disabled}
-            className={cn(
-                "flex-1 flex items-center justify-center gap-2 px-4 py-3",
-                "text-sm font-medium transition-colors",
-                "border-b-2 -mb-[2px]",
-                active
-                    ? "text-primary border-primary"
-                    : "text-muted-foreground border-transparent",
-                !disabled && !active && "hover:text-foreground hover:bg-accent/50",
-                disabled && "opacity-60 cursor-not-allowed"
-            )}
-        >
-            <Icon className="h-4 w-4" />
-            <span className="hidden sm:inline">{label}</span>
-            {badge && (
-                <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary uppercase tracking-wide">
-                    {badge}
-                </span>
-            )}
-        </button>
-    );
-}
-
-// ─────────────────────────────────────────────────────────────
-// File Upload Tab
-// ─────────────────────────────────────────────────────────────
-
-interface FileUploadTabProps {
-    file: File | null;
-    onFileSelect: (file: File) => void;
-    onClear: () => void;
-}
-
-function FileUploadTab({ file, onFileSelect, onClear }: FileUploadTabProps) {
-    const inputRef = React.useRef<HTMLInputElement>(null);
-    const [isDragging, setIsDragging] = React.useState(false);
-
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(false);
-        const droppedFile = e.dataTransfer.files[0];
-        if (droppedFile) {
-            onFileSelect(droppedFile);
-        }
-    };
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile = e.target.files?.[0];
-        if (selectedFile) {
-            onFileSelect(selectedFile);
-        }
-    };
-
-    if (file) {
-        return (
-            <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border border-border">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <CloudUpload className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground truncate">{file.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                        {formatFileSize(file.size)}
-                    </p>
-                </div>
-                <button
-                    type="button"
-                    onClick={onClear}
-                    className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-                >
-                    <Trash className="h-5 w-5" />
-                </button>
-            </div>
-        );
-    }
-
-    return (
-        <div
-            onDragOver={(e) => {
-                e.preventDefault();
-                setIsDragging(true);
-            }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={handleDrop}
-            className={cn(
-                "flex flex-col items-center justify-center gap-4 py-12 px-6",
-                "border-2 border-dashed rounded-xl transition-colors",
-                isDragging
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50"
-            )}
-        >
-            <div className="text-center">
-                <h3 className="text-lg font-semibold text-foreground mb-1">
-                    Drag & Drop
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                    Supported formats: {SUPPORTED_FORMATS.join(", ")}
-                </p>
-            </div>
-
-            <div className="text-muted-foreground">or</div>
-
-            <Button
-                variant="outline"
-                onClick={() => inputRef.current?.click()}
-                className="gap-2"
-            >
-                <Folder className="h-4 w-4" />
-                Browse file
-            </Button>
-
-            <input
-                ref={inputRef}
-                type="file"
-                accept={SUPPORTED_FORMATS.join(",")}
-                onChange={handleFileChange}
-                className="hidden"
-            />
-        </div>
-    );
-}
-
-// ─────────────────────────────────────────────────────────────
-// Multi-File Upload Tab (Pro Feature)
-// ─────────────────────────────────────────────────────────────
-
-interface MultiFileUploadTabProps {
-    files: File[];
-    onFilesSelect: (files: File[], append?: boolean) => void;
-    onRemoveFile: (index: number) => void;
-    onClear: () => void;
-    maxFilesPerUpload: number;
-    isValidating: boolean;
-}
-
-function MultiFileUploadTab({
-    files,
-    onFilesSelect,
-    onRemoveFile,
-    onClear,
-    maxFilesPerUpload,
-    isValidating
-}: MultiFileUploadTabProps) {
-    const inputRef = React.useRef<HTMLInputElement>(null);
-    const addMoreInputRef = React.useRef<HTMLInputElement>(null);
-    const [isDragging, setIsDragging] = React.useState(false);
-
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(false);
-        const droppedFiles = Array.from(e.dataTransfer.files);
-        if (droppedFiles.length > 0) {
-            // If files already selected, append; otherwise replace
-            onFilesSelect(droppedFiles, files.length > 0);
-        }
-    };
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFiles = Array.from(e.target.files || []);
-        if (selectedFiles.length > 0) {
-            onFilesSelect(selectedFiles, false); // Replace mode for initial selection
-        }
-        e.target.value = "";
-    };
-
-    const handleAddMoreFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFiles = Array.from(e.target.files || []);
-        if (selectedFiles.length > 0) {
-            onFilesSelect(selectedFiles, true); // Append mode
-        }
-        e.target.value = "";
-    };
-
-    // If files are selected, show the file list
-    if (files.length > 0) {
-        return (
-            <div className="space-y-3">
-                {/* File count header */}
-                <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                        {files.length} file{files.length !== 1 ? "s" : ""} selected
-                        {maxFilesPerUpload > 1 && ` (max ${maxFilesPerUpload})`}
-                    </span>
-                    <button
-                        type="button"
-                        onClick={onClear}
-                        className="text-sm text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                        Clear all
-                    </button>
-                </div>
-
-                {/* File list */}
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {files.map((file, index) => (
-                        <div
-                            key={`${file.name}-${index}`}
-                            className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border border-border"
-                        >
-                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                                <CloudUpload className="h-4 w-4 text-primary" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-foreground truncate">{file.name}</p>
-                                <p className="text-xs text-muted-foreground">
-                                    {formatFileSize(file.size)}
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => onRemoveFile(index)}
-                                className="p-1.5 text-muted-foreground hover:text-destructive transition-colors shrink-0"
-                                title="Remove file"
-                            >
-                                <Trash className="h-4 w-4" />
-                            </button>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Add more files button - only for Pro users (maxFilesPerUpload > 1) */}
-                {maxFilesPerUpload > 1 && files.length < maxFilesPerUpload && (
-                    <>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => addMoreInputRef.current?.click()}
-                            className="w-full gap-2"
-                        >
-                            <Folder className="h-4 w-4" />
-                            Add more files
-                        </Button>
-                        <input
-                            ref={addMoreInputRef}
-                            type="file"
-                            multiple
-                            accept={SUPPORTED_FORMATS.join(",")}
-                            onChange={handleAddMoreFiles}
-                            className="hidden"
-                        />
-                    </>
-                )}
-            </div>
-        );
-    }
-
-    // Empty state - drag & drop zone
-    return (
-        <div
-            onDragOver={(e) => {
-                e.preventDefault();
-                setIsDragging(true);
-            }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={handleDrop}
-            className={cn(
-                "flex flex-col items-center justify-center gap-4 py-8 sm:py-12 px-6",
-                "border-2 border-dashed rounded-xl transition-colors",
-                isDragging
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50"
-            )}
-        >
-            {isValidating ? (
-                <div className="text-center">
-                    <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-3" />
-                    <p className="text-sm text-muted-foreground">Validating files...</p>
-                </div>
-            ) : (
-                <>
-                    <div className="text-center">
-                        <h3 className="text-lg font-semibold text-foreground mb-1">
-                            <span className="hidden sm:inline">Drag & Drop</span>
-                            <span className="sm:hidden">Select Files</span>
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                            {maxFilesPerUpload > 1
-                                ? `Up to ${maxFilesPerUpload} files`
-                                : "Drop your file here"}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1 hidden sm:block">
-                            {SUPPORTED_FORMATS.join(", ")}
-                        </p>
-                    </div>
-
-                    <div className="text-muted-foreground hidden sm:block">or</div>
-
-                    <Button
-                        variant="outline"
-                        onClick={() => inputRef.current?.click()}
-                        className="gap-2"
-                    >
-                        <Folder className="h-4 w-4" />
-                        Browse {maxFilesPerUpload > 1 ? "files" : "file"}
-                    </Button>
-
-                    <input
-                        ref={inputRef}
-                        type="file"
-                        multiple={maxFilesPerUpload > 1}
-                        accept={SUPPORTED_FORMATS.join(",")}
-                        onChange={handleFileChange}
-                        className="hidden"
-                    />
-                </>
-            )}
-        </div>
-    );
-}
-
-// ─────────────────────────────────────────────────────────────
-// YouTube Tab
-// ─────────────────────────────────────────────────────────────
-
-interface YouTubeTabProps {
-    url: string;
-    onUrlChange: (url: string) => void;
-    onClear: () => void;
-}
-
-function YouTubeTab({ url, onUrlChange, onClear }: YouTubeTabProps) {
-    const isValidUrl = url.includes("youtube.com") || url.includes("youtu.be");
-
-    return (
-        <div className="space-y-4">
-            <div className="relative">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2">
-                    <Youtube className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <input
-                    type="url"
-                    placeholder="Paste YouTube URL here..."
-                    value={url}
-                    onChange={(e) => onUrlChange(e.target.value)}
-                    className={cn(
-                        "w-full h-12 pl-10 pr-10 rounded-lg",
-                        "bg-background border border-input",
-                        "text-foreground placeholder:text-muted-foreground",
-                        "focus:outline-none focus:ring-2 focus:ring-ring"
-                    )}
-                />
-                {url && (
-                    <button
-                        type="button"
-                        onClick={onClear}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                        <Xmark className="h-5 w-5" />
-                    </button>
-                )}
-            </div>
-
-            {url && !isValidUrl && (
-                <p className="text-sm text-warning">
-                    Please enter a valid YouTube URL
-                </p>
-            )}
-
-            {url && isValidUrl && (
-                <div className="p-4 bg-muted/50 rounded-lg border border-border">
-                    <p className="text-sm text-muted-foreground mb-1">Video URL</p>
-                    <p className="font-medium text-foreground truncate">{url}</p>
-                </div>
-            )}
-        </div>
-    );
-}
-
-
-
-

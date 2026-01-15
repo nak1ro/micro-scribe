@@ -2,26 +2,16 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { NavArrowDown, NavArrowUp, EmojiSatisfied, EmojiSad } from "iconoir-react";
-import type { TranscriptionAnalysisDto, ShortSummaryContent, SentimentContent } from "@/types/api/analysis";
-import { parseAnalysisContent } from "@/types/api/analysis";
+import { NavArrowDown, NavArrowUp } from "iconoir-react";
+import type { TranscriptionAnalysisDto, ShortSummaryContent, SentimentContent } from "@/features/transcription/types/analysis";
+import { parseAnalysisContent } from "@/features/transcription/types/analysis";
+import { getSentimentConfig } from "./constants";
 
 interface TLDRCardProps {
     summaryAnalysis: TranscriptionAnalysisDto | undefined;
     sentimentAnalysis: TranscriptionAnalysisDto | undefined;
     displayLanguage: string | null;
     className?: string;
-}
-
-function getSentimentDisplay(sentiment: string | undefined) {
-    switch (sentiment) {
-        case "Positive":
-            return { Icon: EmojiSatisfied, color: "text-success", bg: "bg-success/10" };
-        case "Negative":
-            return { Icon: EmojiSad, color: "text-destructive", bg: "bg-destructive/10" };
-        default:
-            return { Icon: null, color: "text-muted-foreground", bg: "bg-muted" };
-    }
 }
 
 export function TLDRCard({
@@ -57,7 +47,7 @@ export function TLDRCard({
         return parseAnalysisContent<SentimentContent>(content);
     }, [sentimentAnalysis, displayLanguage]);
 
-    const sentimentDisplay = getSentimentDisplay(sentiment?.sentiment);
+    const sentimentConfig = sentiment ? getSentimentConfig(sentiment.sentiment) : null;
 
     if (!summaryAnalysis && !sentimentAnalysis) {
         return null;
@@ -77,17 +67,13 @@ export function TLDRCard({
                     <span className="text-lg">💡</span>
                     <span className="font-medium text-foreground">TL;DR</span>
 
-                    {sentiment && (
+                    {sentiment && sentimentConfig && (
                         <div className={cn(
-                            "flex items-center gap-1 px-2 py-0.5 rounded-full",
-                            sentimentDisplay.bg
+                            "flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border",
+                            sentimentConfig.badge
                         )}>
-                            {sentimentDisplay.Icon ? (
-                                <sentimentDisplay.Icon className={cn("h-3.5 w-3.5", sentimentDisplay.color)} />
-                            ) : (
-                                <span className={cn("text-xs", sentimentDisplay.color)}>😐</span>
-                            )}
-                            <span className={cn("text-xs font-medium", sentimentDisplay.color)}>
+                            <span className="text-xs">{sentimentConfig.emoji}</span>
+                            <span className="text-xs font-medium">
                                 {sentiment.sentiment}
                             </span>
                         </div>
@@ -123,3 +109,4 @@ export function TLDRCard({
         </div>
     );
 }
+

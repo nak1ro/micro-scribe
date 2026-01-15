@@ -1,0 +1,246 @@
+
+// ─────────────────────────────────────────────────────────────
+// Media File Types
+// ─────────────────────────────────────────────────────────────
+
+export enum MediaFileType {
+    Audio = 0,
+    Video = 1,
+}
+
+export interface MediaFileResponse {
+    id: string;
+    originalFileName: string;
+    sizeBytes: number;
+    contentType: string;
+    fileType: MediaFileType;
+    durationSeconds: number | null;
+    normalizedAudioObjectKey: string | null;
+    createdAtUtc: string;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Pagination
+// ─────────────────────────────────────────────────────────────
+
+export interface PagedResponse<T> {
+    items: T[];
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+}
+
+export interface PaginationParams {
+    page?: number;
+    pageSize?: number;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Upload Session Types
+// ─────────────────────────────────────────────────────────────
+
+export interface InitiateUploadRequest {
+    fileName: string;
+    contentType: string;
+    sizeBytes: number;
+    clientRequestId?: string;
+}
+
+export interface UploadSessionResponse {
+    id: string;
+    status: string;
+    uploadUrl: string | null;
+    uploadId: string | null;
+    key: string;
+    initialChunkSize: number;
+    expiresAtUtc: string;
+    correlationId: string;
+}
+
+export interface CompleteUploadRequest {
+    parts?: PartDto[] | null;
+}
+
+export interface PartDto {
+    partNumber: number;
+}
+
+export interface UploadSessionStatusResponse {
+    id: string;
+    status: UploadSessionStatus;
+    errorMessage: string | null;
+    createdAtUtc: string;
+    uploadedAtUtc: string | null;
+    validatedAtUtc: string | null;
+}
+
+export type UploadSessionStatus =
+    | "Created"
+    | "Uploading"
+    | "Uploaded"
+    | "Validating"
+    | "Ready"
+    | "Invalid"
+    | "Aborted"
+    | "Expired";
+
+// ─────────────────────────────────────────────────────────────
+// Transcription Types (API)
+// ─────────────────────────────────────────────────────────────
+
+export enum TranscriptionJobStatus {
+    Pending = "Pending",
+    Processing = "Processing",
+    Completed = "Completed",
+    Failed = "Failed",
+    Cancelled = "Cancelled",
+}
+
+export enum TranscriptionQuality {
+    Fast = 0,
+    Balanced = 1,
+    Accurate = 2,
+}
+
+export interface CreateTranscriptionJobRequest {
+    mediaFileId?: string;
+    uploadSessionId?: string;
+    quality?: TranscriptionQuality;
+    sourceLanguage?: string | null;
+    enableSpeakerDiarization?: boolean;
+}
+
+export interface TranscriptionJobResponse {
+    jobId: string;
+    mediaFileId: string;
+    status: TranscriptionJobStatus;
+    createdAtUtc: string;
+}
+
+// List item for paginated job list response
+export interface TranscriptionJobListItem {
+    jobId: string;
+    originalFileName: string;
+    status: TranscriptionJobStatus;
+    processingStep: string | null;
+    quality: TranscriptionQuality;
+    sourceLanguage: string | null;
+    durationSeconds: number | null;
+    transcriptPreview: string | null;
+    createdAtUtc: string;
+    completedAtUtc: string | null;
+}
+
+export interface TranscriptionJobDetailResponse {
+    jobId: string;
+    mediaFileId: string;
+    originalFileName: string;
+    status: TranscriptionJobStatus;
+    processingStep: string | null;
+    quality: TranscriptionQuality;
+    sourceLanguage: string | null;
+    translatedLanguages: string[];
+    translationStatus: string | null;
+    translatingToLanguage: string | null;
+    transcript: string | null;
+    errorMessage: string | null;
+    durationSeconds: number | null;
+    segments: TranscriptSegmentDto[];
+    enableSpeakerDiarization: boolean;
+    speakers: TranscriptionSpeakerDto[];
+    presignedUrl: string | null;
+    createdAtUtc: string;
+    startedAtUtc: string | null;
+    completedAtUtc: string | null;
+}
+
+export interface TranscriptSegmentDto {
+    id: string;
+    text: string;
+    startSeconds: number;
+    endSeconds: number;
+    speaker: string | null;
+    translations: Record<string, string>;
+    isEdited: boolean;
+    originalText: string | null;
+}
+
+export interface UpdateSegmentRequest {
+    text: string;
+}
+
+export enum ApiExportFormat {
+    Txt = 0,
+    Srt = 1,
+    Vtt = 2,
+    Docx = 3,
+    Pdf = 4,
+}
+
+// Speaker metadata for diarization
+export interface TranscriptionSpeakerDto {
+    id: string;
+    displayName: string | null;
+    color: string | null;
+}
+
+// Request for on-demand translation
+export interface TranslateJobRequest {
+    targetLanguage: string;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Viewer Specific Types
+// ─────────────────────────────────────────────────────────────
+
+export interface ViewerSegment {
+    id: string;
+    text: string;
+    startSeconds: number;
+    endSeconds: number;
+    speaker: string | null;
+    translations: Record<string, string>;
+    isEdited: boolean;
+    originalText: string | null;
+}
+
+export interface ViewerState {
+    activeSegmentIndex: number;
+    isPlaying: boolean;
+    currentTime: number;
+    showTimecodes: boolean;
+    showSpeakers: boolean;
+}
+
+// Speaker metadata for UI
+export interface SpeakerInfo {
+    id: string;
+    displayName: string | null;
+    color: string | null;
+}
+
+export interface TranscriptionData {
+    id: string;
+    fileName: string;
+    status: "pending" | "processing" | "completed" | "failed";
+    processingStep: string | null;
+    durationSeconds: number;
+    sourceLanguage: string;
+    translatedLanguages: string[];
+    translationStatus: string | null;
+    translatingToLanguage: string | null;
+    enableSpeakerDiarization: boolean;
+    speakers: SpeakerInfo[];
+    segments: ViewerSegment[];
+    audioUrl: string | null;
+}
+
+export type ExportFormat = "txt" | "docx" | "srt" | "vtt" | "json" | "csv" | "mp3";
+
+export interface ExportOption {
+    id: ExportFormat;
+    label: string;
+    description: string;
+    icon: string;
+}

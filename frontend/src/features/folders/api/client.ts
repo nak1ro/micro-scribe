@@ -6,7 +6,7 @@ import {
     UpdateFolderItemsRequest,
     UpdateFolderRequest
 } from "../types";
-import { TranscriptionJobListItem, PagedResponse } from "@/types/api/transcription";
+import { TranscriptionJobListItem, PagedResponse } from "@/features/transcription/types";
 
 export const FoldersService = {
     // CRUD

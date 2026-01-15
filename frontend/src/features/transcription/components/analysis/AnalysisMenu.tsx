@@ -2,8 +2,11 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { NavArrowDown, Check, RefreshDouble, Plus, ReportColumns, ArrowLeft } from "iconoir-react";
-import type { TranscriptionAnalysisDto, AnalysisType } from "@/types/api/analysis";
+import { NavArrowDown, RefreshDouble, ReportColumns, ArrowLeft, Plus } from "iconoir-react";
+import { useOnClickOutside } from "@/hooks";
+import type { TranscriptionAnalysisDto, AnalysisType } from "@/features/transcription/types/analysis";
+import { ANALYSIS_TYPES_CONFIG, AnalysisTypeConfig } from "./constants";
+import { AnalysisMenuItem } from "./items/AnalysisMenuItem";
 
 interface AnalysisMenuProps {
     analyses: TranscriptionAnalysisDto[];
@@ -16,15 +19,6 @@ interface AnalysisMenuProps {
     disabled?: boolean;
     className?: string;
 }
-
-// Analysis types we support
-const ANALYSIS_TYPES: { type: AnalysisType; label: string; hasView: boolean }[] = [
-    { type: "ShortSummary", label: "TL;DR Summary", hasView: true },
-    { type: "Topics", label: "Topics/Tags", hasView: true },
-    { type: "Sentiment", label: "Sentiment Analysis", hasView: true },
-    { type: "ActionItems", label: "Action Items", hasView: true },
-    { type: "MeetingMinutes", label: "Meeting Minutes", hasView: true },
-];
 
 export function AnalysisMenu({
     analyses,
@@ -41,19 +35,8 @@ export function AnalysisMenu({
     const menuRef = React.useRef<HTMLDivElement>(null);
 
     // Close on click outside
-    React.useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-                setIsOpen(false);
-            }
-        };
-        if (isOpen) {
-            document.addEventListener("mousedown", handleClickOutside);
-        }
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [isOpen]);
+    useOnClickOutside(menuRef, () => setIsOpen(false));
 
-    // Check helpers
     // Check helpers
     const getAnalysis = (type: AnalysisType) => analyses.find(a => a.analysisType === type);
 
@@ -71,19 +54,15 @@ export function AnalysisMenu({
     // An item is "failed"
     const isFailed = (type: AnalysisType) => getAnalysis(type)?.status === "Failed";
 
-    const generatedCount = ANALYSIS_TYPES.filter(t => isCompleted(t.type)).length;
+    const generatedCount = ANALYSIS_TYPES_CONFIG.filter(t => isCompleted(t.type)).length;
 
     // Handle item click
-    const handleClick = (item: typeof ANALYSIS_TYPES[0]) => {
+    const handleClick = (item: AnalysisTypeConfig) => {
         const loading = isLoading(item.type);
         const complete = isCompleted(item.type);
-        const failed = isFailed(item.type);
-
-        console.log("[AnalysisMenu] handleClick called", item.type, { loading, complete, failed });
 
         // If loading, do nothing
         if (loading) {
-            console.log("[AnalysisMenu] Returning early - type is loading");
             return;
         }
 
@@ -91,19 +70,16 @@ export function AnalysisMenu({
         if (item.hasView) {
             // If complete, open the view
             if (complete) {
-                console.log("[AnalysisMenu] Opening view for", item.type);
                 onSelectView(item.type);
                 setIsOpen(false);
                 return;
             }
 
             // If not complete (or failed), generate/retry
-            console.log("[AnalysisMenu] Generating/Retrying", item.type);
             onGenerate([item.type]);
         } else {
             // For other types, generate if not complete
             if (!complete) {
-                console.log("[AnalysisMenu] Calling onGenerate for non-view type", item.type);
                 onGenerate([item.type]);
             }
         }
@@ -136,7 +112,7 @@ export function AnalysisMenu({
                 <div className="flex items-center gap-1.5">
                     {generatedCount > 0 && (
                         <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/10 text-success">
-                            {generatedCount}/{ANALYSIS_TYPES.length}
+                            {generatedCount}/{ANALYSIS_TYPES_CONFIG.length}
                         </span>
                     )}
                     <NavArrowDown className={cn(
@@ -166,39 +142,21 @@ export function AnalysisMenu({
                             <div className="h-px bg-border my-1" />
                         </>
                     )}
-                    {ANALYSIS_TYPES.map((item) => {
-                        const loading = isLoading(item.type);
-                        const complete = isCompleted(item.type);
-                        const failed = isFailed(item.type);
-                        const isActive = currentView === item.type;
-
-                        return (
-                            <button
-                                key={item.type}
-                                onClick={() => handleClick(item)}
-                                disabled={loading || disabled}
-                                className={cn(
-                                    "w-full flex items-center justify-between px-3 py-2",
-                                    "text-left transition-colors",
-                                    isActive ? "bg-primary/10" : "hover:bg-muted",
-                                    (loading || disabled) && "opacity-70 cursor-wait"
-                                )}
-                            >
-                                <span className={cn("text-sm", failed ? "text-destructive" : "text-foreground")}>
-                                    {item.label}
-                                </span>
-                                <div className="flex items-center gap-1">
-                                    {loading && <RefreshDouble className="h-4 w-4 text-info animate-spin" />}
-                                    {complete && <Check className="h-4 w-4 text-success" />}
-                                    {failed && <span className="text-xs text-destructive font-medium">Failed</span>}
-                                    {!complete && !loading && !failed && <Plus className="h-4 w-4 text-muted-foreground" />}
-                                </div>
-                            </button>
-                        );
-                    })}
+                    {ANALYSIS_TYPES_CONFIG.map((item) => (
+                        <AnalysisMenuItem
+                            key={item.type}
+                            item={item}
+                            isLoading={isLoading(item.type)}
+                            isCompleted={isCompleted(item.type)}
+                            isFailed={isFailed(item.type)}
+                            isActive={currentView === item.type}
+                            disabled={disabled}
+                            onClick={() => handleClick(item)}
+                        />
+                    ))}
 
                     {/* Generate All */}
-                    {generatedCount < ANALYSIS_TYPES.length && (
+                    {generatedCount < ANALYSIS_TYPES_CONFIG.length && (
                         <>
                             <div className="h-px bg-border my-1" />
                             <button
@@ -215,10 +173,9 @@ export function AnalysisMenu({
                             </button>
                         </>
                     )}
-
-
                 </div>
             )}
         </div>
     );
 }
+

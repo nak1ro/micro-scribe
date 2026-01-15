@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import type { TranscriptionAnalysisDto, TopicsContent } from "@/types/api/analysis";
-import { parseAnalysisContent } from "@/types/api/analysis";
+import type { TranscriptionAnalysisDto, TopicsContent } from "@/features/transcription/types";
+import { parseAnalysisContent } from "@/features/transcription/types";
 
 interface TopicsBadgesProps {
     topicsAnalysis: TranscriptionAnalysisDto | undefined;
