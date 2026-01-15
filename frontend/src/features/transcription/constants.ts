@@ -91,3 +91,14 @@ export const QUALITY_OPTIONS = [
     { id: "standard", label: "Standard", description: "Faster processing" },
     { id: "enhanced", label: "Enhanced", description: "Higher accuracy" },
 ] as const;
+
+// Analysis view display titles for ViewerHeader
+export const ANALYSIS_VIEW_TITLES: Record<string, string> = {
+    ActionItems: "📋 Action Items",
+    MeetingMinutes: "📝 Meeting Minutes",
+    ShortSummary: "💡 TL;DR Summary",
+    LongSummary: "📄 Detailed Summary",
+    Topics: "🏷️ Topics & Tags",
+    Sentiment: "😊 Sentiment Analysis",
+};
+

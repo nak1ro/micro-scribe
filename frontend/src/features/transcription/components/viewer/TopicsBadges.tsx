@@ -1,9 +1,8 @@
 "use client";
 
-import * as React from "react";
 import { cn } from "@/lib/utils";
-import type { TranscriptionAnalysisDto, TopicsContent } from "@/features/transcription/types";
-import { parseAnalysisContent } from "@/features/transcription/types";
+import type { TranscriptionAnalysisDto } from "@/features/transcription/types";
+import { useTopics } from "@/features/transcription/hooks/useTopics";
 
 interface TopicsBadgesProps {
     topicsAnalysis: TranscriptionAnalysisDto | undefined;
@@ -12,28 +11,16 @@ interface TopicsBadgesProps {
     className?: string;
 }
 
-export function TopicsBadges({
-    topicsAnalysis,
-    displayLanguage,
-    onTopicClick,
-    className,
-}: TopicsBadgesProps) {
-    // Get topics in appropriate language
-    const topics = React.useMemo(() => {
-        if (!topicsAnalysis) return [];
+const badgeClasses = cn(
+    "px-2 py-0.5 rounded-full text-xs font-medium",
+    "bg-primary/10 text-primary",
+    "hover:bg-primary/20 transition-colors"
+);
 
-        let content = topicsAnalysis.content;
-        if (displayLanguage && topicsAnalysis.translations[displayLanguage]) {
-            content = topicsAnalysis.translations[displayLanguage];
-        }
+export function TopicsBadges({ topicsAnalysis, displayLanguage, onTopicClick, className }: TopicsBadgesProps) {
+    const topics = useTopics({ topicsAnalysis, displayLanguage });
 
-        const parsed = parseAnalysisContent<TopicsContent>(content);
-        return parsed?.topics ?? [];
-    }, [topicsAnalysis, displayLanguage]);
-
-    if (!topicsAnalysis || topics.length === 0) {
-        return null;
-    }
+    if (topics.length === 0) return null;
 
     return (
         <div className={cn("flex flex-wrap gap-1.5", className)}>
@@ -41,12 +28,7 @@ export function TopicsBadges({
                 <button
                     key={idx}
                     onClick={() => onTopicClick?.(topic)}
-                    className={cn(
-                        "px-2 py-0.5 rounded-full text-xs font-medium",
-                        "bg-primary/10 text-primary",
-                        "hover:bg-primary/20 transition-colors",
-                        !onTopicClick && "cursor-default"
-                    )}
+                    className={cn(badgeClasses, !onTopicClick && "cursor-default")}
                 >
                     #{topic}
                 </button>

@@ -3,9 +3,9 @@
 import * as React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { NavArrowDown, Page, TextBox, MediaVideo, Table2Columns, MusicDoubleNote, Lock, Code } from "iconoir-react";
+import { NavArrowDown, Lock } from "iconoir-react";
 import { getLanguageName } from "@/lib/utils";
-import { usePlanLimits, useOnClickOutside, useEscapeKey } from "@/hooks";
+import { useExportMenu } from "@/features/transcription/hooks/useExportMenu";
 
 import type { ExportFormat } from "@/features/transcription/types";
 import { EXPORT_FORMAT_OPTIONS } from "@/features/transcription/constants";
@@ -20,49 +20,42 @@ interface ExportMenuProps {
 
 
 
-const iconMap = {
-    Page: Page,
-    TextBox: TextBox,
-    MediaVideo: MediaVideo,
-    Table2Columns: Table2Columns,
-    MusicDoubleNote: MusicDoubleNote,
-    Code: Code,
-};
+const triggerButtonClasses = cn(
+    "w-full flex items-center justify-between gap-2",
+    "px-3 py-2.5 rounded-lg",
+    "bg-muted/50 hover:bg-muted",
+    "border border-border hover:border-primary/30",
+    "text-sm font-medium text-foreground",
+    "transition-colors duration-150",
+    "disabled:opacity-50 disabled:cursor-not-allowed"
+);
+
+// ─────────────────────────────────────────────────────────────
+// Component
+// ─────────────────────────────────────────────────────────────
 
 export function ExportMenu({ onExport, displayLanguage, sourceLanguage, disabled, className }: ExportMenuProps) {
-    const [isOpen, setIsOpen] = React.useState(false);
-    const menuRef = React.useRef<HTMLDivElement>(null);
-    const { canExport, isPro } = usePlanLimits();
-
-    // Close on click outside
-    useOnClickOutside(menuRef, () => setIsOpen(false));
-
-    // Close on escape
-    useEscapeKey(() => setIsOpen(false), isOpen);
-
-    const handleExport = (format: ExportFormat) => {
-        if (!canExport(format)) return;
-        onExport(format);
-        setIsOpen(false);
-    };
+    const {
+        isOpen,
+        setIsOpen,
+        menuRef,
+        menuId,
+        handleExport,
+        canExport,
+        getIconComponent,
+        toggleOpen
+    } = useExportMenu({ onExport });
 
     return (
         <div ref={menuRef} className={cn("relative", className)}>
             {/* Trigger button */}
             <button
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={toggleOpen}
                 disabled={disabled}
-                className={cn(
-                    "w-full flex items-center justify-between gap-2",
-                    "px-3 py-2.5 rounded-lg",
-                    "bg-muted/50 hover:bg-muted",
-                    "border border-border hover:border-primary/30",
-                    "text-sm font-medium text-foreground",
-                    "transition-colors duration-150",
-                    "disabled:opacity-50 disabled:cursor-not-allowed"
-                )}
+                className={triggerButtonClasses}
                 aria-expanded={isOpen}
                 aria-haspopup="true"
+                aria-controls={isOpen ? menuId : undefined}
             >
                 <span>Export</span>
                 <NavArrowDown
@@ -82,6 +75,7 @@ export function ExportMenu({ onExport, displayLanguage, sourceLanguage, disabled
                         "py-1 animate-fade-in"
                     )}
                     role="menu"
+                    id={menuId}
                 >
                     {/* Language hint */}
                     <div className="px-3 py-2 border-b border-border mb-1">
@@ -90,7 +84,7 @@ export function ExportMenu({ onExport, displayLanguage, sourceLanguage, disabled
                         </span>
                     </div>
                     {EXPORT_FORMAT_OPTIONS.map((option) => {
-                        const Icon = iconMap[option.icon as keyof typeof iconMap];
+                        const Icon = getIconComponent(option.icon);
                         const isLocked = !canExport(option.id);
 
                         return (
