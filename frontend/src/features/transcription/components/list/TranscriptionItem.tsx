@@ -3,13 +3,8 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import {
-    Trash,
-    CheckCircle,
-} from "iconoir-react";
-import { Button } from "@/components/ui";
-import { toast } from "sonner";
 import { formatDuration } from "@/features/transcription/utils";
+import { useDragFolderHint } from "@/features/transcription/hooks/useDragFolderHint";
 import { StatusBadge } from "./StatusBadge";
 import { ActionMenu } from "./ActionMenu";
 import type { TranscriptionListItem } from "@/types/models/transcription";
@@ -34,6 +29,7 @@ export function TranscriptionItem({
     onShare
 }: TranscriptionItemProps) {
     const router = useRouter();
+    const { handleDragStart } = useDragFolderHint();
 
     const formattedDate = new Date(item.uploadDate).toLocaleDateString("en-US", {
         month: "short",
@@ -54,28 +50,10 @@ export function TranscriptionItem({
 
     const isEven = index % 2 === 0;
 
-    const handleDragStart = (e: React.DragEvent) => {
-        e.dataTransfer.setData("application/x-scribe-job-id", item.id);
-        e.dataTransfer.effectAllowed = "move";
-        // Optional: Custom drag image or ghost could be set here
-
-        // Hint toast on first drag (simple implementation: always show or use local storage to show once)
-        // For now, let's just show it if it's not irritating. 
-        // Better: check if we've shown it before.
-        const hasShownHint = localStorage.getItem("scribe-drag-folder-hint");
-        if (!hasShownHint) {
-            toast("Drag to a folder to move", {
-                duration: 3000,
-                position: "bottom-center"
-            });
-            localStorage.setItem("scribe-drag-folder-hint", "true");
-        }
-    };
-
     return (
         <div
             draggable
-            onDragStart={handleDragStart}
+            onDragStart={(e) => handleDragStart(e, item.id)}
             onClick={handleItemClick}
             className={cn(
                 "group grid items-center gap-3 px-3 py-2.5",

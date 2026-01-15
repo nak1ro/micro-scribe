@@ -12,15 +12,13 @@ import { MultiFileUploadTab } from "./MultiFileUploadTab";
 import { YouTubeTab } from "./YouTubeTab";
 import { SOURCE_LANGUAGES, TRANSCRIPTION_QUALITY_OPTIONS, SUPPORTED_FORMATS } from "./constants";
 import { TranscriptionQuality } from "@/features/transcription/types";
-import { useFileUpload } from "@/features/transcription/hooks/useFileUpload";
-import { usePlanLimits } from "@/hooks/usePlanLimits";
-import { PLANS } from "@/lib/plans";
+import { useCreateTranscription, TabType } from "@/features/transcription/hooks/useCreateTranscription";
 
 // ─────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────
 
-type TabType = "file" | "youtube" | "voice";
+
 
 interface CreateTranscriptionModalProps {
     isOpen: boolean;
@@ -55,233 +53,59 @@ export interface TranscriptionFormData {
 // Main Modal Component
 // ─────────────────────────────────────────────────────────────
 
-export function CreateTranscriptionModal({
-    isOpen,
-    onClose,
-    onSuccess,
-    onOptimisticAdd,
-    onOptimisticUpdate,
-    onOptimisticRemove,
-}: CreateTranscriptionModalProps) {
-    const [activeTab, setActiveTab] = React.useState<TabType>("file");
-    const [files, setFiles] = React.useState<File[]>([]);
-    const [fileErrors, setFileErrors] = React.useState<Map<string, string>>(new Map());
-    const [youtubeUrl, setYoutubeUrl] = React.useState("");
-    const [audioBlob, setAudioBlob] = React.useState<Blob | null>(null);
-    const [sourceLanguage, setSourceLanguage] = React.useState("auto");
-    const [quality, setQuality] = React.useState<TranscriptionQuality>(TranscriptionQuality.Balanced);
-    const [enableSpeakerDiarization, setEnableSpeakerDiarization] = React.useState(false);
-    const [generalError, setGeneralError] = React.useState<string | null>(null);
-    const [isValidatingFiles, setIsValidatingFiles] = React.useState(false);
+// ─────────────────────────────────────────────────────────────
+// Main Modal Component
+// ─────────────────────────────────────────────────────────────
 
-    const { upload, abort, reset, progress, status, error, isUploading } = useFileUpload();
-    const { isPro, remainingToday, dailyLimit, canTranscribe, isFileSizeValid, maxFileSizeMB, maxMinutesPerFile, limits } = usePlanLimits();
-    const maxFilesPerUpload = limits.maxFilesPerUpload;
+export function CreateTranscriptionModal(props: CreateTranscriptionModalProps) {
+    const {
+        isOpen,
+        onClose,
+    } = props;
 
-    // Reset state when modal opens or closes
-    React.useEffect(() => {
-        setFiles([]);
-        setFileErrors(new Map());
-        setYoutubeUrl("");
-        setAudioBlob(null);
-        setActiveTab("file");
-        setEnableSpeakerDiarization(false);
-        setGeneralError(null);
-        reset();
-    }, [isOpen, reset]);
+    const {
+        // State
+        activeTab,
+        files,
+        fileErrors,
+        youtubeUrl,
+        audioBlob,
+        sourceLanguage,
+        quality,
+        enableSpeakerDiarization,
+        generalError,
+        isValidatingFiles,
+        isUploading,
+        progress,
+        status,
+        error,
 
-    // Get duration of audio/video file in minutes
-    const getMediaDuration = (file: File): Promise<number | null> => {
-        return new Promise((resolve) => {
-            const url = URL.createObjectURL(file);
-            const media = file.type.startsWith("video/")
-                ? document.createElement("video")
-                : document.createElement("audio");
+        // Limits/Info
+        isPro,
+        remainingToday,
+        dailyLimit,
+        canTranscribe,
+        maxFilesPerUpload,
+        limits,
 
-            media.onloadedmetadata = () => {
-                URL.revokeObjectURL(url);
-                const durationMinutes = media.duration / 60;
-                resolve(isFinite(durationMinutes) ? durationMinutes : null);
-            };
+        // Setters
+        setActiveTab,
+        setYoutubeUrl,
+        setAudioBlob,
+        setSourceLanguage,
+        setQuality,
+        setEnableSpeakerDiarization,
 
-            media.onerror = () => {
-                URL.revokeObjectURL(url);
-                resolve(null); // Can't determine duration, let backend handle it
-            };
-
-            media.src = url;
-        });
-    };
-
-    const hasContent = () => {
-        switch (activeTab) {
-            case "file":
-                return files.length > 0;
-            case "youtube":
-                return youtubeUrl.trim().length > 0;
-            case "voice":
-                return audioBlob !== null;
-        }
-    };
-
-    const handleClear = () => {
-        setGeneralError(null);
-        setFileErrors(new Map());
-        switch (activeTab) {
-            case "file":
-                setFiles([]);
-                break;
-            case "youtube":
-                setYoutubeUrl("");
-                break;
-            case "voice":
-                setAudioBlob(null);
-                break;
-        }
-    };
-
-    // Remove a specific file from the list
-    const handleRemoveFile = (index: number) => {
-        setFiles(prev => prev.filter((_, i) => i !== index));
-        // Remove error for this file if any
-        const fileName = files[index]?.name;
-        if (fileName) {
-            setFileErrors(prev => {
-                const next = new Map(prev);
-                next.delete(fileName);
-                return next;
-            });
-        }
-    };
-
-    // File selection with size and duration validation for multiple files
-    const handleFilesSelect = async (selectedFiles: File[], append: boolean = false) => {
-        setGeneralError(null);
-
-        // Calculate total files after addition
-        const existingCount = append ? files.length : 0;
-        const totalAfterAdd = existingCount + selectedFiles.length;
-
-        // Check max files limit
-        if (totalAfterAdd > maxFilesPerUpload) {
-            setGeneralError(
-                `You can upload up to ${maxFilesPerUpload} file${maxFilesPerUpload > 1 ? "s" : ""} at once. ${!isPro ? "Upgrade to Pro for up to 20 files." : ""}`
-            );
-            return;
-        }
-
-        setIsValidatingFiles(true);
-        const newValidFiles: File[] = [];
-        const newErrors = new Map<string, string>();
-
-        for (const file of selectedFiles) {
-            // Check file size
-            if (!isFileSizeValid(file.size)) {
-                newErrors.set(file.name, `Exceeds ${maxFileSizeMB}MB limit`);
-                continue;
-            }
-
-            // Check file duration
-            const durationMinutes = await getMediaDuration(file);
-            if (durationMinutes !== null && durationMinutes > maxMinutesPerFile) {
-                newErrors.set(file.name, `Exceeds ${maxMinutesPerFile} min limit`);
-                continue;
-            }
-
-            newValidFiles.push(file);
-        }
-
-        setIsValidatingFiles(false);
-
-        if (append) {
-            // Append new files to existing
-            setFiles(prev => [...prev, ...newValidFiles]);
-            setFileErrors(prev => {
-                const merged = new Map(prev);
-                newErrors.forEach((v, k) => merged.set(k, v));
-                return merged;
-            });
-        } else {
-            // Replace files
-            setFiles(newValidFiles);
-            setFileErrors(newErrors);
-        }
-    };
-
-    const handleSubmit = async () => {
-        if (!hasContent()) return;
-
-        // Helper to run upload in background with optimistic updates
-        const runBackgroundUpload = async (uploadFile: File, index: number) => {
-            // Create a unique temporary ID for optimistic item
-            const tempId = `temp-${Date.now()}-${index}`;
-
-            // Add optimistic item to list
-            onOptimisticAdd?.({
-                id: tempId,
-                fileName: uploadFile.name,
-                uploadDate: new Date().toISOString(),
-                status: "uploading",
-                duration: null,
-                language: sourceLanguage === "auto" ? null : sourceLanguage,
-                preview: null,
-            });
-
-            // Run upload in background
-            try {
-                const job = await upload(uploadFile, {
-                    sourceLanguage: sourceLanguage === "auto" ? undefined : sourceLanguage,
-                    quality,
-                    enableSpeakerDiarization,
-                }, tempId);
-
-                if (job) {
-                    // Upload succeeded - remove optimistic item (server data will appear on refetch)
-                    onOptimisticRemove?.(tempId);
-                    onSuccess?.();
-                } else {
-                    // Upload failed - update status to failed
-                    onOptimisticUpdate?.(tempId, { status: "failed" });
-                }
-            } catch {
-                // Upload errored - update status to failed
-                onOptimisticUpdate?.(tempId, { status: "failed" });
-            }
-        };
-
-
-        if (activeTab === "file" && files.length > 0) {
-            // Close modal and reset immediately, then upload all files in parallel
-            onClose();
-            reset();
-
-            // Upload all valid files in parallel
-            files.forEach((file, index) => {
-                runBackgroundUpload(file, index);
-            });
-        } else if (activeTab === "youtube") {
-            // TODO: Implement YouTube handling
-        } else if (activeTab === "voice" && audioBlob) {
-            onClose();
-            reset();
-            const voiceFile = new File([audioBlob], "voice-recording.webm", {
-                type: "audio/webm",
-            });
-            runBackgroundUpload(voiceFile, 0);
-        }
-    };
-
-    const handleCancel = () => {
-        if (isUploading) {
-            abort();
-        } else {
-            onClose();
-        }
-    };
-
-    const handleRetry = () => {
-        reset();
-    };
+        // Handlers
+        handleFilesSelect,
+        handleRemoveFile,
+        handleClear,
+        handleSubmit,
+        handleCancel,
+        handleRetry,
+        hasContent,
+        abort
+    } = useCreateTranscription(props);
 
     if (!isOpen) return null;
 

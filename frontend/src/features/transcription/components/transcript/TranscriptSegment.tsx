@@ -3,9 +3,10 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { EditPencil } from "iconoir-react";
-import { formatTimestamp, getSpeakerColor, getSpeakerBgColor, getSpeakerDisplayName } from "@/lib/utils";
+import { formatTimestamp } from "@/lib/utils";
 import { hasSpeakerChanged } from "@/features/transcription/utils";
 import type { ViewerSegment, SpeakerInfo } from "@/features/transcription/types";
+import { SpeakerLabel } from "./SpeakerLabel";
 
 interface TranscriptSegmentProps {
     segment: ViewerSegment;
@@ -38,9 +39,6 @@ export function TranscriptSegment({
     onEditClick,
 }: TranscriptSegmentProps) {
     const speakerChanged = showSpeaker && hasSpeakerChanged(segment.speaker, previousSpeaker);
-    const speakerColor = segment.speaker ? getSpeakerColor(segment.speaker, speakerInfo?.color) : "";
-    const speakerBgColor = segment.speaker ? getSpeakerBgColor(segment.speaker, speakerInfo?.color) : "";
-    const speakerName = segment.speaker ? getSpeakerDisplayName(segment.speaker, speakerInfo?.displayName) : "";
 
     // Resolve display text based on selected language
     const displayText = React.useMemo(() => {
@@ -63,41 +61,14 @@ export function TranscriptSegment({
         <>
             {/* Speaker separator with badge */}
             {speakerChanged && segment.speaker && (
-                <div className="flex items-center gap-3 pt-6 pb-3">
-                    <div className="h-px flex-1 bg-border" />
-                    <div className={cn(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-full",
-                        speakerBgColor
-                    )}>
-                        <span className={cn(
-                            "w-2 h-2 rounded-full",
-                            speakerColor.replace("text-", "bg-")
-                        )} />
-                        <span className={cn("text-xs font-semibold", speakerColor)}>
-                            {speakerName}
-                        </span>
-                    </div>
-                    <div className="h-px flex-1 bg-border" />
+                <div className="pt-3">
+                    <SpeakerLabel speakerId={segment.speaker} speakerInfo={speakerInfo} />
                 </div>
             )}
 
-            {/* First speaker label (no line above) */}
-            {showSpeaker && index === 0 && segment.speaker && (
-                <div className="flex items-center gap-3 pb-3">
-                    <div className={cn(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-full",
-                        speakerBgColor
-                    )}>
-                        <span className={cn(
-                            "w-2 h-2 rounded-full",
-                            speakerColor.replace("text-", "bg-")
-                        )} />
-                        <span className={cn("text-xs font-semibold", speakerColor)}>
-                            {speakerName}
-                        </span>
-                    </div>
-                    <div className="h-px flex-1 bg-border" />
-                </div>
+            {/* First speaker label (if enabled and first item) */}
+            {showSpeaker && index === 0 && segment.speaker && !speakerChanged && (
+                <SpeakerLabel speakerId={segment.speaker} speakerInfo={speakerInfo} />
             )}
 
             {/* Segment content */}

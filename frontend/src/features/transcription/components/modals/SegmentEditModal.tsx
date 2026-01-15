@@ -3,8 +3,9 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Xmark, Undo, Check, WarningCircle } from "iconoir-react";
-import { Button } from "@/components/ui";
+import { Button, Textarea } from "@/components/ui";
 import type { ViewerSegment } from "@/features/transcription/types";
+import { useSegmentEditForm } from "@/features/transcription/hooks/useSegmentEditForm";
 
 interface SegmentEditModalProps {
     segment: ViewerSegment | null;
@@ -23,55 +24,29 @@ export function SegmentEditModal({
     isSaving,
     isReverting,
 }: SegmentEditModalProps) {
-    const [text, setText] = React.useState("");
-    const [error, setError] = React.useState<string | null>(null);
     const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
-    // Sync text when segment changes
+    const {
+        text,
+        setText,
+        error,
+        setError,
+        isBlank,
+        handleSave,
+        handleRevert
+    } = useSegmentEditForm({
+        segment,
+        onSave,
+        onRevert,
+        onClose
+    });
+
+    // Focus on open
     React.useEffect(() => {
         if (segment) {
-            setText(segment.text);
-            setError(null);
-            // Focus textarea when modal opens
             setTimeout(() => textareaRef.current?.focus(), 50);
         }
     }, [segment]);
-
-    if (!segment) return null;
-
-    const isEdited = segment.isEdited;
-    const originalText = segment.originalText;
-    const hasChanges = text.trim() !== segment.text;
-    const isBlank = text.trim().length === 0;
-    const isLoading = isSaving || isReverting;
-
-    const handleSave = async () => {
-        if (isBlank) {
-            setError("Text cannot be empty");
-            return;
-        }
-        if (!hasChanges) {
-            onClose();
-            return;
-        }
-        try {
-            setError(null);
-            await onSave(segment.id, text.trim());
-            onClose();
-        } catch (err) {
-            setError("Failed to save changes. Please try again.");
-        }
-    };
-
-    const handleRevert = async () => {
-        try {
-            setError(null);
-            await onRevert(segment.id);
-            onClose();
-        } catch (err) {
-            setError("Failed to revert. Please try again.");
-        }
-    };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         // Ctrl/Cmd + Enter to save
@@ -80,6 +55,12 @@ export function SegmentEditModal({
             handleSave();
         }
     };
+
+    if (!segment) return null;
+
+    const isEdited = segment.isEdited;
+    const originalText = segment.originalText;
+    const isLoading = isSaving || isReverting;
 
     return (
         <>
@@ -137,7 +118,7 @@ export function SegmentEditModal({
                         <label htmlFor="segment-text" className="text-sm font-medium text-foreground">
                             Text
                         </label>
-                        <textarea
+                        <Textarea
                             ref={textareaRef}
                             id="segment-text"
                             value={text}
@@ -147,15 +128,8 @@ export function SegmentEditModal({
                             }}
                             onKeyDown={handleKeyDown}
                             disabled={isLoading}
-                            className={cn(
-                                "w-full min-h-[120px] max-h-[300px] resize-y",
-                                "px-3 py-2 rounded-lg",
-                                "bg-background border border-border",
-                                "text-foreground placeholder:text-muted-foreground",
-                                "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent",
-                                "disabled:opacity-50 disabled:cursor-not-allowed",
-                                error && "border-destructive focus:ring-destructive"
-                            )}
+                            hasError={!!error}
+                            className="w-full min-h-[120px] max-h-[300px] resize-y"
                             placeholder="Enter segment text..."
                         />
                         <div className="flex items-center justify-between text-xs text-muted-foreground">

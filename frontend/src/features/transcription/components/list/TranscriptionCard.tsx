@@ -2,21 +2,11 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import {
-    MusicDoubleNote,
-    Download,
-    Trash,
-    RefreshDouble,
-    Clock,
-    CheckCircle,
-    XmarkCircle,
-    Prohibition,
-    Xmark,
-} from "iconoir-react";
+import { MusicDoubleNote } from "iconoir-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/Button";
 import { getProcessingStepText, formatDuration } from "@/features/transcription/utils";
 import { StatusBadge } from "./StatusBadge";
+import { TranscriptionCardActions } from "./TranscriptionCardActions";
 import type { TranscriptionListItem, TranscriptionStatus } from "@/types/models/transcription";
 
 interface TranscriptionCardProps {
@@ -30,9 +20,8 @@ interface TranscriptionCardProps {
     onShare?: (id: string) => void;
 }
 
-// Status categories for button visibility
+// Status categories
 const IN_PROGRESS_STATUSES: TranscriptionStatus[] = ["uploading", "pending", "processing"];
-const FINISHED_STATUSES: TranscriptionStatus[] = ["completed", "failed", "cancelled"];
 
 export function TranscriptionCard({
     item,
@@ -42,20 +31,20 @@ export function TranscriptionCard({
     onDelete,
     onCancelUpload,
     onCancelJob,
-    onShare,
+    // onShare unused in card view currently
 }: TranscriptionCardProps) {
     const router = useRouter();
-    const [showActions, setShowActions] = React.useState(false);
+    const [isHovered, setIsHovered] = React.useState(false);
 
     const formattedDate = new Date(item.uploadDate).toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
     });
 
-
+    const isInProgress = IN_PROGRESS_STATUSES.includes(item.status);
 
     const handleCardClick = () => {
-        if (IN_PROGRESS_STATUSES.includes(item.status)) return;
+        if (isInProgress) return;
         router.push(`/transcriptions/${item.id}`);
     };
 
@@ -64,94 +53,44 @@ export function TranscriptionCard({
         onSelect?.(item.id);
     };
 
-    const handleCancel = (e: React.MouseEvent) => {
-        e.stopPropagation();
+    const handleCancel = (id: string) => {
         if (item.status === "uploading") {
-            onCancelUpload?.(item.id);
+            onCancelUpload?.(id);
         } else {
-            onCancelJob?.(item.id);
+            onCancelJob?.(id);
         }
     };
 
     // Get processing step text for preview
     const processingText = getProcessingStepText(item.status, item.processingStep ?? null);
 
-    const isInProgress = IN_PROGRESS_STATUSES.includes(item.status);
-    const isFinished = FINISHED_STATUSES.includes(item.status);
-
     return (
         <div
             onClick={handleCardClick}
-            onMouseEnter={() => setShowActions(true)}
-            onMouseLeave={() => setShowActions(false)}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
             className={cn(
                 "relative flex flex-col p-4 rounded-xl",
                 "bg-card border border-border",
                 "transition-all duration-200",
-                // Interactive state (not in progress)
                 !isInProgress && "cursor-pointer hover:border-primary/30 hover:shadow-lg",
-                // Disabled state (in progress)
                 isInProgress && "cursor-default opacity-80 bg-muted/5",
                 isSelected && "ring-2 ring-primary border-primary"
             )}
         >
+            <TranscriptionCardActions
+                item={item}
+                isHovered={isHovered}
+                isInProgress={isInProgress}
+                onDownload={onDownload}
+                onDelete={onDelete}
+                onCancel={handleCancel}
+            />
 
-            {/* Cancel button - always visible for in-progress */}
-            {isInProgress && (onCancelUpload || onCancelJob) && (
-                <div className="absolute top-3 right-3">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 bg-card/80 backdrop-blur text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={handleCancel}
-                        title="Cancel"
-                        aria-label="Cancel transcription"
-                    >
-                        <Xmark className="h-3.5 w-3.5" />
-                    </Button>
-                </div>
-            )}
-
-            {/* Action menu - only for finished items on hover */}
-            {showActions && isFinished && (
-                <div className="absolute top-3 right-3 flex gap-1">
-                    {item.status === "completed" && onDownload && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 bg-card/80 backdrop-blur"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onDownload(item.id);
-                            }}
-                            title="Download"
-                            aria-label="Download transcription"
-                        >
-                            <Download className="h-3.5 w-3.5" />
-                        </Button>
-                    )}
-                    {onDelete && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 bg-card/80 backdrop-blur text-destructive hover:text-destructive"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onDelete(item.id);
-                            }}
-                            title="Delete"
-                            aria-label="Delete transcription"
-                        >
-                            <Trash className="h-3.5 w-3.5" />
-                        </Button>
-                    )}
-                </div>
-            )}
-
-            {/* Icon + Title */}
-            <div className="flex items-center gap-3 mb-3 pr-16">
+            {/* Header: Icon + Title */}
+            <div className="flex items-center gap-3 mb-3 pr-10">
                 <div
-                    className="relative p-2 rounded-lg bg-primary/10 shrink-0 h-9 w-9 flex items-center justify-center cursor-pointer"
+                    className="relative p-2 rounded-lg bg-primary/10 shrink-0 h-9 w-9 flex items-center justify-center cursor-pointer group/icon"
                     onClick={(e) => {
                         e.stopPropagation();
                         onSelect?.(item.id);
@@ -160,7 +99,7 @@ export function TranscriptionCard({
                     <MusicDoubleNote
                         className={cn(
                             "h-5 w-5 text-primary transition-opacity duration-200",
-                            (isSelected || showActions) ? "opacity-0" : "opacity-100"
+                            (isSelected || isHovered) ? "opacity-0" : "opacity-100"
                         )}
                     />
                     <input
@@ -173,27 +112,25 @@ export function TranscriptionCard({
                             "h-5 w-5 rounded border-border text-primary",
                             "focus:ring-primary cursor-pointer",
                             "transition-opacity duration-200",
-                            (isSelected || showActions) ? "opacity-100" : "opacity-0 pointer-events-none"
+                            (isSelected || isHovered) ? "opacity-100" : "opacity-0 pointer-events-none"
                         )}
+                        aria-label={`Select ${item.fileName}`}
                     />
                 </div>
                 <div className="min-w-0 flex-1">
-                    <h3 className="font-medium text-foreground truncate text-lg">
+                    <h3 className="font-medium text-foreground truncate text-lg" title={item.fileName}>
                         {item.fileName}
                     </h3>
                 </div>
             </div>
 
-            {/* Preview text */}
-            {item.preview ? (
-                <p className="text-sm text-muted-foreground overflow-hidden mb-4 h-[72px] leading-6" style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
-                    {item.preview}
-                </p>
-            ) : (
-                <p className="text-sm text-muted-foreground/50 italic mb-4 h-[72px]">
-                    {item.status === "completed" ? "No preview available" : processingText}
-                </p>
-            )}
+            {/* Preview Text */}
+            <p className={cn(
+                "text-sm mb-4 h-[72px] leading-6 overflow-hidden line-clamp-3",
+                item.preview ? "text-muted-foreground" : "text-muted-foreground/50 italic"
+            )}>
+                {item.preview || (item.status === "completed" ? "No preview available" : processingText)}
+            </p>
 
             {/* Footer: Status + Metadata */}
             <div className="flex items-center justify-between mt-auto pt-3 border-t border-border/50">

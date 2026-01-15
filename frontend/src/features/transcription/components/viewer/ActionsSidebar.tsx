@@ -9,6 +9,7 @@ import { LanguageMenu } from "./LanguageMenu";
 import { Toggle } from "@/components/ui";
 import { AnalysisMenu } from "@/features/transcription";
 import type { ExportFormat } from "@/features/transcription";
+import { SettingsRow } from "./SettingsRow";
 import type { TranscriptionAnalysisDto, AnalysisType } from "@/features/transcription/types";
 
 interface ActionsSidebarProps {
@@ -128,21 +129,17 @@ export function ActionsSidebar({
                     currentView={currentAnalysisView}
                     disabled={disabled}
                 />
+
                 {/* Copy */}
-                {/* Copy */}
-                <button
+                <Button
                     onClick={onCopy}
                     disabled={disabled || !canCopy}
+                    variant="outline"
                     className={cn(
-                        "w-full flex items-center gap-2",
-                        "px-3 py-2.5 rounded-lg",
-                        "bg-muted/50 hover:bg-muted",
-                        "border border-border hover:border-primary/30",
-                        "text-sm font-medium text-foreground",
-                        "transition-colors duration-150",
-                        "disabled:opacity-50 disabled:cursor-not-allowed",
-                        isCopied && "text-success border-success/30 bg-success/5 hover:bg-success/10 hover:border-success/30",
-                        !isCopied && "hover:text-foreground"
+                        "w-full justify-start gap-2",
+                        "border-border hover:border-primary/30",
+                        isCopied && "text-success border-success/30 bg-success/5 hover:bg-success/10 hover:border-success/30 hover:text-success",
+                        !isCopied && "text-foreground hover:text-foreground"
                     )}
                 >
                     {isCopied ? (
@@ -156,7 +153,7 @@ export function ActionsSidebar({
                             <span>Copy transcript</span>
                         </>
                     )}
-                </button>
+                </Button>
             </div>
 
             {/* Divider */}
@@ -172,45 +169,42 @@ export function ActionsSidebar({
                 </div>
 
                 {/* Timecodes toggle */}
-                <div className="flex items-center justify-between gap-3 px-1">
-                    <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-foreground">Timecodes</span>
-                    </div>
+                <SettingsRow
+                    icon={<Clock className="h-4 w-4 text-muted-foreground" />}
+                    label="Timecodes"
+                >
                     <Toggle
                         checked={showTimecodes}
                         onChange={onToggleTimecodes}
                         disabled={disabled}
                     />
-                </div>
+                </SettingsRow>
 
                 {/* Speakers toggle */}
                 {hasSpeakers && (
-                    <div className="flex items-center justify-between gap-3 px-1">
-                        <div className="flex items-center gap-2">
-                            <Group className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm text-foreground">Speakers</span>
-                        </div>
+                    <SettingsRow
+                        icon={<Group className="h-4 w-4 text-muted-foreground" />}
+                        label="Speakers"
+                    >
                         <Toggle
                             checked={showSpeakers}
                             onChange={onToggleSpeakers}
                             disabled={disabled}
                         />
-                    </div>
+                    </SettingsRow>
                 )}
 
                 {/* Edit Mode Toggle */}
-                <div className="flex items-center justify-between gap-3 px-1">
-                    <div className="flex items-center gap-2">
-                        <EditPencil className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-foreground">Edit Mode</span>
-                    </div>
+                <SettingsRow
+                    icon={<EditPencil className="h-4 w-4 text-muted-foreground" />}
+                    label="Edit Mode"
+                >
                     <Toggle
                         checked={isEditMode}
                         onChange={onToggleEditMode}
                         disabled={disabled}
                     />
-                </div>
+                </SettingsRow>
             </div>
 
             {/* Spacer */}

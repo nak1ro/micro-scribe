@@ -9,6 +9,7 @@ import {
     Prohibition
 } from "iconoir-react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/Badge";
 import { getProcessingStepText } from "@/features/transcription/utils";
 import type { TranscriptionStatus } from "@/types/models/transcription";
 
@@ -17,48 +18,48 @@ interface StatusBadgeProps {
     processingStep?: string | null;
 }
 
-export function StatusBadge({ status, processingStep }: StatusBadgeProps) {
-    const config: Record<TranscriptionStatus, {
-        icon: React.ComponentType<{ className?: string }>;
-        className: string;
-    }> = {
-        uploading: {
-            icon: RefreshDouble,
-            className: "bg-primary/10 text-primary",
-        },
-        pending: {
-            icon: Clock,
-            className: "bg-warning/10 text-warning",
-        },
-        processing: {
-            icon: RefreshDouble,
-            className: "bg-info/10 text-info",
-        },
-        completed: {
-            icon: CheckCircle,
-            className: "bg-success/10 text-success",
-        },
-        failed: {
-            icon: XmarkCircle,
-            className: "bg-destructive/10 text-destructive",
-        },
-        cancelled: {
-            icon: Prohibition,
-            className: "bg-muted text-muted-foreground",
-        },
-    };
+const statusConfig: Record<TranscriptionStatus, {
+    icon: React.ComponentType<{ className?: string }>;
+    variant: "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "info" | "muted";
+    animate?: boolean;
+}> = {
+    uploading: {
+        icon: RefreshDouble,
+        variant: "default", // primary
+        animate: true,
+    },
+    pending: {
+        icon: Clock,
+        variant: "warning",
+    },
+    processing: {
+        icon: RefreshDouble,
+        variant: "info",
+        animate: true,
+    },
+    completed: {
+        icon: CheckCircle,
+        variant: "success",
+    },
+    failed: {
+        icon: XmarkCircle,
+        variant: "destructive",
+    },
+    cancelled: {
+        icon: Prohibition,
+        variant: "muted",
+    },
+};
 
-    const { icon: Icon, className } = config[status];
-    const isAnimated = status === "processing" || status === "uploading";
+export function StatusBadge({ status, processingStep }: StatusBadgeProps) {
+    const config = statusConfig[status];
+    const Icon = config.icon;
     const label = getProcessingStepText(status, processingStep ?? null);
 
     return (
-        <span className={cn(
-            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
-            className
-        )}>
-            <Icon className={cn("h-3 w-3", isAnimated && "animate-spin")} />
+        <Badge variant={config.variant} className="gap-1 font-medium">
+            <Icon className={cn("h-3 w-3", config.animate && "animate-spin")} />
             {label}
-        </span>
+        </Badge>
     );
 }

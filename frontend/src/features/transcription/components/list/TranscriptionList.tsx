@@ -1,13 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { cn } from "@/lib/utils";
 import { TranscriptionCard } from "./TranscriptionCard";
 import { TranscriptionEmptyState } from "./TranscriptionEmptyState";
 import { BulkActionBar } from "./BulkActionBar";
 import { CardGridSkeleton } from "./CardGridSkeleton";
+import { useTranscriptionSelection } from "@/features/transcription/hooks/useTranscriptionSelection";
 import type { TranscriptionListItem } from "@/types/models/transcription";
-import { TranscriptionItem } from "@/features/transcription";
 
 type InputType = "file" | "youtube" | "voice";
 
@@ -40,50 +39,20 @@ export function TranscriptionList({
     onBulkShare,
     onMoveToFolder,
 }: TranscriptionListProps) {
-    // Selection state
-    const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
-
-    // Selection handlers
-    const toggleSelect = (id: string) => {
-        setSelectedIds(prev => {
-            const next = new Set(prev);
-            if (next.has(id)) {
-                next.delete(id);
-            } else {
-                next.add(id);
-            }
-            return next;
-        });
-    };
-
-    const clearSelection = () => setSelectedIds(new Set());
-
-    // Bulk action handlers
-    const handleBulkDelete = () => {
-        if (selectedIds.size > 0) {
-            onBulkDelete?.(Array.from(selectedIds));
-            clearSelection();
-        }
-    };
-
-    const handleBulkDownload = () => {
-        if (selectedIds.size > 0) {
-            onBulkDownload?.(Array.from(selectedIds));
-        }
-    };
-
-    const handleBulkShare = () => {
-        if (selectedIds.size > 0) {
-            onBulkShare?.(Array.from(selectedIds));
-        }
-    };
-
-    const handleMoveToFolder = (folderId: string) => {
-        if (selectedIds.size > 0) {
-            onMoveToFolder?.(folderId, Array.from(selectedIds));
-            clearSelection();
-        }
-    };
+    const {
+        selectedIds,
+        toggleSelect,
+        clearSelection,
+        handleBulkDelete,
+        handleBulkDownload,
+        handleBulkShare,
+        handleMoveToFolder,
+    } = useTranscriptionSelection({
+        onBulkDelete,
+        onBulkDownload,
+        onBulkShare,
+        onMoveToFolder
+    });
 
     if (isLoading) {
         return <CardGridSkeleton />;
@@ -125,7 +94,6 @@ export function TranscriptionList({
                     />
                 ))}
             </div>
-
         </>
     );
 }

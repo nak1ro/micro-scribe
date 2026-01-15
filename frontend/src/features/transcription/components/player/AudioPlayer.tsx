@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Play, Pause, SkipPrev, SkipNext, SoundHigh } from "iconoir-react";
 import { Button } from "@/components/ui";
 import { formatTime } from "@/lib/utils";
+import { useAudioProgress } from "@/features/transcription/hooks/useAudioProgress";
 
 interface AudioPlayerProps {
     currentTime: number;
@@ -29,63 +30,12 @@ export function AudioPlayer({
     disabled = false,
     className,
 }: AudioPlayerProps) {
-    const progressRef = React.useRef<HTMLDivElement>(null);
-    const [isDragging, setIsDragging] = React.useState(false);
-
-    const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
-
-    // Handle click/drag on progress bar
-    const handleProgressInteraction = React.useCallback((clientX: number) => {
-        if (!progressRef.current || disabled) return;
-
-        const rect = progressRef.current.getBoundingClientRect();
-        const percentage = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-        const newTime = percentage * duration;
-        onSeek(newTime);
-    }, [duration, onSeek, disabled]);
-
-    const handleMouseDown = (e: React.MouseEvent) => {
-        if (disabled) return;
-        setIsDragging(true);
-        handleProgressInteraction(e.clientX);
-    };
-
-    const handleMouseMove = React.useCallback((e: MouseEvent) => {
-        if (!isDragging) return;
-        handleProgressInteraction(e.clientX);
-    }, [isDragging, handleProgressInteraction]);
-
-    const handleMouseUp = React.useCallback(() => {
-        setIsDragging(false);
-    }, []);
-
-    // Global mouse event listeners for drag
-    React.useEffect(() => {
-        if (isDragging) {
-            window.addEventListener("mousemove", handleMouseMove);
-            window.addEventListener("mouseup", handleMouseUp);
-        }
-        return () => {
-            window.removeEventListener("mousemove", handleMouseMove);
-            window.removeEventListener("mouseup", handleMouseUp);
-        };
-    }, [isDragging, handleMouseMove, handleMouseUp]);
-
-    // Touch support
-    const handleTouchStart = (e: React.TouchEvent) => {
-        if (disabled) return;
-        setIsDragging(true);
-        handleProgressInteraction(e.touches[0].clientX);
-    };
-
-    const handleTouchMove = (e: React.TouchEvent) => {
-        if (!isDragging || disabled) return;
-        handleProgressInteraction(e.touches[0].clientX);
-    };
-
-    const handleTouchEnd = () => {
-        setIsDragging(false);
-    };
+    const { progressRef, isDragging, progress, handlers } = useAudioProgress({
+        currentTime,
+        duration,
+        disabled,
+        onSeek,
+    });
 
     return (
         <div
@@ -109,10 +59,7 @@ export function AudioPlayer({
                         "flex-1 h-2 rounded-full bg-muted cursor-pointer relative group",
                         disabled && "opacity-50 cursor-not-allowed"
                     )}
-                    onMouseDown={handleMouseDown}
-                    onTouchStart={handleTouchStart}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
+                    {...handlers}
                     role="slider"
                     aria-label="Audio progress"
                     aria-valuemin={0}

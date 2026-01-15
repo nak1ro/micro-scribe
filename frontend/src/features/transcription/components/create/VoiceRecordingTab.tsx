@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Microphone, Trash } from "iconoir-react";
 import { cn, formatFileSize } from "@/lib/utils";
+import { useVoiceRecorder } from "@/features/transcription/hooks/useVoiceRecorder";
 
 interface VoiceRecordingTabProps {
     audioBlob: Blob | null;
@@ -11,60 +12,13 @@ interface VoiceRecordingTabProps {
 }
 
 export function VoiceRecordingTab({ audioBlob, onRecordingComplete, onClear }: VoiceRecordingTabProps) {
-    const [isRecording, setIsRecording] = React.useState(false);
-    const [recordingTime, setRecordingTime] = React.useState(0);
-    const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
-    const chunksRef = React.useRef<Blob[]>([]);
-    const timerRef = React.useRef<number | null>(null);
-
-    const startRecording = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const mediaRecorder = new MediaRecorder(stream);
-            mediaRecorderRef.current = mediaRecorder;
-            chunksRef.current = [];
-
-            mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) {
-                    chunksRef.current.push(e.data);
-                }
-            };
-
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-                onRecordingComplete(blob);
-                stream.getTracks().forEach((track) => track.stop());
-            };
-
-            mediaRecorder.start();
-            setIsRecording(true);
-            setRecordingTime(0);
-
-            timerRef.current = window.setInterval(() => {
-                setRecordingTime((t) => t + 1);
-            }, 1000);
-        } catch (err) {
-            console.error("Failed to start recording:", err);
-            alert("Could not access microphone. Please check permissions.");
-        }
-    };
-
-    const stopRecording = () => {
-        if (mediaRecorderRef.current) {
-            mediaRecorderRef.current.stop();
-            setIsRecording(false);
-            if (timerRef.current) {
-                clearInterval(timerRef.current);
-                timerRef.current = null;
-            }
-        }
-    };
-
-    const formatTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, "0")}`;
-    };
+    const {
+        isRecording,
+        recordingTime,
+        startRecording,
+        stopRecording,
+        formatTime
+    } = useVoiceRecorder({ onRecordingComplete });
 
     if (audioBlob) {
         const audioUrl = URL.createObjectURL(audioBlob);
